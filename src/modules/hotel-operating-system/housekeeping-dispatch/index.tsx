@@ -53,7 +53,7 @@ export default function HousekeepingDispatchModule() {
             if (operationalFilter !== "All") {
                 // room_id could be an object, or null
                 const opStatusId = typeof task.room_id === "object" && task.room_id !== null 
-                    ? (task.room_id as any).operational_status_id 
+                    ? (task.room_id as { operational_status_id?: number }).operational_status_id 
                     : null;
                 
                 if (operationalFilter === "Vacant" && opStatusId !== 1) return false;

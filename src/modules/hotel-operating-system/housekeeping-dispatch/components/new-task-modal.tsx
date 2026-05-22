@@ -38,7 +38,7 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
                 const res = await fetch("/api/hos/housekeeping-status");
                 if (res.ok) {
                     const json = await res.json();
-                    const filtered = (json.data || []).filter((s: any) => 
+                    const filtered = (json.data || []).filter((s: { status_name: string }) => 
                         s.status_name !== "Clean"
                     );
                     setTaskTypes(filtered);
