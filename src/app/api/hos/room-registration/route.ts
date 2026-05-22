@@ -66,6 +66,41 @@ export async function POST(request: Request) {
         const body = await request.json();
         const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
 
+        if (body.main_image_url && body.main_image_url.startsWith('data:image')) {
+            try {
+                const matches = body.main_image_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+                if (matches && matches.length === 3) {
+                    const type = matches[1];
+                    const data = Buffer.from(matches[2], 'base64');
+                    const blob = new Blob([data], { type });
+                    const formData = new FormData();
+                    formData.append('file', blob, `room_img_${Date.now()}.${type.split('/')[1] || 'png'}`);
+
+                    const fileRes = await fetch(`${API_BASE_URL}/files`, {
+                        method: 'POST',
+                        headers: {
+                            ...(staticToken ? { 'Authorization': `Bearer ${staticToken}` } : {}),
+                        },
+                        body: formData
+                    });
+                    
+                    if (fileRes.ok) {
+                        const fileData = await fileRes.json();
+                        if (fileData?.data?.id) {
+                            body.main_image_url = fileData.data.id;
+                        } else {
+                            body.main_image_url = null;
+                        }
+                    } else {
+                        body.main_image_url = null;
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to upload image to Directus", err);
+                body.main_image_url = null;
+            }
+        }
+
         // Construct payload with created_by
         const payloadData = {
             ...body,

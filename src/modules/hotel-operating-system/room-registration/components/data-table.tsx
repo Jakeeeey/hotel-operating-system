@@ -1,39 +1,33 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "./new-data-table";
+import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MoreHorizontal, Plus, Eye, Edit, Trash, Image as ImageIcon } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RoomForm } from "./room-form";
-import { Plus, Edit, Trash, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
-import Image from "next/image";
 
 export function RoomDataTable() {
-    const [rooms, setRooms] = useState<any[]>([]);
-    const [types, setTypes] = useState<any[]>([]);
-    const [statuses, setStatuses] = useState<any[]>([]);
+    const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-
-    const [filterFloor, setFilterFloor] = useState("");
-    const [filterStatus, setFilterStatus] = useState("all");
-    const [filterType, setFilterType] = useState("all");
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingRoom, setEditingRoom] = useState<any>(null);
 
-    const fetchRooms = async () => {
+    const [isViewOpen, setIsViewOpen] = useState(false);
+    const [viewingRoom, setViewingRoom] = useState<any>(null);
+
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL || "http://localhost:8055";
+
+    const fetchData = async () => {
         setLoading(true);
         try {
-            const params = new URLSearchParams();
-            if (filterFloor) params.append("floor", filterFloor);
-            if (filterStatus && filterStatus !== "all") params.append("status", filterStatus);
-            if (filterType && filterType !== "all") params.append("type", filterType);
-
-            const res = await fetch(`/api/hos/room-registration?${params.toString()}`);
-            const data = await res.json();
-            setRooms(data.data || []);
+            const res = await fetch("/api/hos/room-registration");
+            const result = await res.json();
+            setData(result.data || []);
         } catch (error) {
             toast.error("Failed to fetch rooms");
         } finally {
@@ -41,28 +35,9 @@ export function RoomDataTable() {
         }
     };
 
-    const fetchFilters = async () => {
-        try {
-            const [typeRes, statusRes] = await Promise.all([
-                fetch("/api/hos/room-type"),
-                fetch("/api/hos/room-status")
-            ]);
-            const typeData = await typeRes.json();
-            const statusData = await statusRes.json();
-            setTypes(typeData.data || []);
-            setStatuses(statusData.data || []);
-        } catch (error) {
-            console.error("Failed to fetch filters");
-        }
-    };
-
     useEffect(() => {
-        fetchFilters();
+        fetchData();
     }, []);
-
-    useEffect(() => {
-        fetchRooms();
-    }, [filterFloor, filterStatus, filterType]);
 
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this room?")) return;
@@ -70,124 +45,177 @@ export function RoomDataTable() {
             const res = await fetch(`/api/hos/room-registration/${id}`, { method: "DELETE" });
             if (!res.ok) throw new Error("Delete failed");
             toast.success("Room deleted successfully");
-            fetchRooms();
+            fetchData();
         } catch (error) {
             toast.error("Failed to delete room");
         }
     };
 
+    const getImageUrl = (urlOrUuid: string) => {
+        if (!urlOrUuid) return null;
+        if (urlOrUuid.startsWith('http') || urlOrUuid.startsWith('data:')) return urlOrUuid;
+        return `${API_BASE_URL}/assets/${urlOrUuid}`;
+    };
+
+    const columns: ColumnDef<any>[] = [
+        {
+            accessorKey: "main_image_url",
+            header: "Image",
+            cell: ({ row }) => {
+                const imageUrl = getImageUrl(row.original.main_image_url);
+                return (
+                    imageUrl ? (
+                        <div className="w-12 h-12 rounded-md overflow-hidden border relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={imageUrl} alt={row.original.room_number} className="object-cover w-full h-full" />
+                        </div>
+                    ) : (
+                        <div className="w-12 h-12 rounded-md border flex items-center justify-center bg-muted">
+                            <ImageIcon className="h-5 w-5 text-muted-foreground opacity-50" />
+                        </div>
+                    )
+                );
+            }
+        },
+        {
+            accessorKey: "room_number",
+            header: "Room Number",
+        },
+        {
+            accessorKey: "floor_number",
+            header: "Floor",
+        },
+        {
+            accessorFn: (row) => row.type_id?.type_name || "N/A",
+            id: "type_name",
+            header: "Type",
+        },
+        {
+            accessorFn: (row) => row.status_id?.status_name || "N/A",
+            id: "status_name",
+            header: "Status",
+            cell: ({ row }) => {
+                const status = row.original.status_id;
+                return (
+                    <div className="flex items-center gap-2">
+                        {status?.ui_color_code && (
+                            <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: status.ui_color_code }} />
+                        )}
+                        {status?.status_name || "N/A"}
+                    </div>
+                );
+            }
+        },
+        {
+            id: "actions",
+            cell: ({ row }) => {
+                const record = row.original;
+                return (
+                    <div className="flex justify-end">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => { setViewingRoom(record); setIsViewOpen(true); }}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => { setEditingRoom(record); setIsFormOpen(true); }}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDelete(record.id)} className="text-destructive">
+                                    <Trash className="mr-2 h-4 w-4" />
+                                    Delete
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                );
+            },
+        },
+    ];
+
+    const actionComponent = (
+        <Button onClick={() => { setEditingRoom(null); setIsFormOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" /> Add Room
+        </Button>
+    );
+
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center bg-card p-4 rounded-xl border shadow-sm">
-                <div className="flex gap-4 flex-wrap">
-                    <Input
-                        placeholder="Filter by floor..."
-                        value={filterFloor}
-                        onChange={(e) => setFilterFloor(e.target.value)}
-                        className="w-40"
-                    />
-                    <Select value={filterType} onValueChange={setFilterType}>
-                        <SelectTrigger className="w-40">
-                            <SelectValue placeholder="All Types" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Types</SelectItem>
-                            {types.map((t) => (
-                                <SelectItem key={t.id} value={t.id.toString()}>{t.type_name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <Select value={filterStatus} onValueChange={setFilterStatus}>
-                        <SelectTrigger className="w-40">
-                            <SelectValue placeholder="All Statuses" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Statuses</SelectItem>
-                            {statuses.map((s) => (
-                                <SelectItem key={s.id} value={s.id.toString()}>{s.status_name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <Button onClick={() => { setEditingRoom(null); setIsFormOpen(true); }}>
-                    <Plus className="h-4 w-4 mr-2" /> Add Room
-                </Button>
-            </div>
-
-            <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Image</TableHead>
-                            <TableHead>Room Number</TableHead>
-                            <TableHead>Floor</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {loading ? (
-                            <TableRow>
-                                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                                    Loading rooms...
-                                </TableCell>
-                            </TableRow>
-                        ) : rooms.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                                    No rooms found.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            rooms.map((room) => (
-                                <TableRow key={room.id}>
-                                    <TableCell>
-                                        {room.main_image_url ? (
-                                            <div className="w-12 h-12 rounded-md overflow-hidden border relative">
-                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img src={room.main_image_url} alt={room.room_number} className="object-cover w-full h-full" />
-                                            </div>
-                                        ) : (
-                                            <div className="w-12 h-12 rounded-md border flex items-center justify-center bg-muted">
-                                                <ImageIcon className="h-5 w-5 text-muted-foreground opacity-50" />
-                                            </div>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="font-medium">{room.room_number}</TableCell>
-                                    <TableCell>{room.floor_number}</TableCell>
-                                    <TableCell>{room.type_id?.type_name || "N/A"}</TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            {room.status_id?.ui_color_code && (
-                                                <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: room.status_id.ui_color_code }} />
-                                            )}
-                                            {room.status_id?.status_name || "N/A"}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => { setEditingRoom(room); setIsFormOpen(true); }}>
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(room.id)}>
-                                                <Trash className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+            <DataTable
+                columns={columns}
+                data={data}
+                isLoading={loading}
+                searchKey="room_number"
+                actionComponent={actionComponent}
+                emptyTitle="No rooms found"
+                emptyDescription="Add a new room to get started."
+            />
 
             <RoomForm
                 open={isFormOpen}
                 onOpenChange={setIsFormOpen}
                 initialData={editingRoom}
-                onSuccess={fetchRooms}
+                onSuccess={fetchData}
             />
+
+            <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+                <DialogContent className="sm:max-w-[400px]">
+                    <DialogHeader>
+                        <DialogTitle>View Room</DialogTitle>
+                    </DialogHeader>
+                    {viewingRoom && (
+                        <div className="space-y-4 mt-4">
+                            <div className="flex justify-center mb-6">
+                                {getImageUrl(viewingRoom.main_image_url) ? (
+                                    <div className="w-48 h-48 rounded-xl overflow-hidden border shadow-sm">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={getImageUrl(viewingRoom.main_image_url)!} alt={viewingRoom.room_number} className="object-cover w-full h-full" />
+                                    </div>
+                                ) : (
+                                    <div className="w-48 h-48 rounded-xl border flex items-center justify-center bg-muted shadow-sm">
+                                        <ImageIcon className="h-12 w-12 text-muted-foreground opacity-50" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">Room Number</p>
+                                    <p className="mt-1 font-semibold">{viewingRoom.room_number}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">Floor</p>
+                                    <p className="mt-1">{viewingRoom.floor_number}</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">Type</p>
+                                    <p className="mt-1">{viewingRoom.type_id?.type_name || "N/A"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">Status</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        {viewingRoom.status_id?.ui_color_code && (
+                                            <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: viewingRoom.status_id.ui_color_code }} />
+                                        )}
+                                        <p>{viewingRoom.status_id?.status_name || "N/A"}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="pt-2 flex justify-end">
+                                <Button onClick={() => setIsViewOpen(false)}>Close</Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

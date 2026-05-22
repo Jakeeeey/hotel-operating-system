@@ -1,34 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "./new-data-table";
+import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { MoreHorizontal, Plus, Eye, Edit } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RoomStatusForm } from "./status-form";
-import { Plus, MoreHorizontal, Search } from "lucide-react";
 import { toast } from "sonner";
-import { useDebounce } from "use-debounce";
 
 export function RoomStatusDataTable() {
-    const [roomStatuses, setRoomStatuses] = useState<any[]>([]);
+    const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState("");
-    const [debouncedSearch] = useDebounce(search, 500);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingStatus, setEditingStatus] = useState<any>(null);
 
-    const fetchRoomStatuses = async () => {
+    const [isViewOpen, setIsViewOpen] = useState(false);
+    const [viewingStatus, setViewingStatus] = useState<any>(null);
+
+    const fetchData = async () => {
         setLoading(true);
         try {
-            const url = debouncedSearch 
-                ? `/api/hos/room-status?search=${encodeURIComponent(debouncedSearch)}`
-                : "/api/hos/room-status";
-            
-            const res = await fetch(url);
-            const data = await res.json();
-            setRoomStatuses(data.data || []);
+            const res = await fetch("/api/hos/room-status");
+            const result = await res.json();
+            setData(result.data || []);
         } catch (error) {
             toast.error("Failed to fetch room statuses");
         } finally {
@@ -37,95 +34,128 @@ export function RoomStatusDataTable() {
     };
 
     useEffect(() => {
-        fetchRoomStatuses();
-    }, [debouncedSearch]);
+        fetchData();
+    }, []);
+
+    const columns: ColumnDef<any>[] = [
+        {
+            accessorKey: "status_name",
+            header: "Status Name",
+            cell: ({ row }) => {
+                const status = row.original;
+                return (
+                    <div className="flex items-center gap-2">
+                        {status.ui_color_code && (
+                            <div 
+                                className="w-3 h-3 rounded-full shadow-sm" 
+                                style={{ backgroundColor: status.ui_color_code }} 
+                            />
+                        )}
+                        {status.status_name}
+                    </div>
+                );
+            }
+        },
+        {
+            accessorKey: "ui_color_code",
+            header: "UI Color Code",
+            cell: ({ row }) => (
+                <code className="text-sm px-2 py-1 bg-muted rounded">
+                    {row.original.ui_color_code || "N/A"}
+                </code>
+            ),
+        },
+        {
+            id: "actions",
+            cell: ({ row }) => {
+                const record = row.original;
+                return (
+                    <div className="flex justify-end">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => { setViewingStatus(record); setIsViewOpen(true); }}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => { setEditingStatus(record); setIsFormOpen(true); }}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                );
+            },
+        },
+    ];
+
+    const actionComponent = (
+        <Button onClick={() => { setEditingStatus(null); setIsFormOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" /> New Category
+        </Button>
+    );
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center bg-card p-4 rounded-xl border shadow-sm">
-                <div className="relative w-64">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search status name..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9"
-                    />
-                </div>
-                <Button onClick={() => { setEditingStatus(null); setIsFormOpen(true); }}>
-                    <Plus className="h-4 w-4 mr-2" /> New Category
-                </Button>
-            </div>
-
-            <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Status Name</TableHead>
-                            <TableHead>UI Color Code</TableHead>
-                            <TableHead className="w-[100px] text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {loading ? (
-                            <TableRow>
-                                <TableCell colSpan={3} className="text-center py-10 text-muted-foreground">
-                                    Loading room statuses...
-                                </TableCell>
-                            </TableRow>
-                        ) : roomStatuses.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={3} className="text-center py-10 text-muted-foreground">
-                                    No room statuses found.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            roomStatuses.map((status) => (
-                                <TableRow key={status.id}>
-                                    <TableCell className="font-medium">
-                                        <div className="flex items-center gap-2">
-                                            {status.ui_color_code && (
-                                                <div 
-                                                    className="w-3 h-3 rounded-full shadow-sm" 
-                                                    style={{ backgroundColor: status.ui_color_code }} 
-                                                />
-                                            )}
-                                            {status.status_name}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <code className="text-sm px-2 py-1 bg-muted rounded">
-                                            {status.ui_color_code || "N/A"}
-                                        </code>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                    <span className="sr-only">Open menu</span>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => { setEditingStatus(status); setIsFormOpen(true); }}>
-                                                    Edit
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+            <DataTable
+                columns={columns}
+                data={data}
+                isLoading={loading}
+                searchKey="status_name"
+                actionComponent={actionComponent}
+                emptyTitle="No room statuses found"
+                emptyDescription="Add a new room status to get started."
+            />
 
             <RoomStatusForm
                 open={isFormOpen}
                 onOpenChange={setIsFormOpen}
                 initialData={editingStatus}
-                onSuccess={fetchRoomStatuses}
+                onSuccess={fetchData}
             />
+
+            <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+                <DialogContent className="sm:max-w-[400px]">
+                    <DialogHeader>
+                        <DialogTitle>View Room Status</DialogTitle>
+                    </DialogHeader>
+                    {viewingStatus && (
+                        <div className="space-y-4 mt-4">
+                            <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">Status Name</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        {viewingStatus.ui_color_code && (
+                                            <div 
+                                                className="w-3 h-3 rounded-full shadow-sm" 
+                                                style={{ backgroundColor: viewingStatus.ui_color_code }} 
+                                            />
+                                        )}
+                                        <p>{viewingStatus.status_name}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">UI Color Code</p>
+                                    <p className="mt-1">
+                                        <code className="text-sm px-2 py-1 bg-muted rounded">
+                                            {viewingStatus.ui_color_code || "N/A"}
+                                        </code>
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="pt-2 flex justify-end">
+                                <Button onClick={() => setIsViewOpen(false)}>Close</Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
