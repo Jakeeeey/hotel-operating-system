@@ -16,7 +16,8 @@ const formSchema = z.object({
     room_number: z.string().min(1, "Room number is required").regex(/^[a-zA-Z0-9]+$/, "Room number must be alphanumeric"),
     floor_number: z.number().min(1, "Floor number is required"),
     type_id: z.number().min(1, "Room type is required"),
-    status_id: z.number().min(1, "Room status is required"),
+    operational_status_id: z.number().min(1, "Operational status is required"),
+    housekeeping_status_id: z.number().min(1, "Housekeeping status is required"),
     main_image_url: z.string().optional(),
 });
 
@@ -31,7 +32,8 @@ interface RoomFormProps {
 
 export function RoomForm({ open, onOpenChange, initialData, onSuccess }: RoomFormProps) {
     const [types, setTypes] = useState<any[]>([]);
-    const [statuses, setStatuses] = useState<any[]>([]);
+    const [opStatuses, setOpStatuses] = useState<any[]>([]);
+    const [hkStatuses, setHkStatuses] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     const form = useForm<RoomFormValues>({
@@ -40,7 +42,8 @@ export function RoomForm({ open, onOpenChange, initialData, onSuccess }: RoomFor
             room_number: "",
             floor_number: 1,
             type_id: 0,
-            status_id: 0,
+            operational_status_id: 1,
+            housekeeping_status_id: 1,
             main_image_url: "",
         },
     });
@@ -52,7 +55,8 @@ export function RoomForm({ open, onOpenChange, initialData, onSuccess }: RoomFor
                     room_number: initialData.room_number,
                     floor_number: initialData.floor_number || 1,
                     type_id: initialData.type_id?.id || initialData.type_id || 0,
-                    status_id: initialData.status_id?.id || initialData.status_id || 0,
+                    operational_status_id: initialData.operational_status_id?.id || initialData.operational_status_id || 1,
+                    housekeeping_status_id: initialData.housekeeping_status_id?.id || initialData.housekeeping_status_id || 1,
                     main_image_url: initialData.main_image_url || "",
                 });
             } else {
@@ -60,7 +64,8 @@ export function RoomForm({ open, onOpenChange, initialData, onSuccess }: RoomFor
                     room_number: "",
                     floor_number: 1,
                     type_id: 0,
-                    status_id: 0,
+                    operational_status_id: 1,
+                    housekeeping_status_id: 1,
                     main_image_url: "",
                 });
             }
@@ -71,10 +76,15 @@ export function RoomForm({ open, onOpenChange, initialData, onSuccess }: RoomFor
                 .then((data) => setTypes(data.data || []))
                 .catch(() => console.error("Failed to load types"));
 
-            fetch("/api/hos/room-status")
+            fetch("/api/hos/operational-status")
                 .then((res) => res.json())
-                .then((data) => setStatuses(data.data || []))
-                .catch(() => console.error("Failed to load statuses"));
+                .then((data) => setOpStatuses(data.data || []))
+                .catch(() => console.error("Failed to load op statuses"));
+
+            fetch("/api/hos/housekeeping-status")
+                .then((res) => res.json())
+                .then((data) => setHkStatuses(data.data || []))
+                .catch(() => console.error("Failed to load hk statuses"));
         }
     }, [open, initialData, form]);
 
@@ -168,20 +178,53 @@ export function RoomForm({ open, onOpenChange, initialData, onSuccess }: RoomFor
                                     </FormItem>
                                 )}
                             />
+
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
-                                name="status_id"
+                                name="operational_status_id"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Room Status</FormLabel>
+                                        <FormLabel>Operational Status</FormLabel>
                                         <Select onValueChange={(val) => field.onChange(Number(val))} value={field.value ? field.value.toString() : ""}>
                                             <FormControl>
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Select status" />
+                                                    <SelectValue placeholder="Select operational status" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                {statuses.map((s) => (
+                                                {opStatuses.map((s) => (
+                                                    <SelectItem key={s.id} value={s.id.toString()}>
+                                                        <div className="flex items-center gap-2">
+                                                            {s.ui_color_code && (
+                                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.ui_color_code }} />
+                                                            )}
+                                                            {s.status_name}
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="housekeeping_status_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Housekeeping Status</FormLabel>
+                                        <Select onValueChange={(val) => field.onChange(Number(val))} value={field.value ? field.value.toString() : ""}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select housekeeping status" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {hkStatuses.map((s) => (
                                                     <SelectItem key={s.id} value={s.id.toString()}>
                                                         <div className="flex items-center gap-2">
                                                             {s.ui_color_code && (

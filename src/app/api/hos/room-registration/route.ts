@@ -13,18 +13,16 @@ export async function GET(request: Request) {
 
         const { searchParams } = new URL(request.url);
         const floor = searchParams.get('floor');
-        const status = searchParams.get('status');
         const type = searchParams.get('type');
 
         const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
         
         let filter: any = {};
         if (floor) filter.floor_number = { _eq: floor };
-        if (status) filter.status_id = { _eq: status };
         if (type) filter.type_id = { _eq: type };
 
         const filterQuery = Object.keys(filter).length > 0 ? `&filter=${encodeURIComponent(JSON.stringify(filter))}` : '';
-        const fieldsQuery = `&fields=*,type_id.id,type_id.type_name,status_id.id,status_id.status_name,status_id.ui_color_code`;
+        const fieldsQuery = `&fields=*,type_id.id,type_id.type_name`;
 
         const response = await fetch(`${API_BASE_URL}/items/rooms?limit=-1${fieldsQuery}${filterQuery}`, {
             method: 'GET',
@@ -120,7 +118,7 @@ export async function POST(request: Request) {
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             console.error('Directus error:', errorData);
-            return NextResponse.json({ error: 'Failed to create room.' }, { status: response.status });
+            return NextResponse.json({ error: 'Failed to create room.', details: errorData }, { status: response.status });
         }
 
         const data = await response.json();

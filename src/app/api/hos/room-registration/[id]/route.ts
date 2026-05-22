@@ -9,7 +9,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         if (!API_BASE_URL) return NextResponse.json({ error: 'Missing API config' }, { status: 500 });
         const { id } = await params;
         const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
-        const fieldsQuery = `?fields=*,type_id.id,type_id.type_name,status_id.id,status_id.status_name,status_id.ui_color_code`;
+        const fieldsQuery = `?fields=*,type_id.id,type_id.type_name`;
         
         const response = await fetch(`${API_BASE_URL}/items/rooms/${id}${fieldsQuery}`, {
             headers: {
@@ -91,7 +91,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             body: JSON.stringify(payloadData),
         });
 
-        if (!response.ok) throw new Error('Update failed');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Directus error:', errorData);
+            return NextResponse.json({ error: 'Update failed', details: errorData }, { status: response.status });
+        }
         const data = await response.json();
         return NextResponse.json(data);
     } catch (error) {

@@ -22,22 +22,27 @@ export function RoomDataTable() {
     const [viewingRoom, setViewingRoom] = useState<any>(null);
 
     const [types, setTypes] = useState<any[]>([]);
-    const [statuses, setStatuses] = useState<any[]>([]);
+    const [opStatuses, setOpStatuses] = useState<any[]>([]);
+    const [hkStatuses, setHkStatuses] = useState<any[]>([]);
     const [filterType, setFilterType] = useState("all");
-    const [filterStatus, setFilterStatus] = useState("all");
+    const [filterOpStatus, setFilterOpStatus] = useState("all");
+    const [filterHkStatus, setFilterHkStatus] = useState("all");
 
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL || "http://localhost:8055";
 
     const fetchFilters = async () => {
         try {
-            const [typeRes, statusRes] = await Promise.all([
+            const [typeRes, opRes, hkRes] = await Promise.all([
                 fetch("/api/hos/room-type"),
-                fetch("/api/hos/room-status")
+                fetch("/api/hos/operational-status"),
+                fetch("/api/hos/housekeeping-status")
             ]);
             const typeData = await typeRes.json();
-            const statusData = await statusRes.json();
+            const opData = await opRes.json();
+            const hkData = await hkRes.json();
             setTypes(typeData.data || []);
-            setStatuses(statusData.data || []);
+            setOpStatuses(opData.data || []);
+            setHkStatuses(hkData.data || []);
         } catch (error) {
             console.error("Failed to fetch filters");
         }
@@ -113,11 +118,37 @@ export function RoomDataTable() {
             header: "Type",
         },
         {
-            accessorFn: (row) => row.status_id?.status_name || "N/A",
-            id: "status_name",
-            header: "Status",
+            accessorFn: (row) => {
+                const statusId = typeof row.operational_status_id === 'object' ? row.operational_status_id?.id : row.operational_status_id;
+                const status = opStatuses.find(s => s.id === statusId);
+                return status ? status.status_name : "N/A";
+            },
+            id: "operational_status_name",
+            header: "Op Status",
             cell: ({ row }) => {
-                const status = row.original.status_id;
+                const statusId = typeof row.original.operational_status_id === 'object' ? row.original.operational_status_id?.id : row.original.operational_status_id;
+                const status = opStatuses.find(s => s.id === statusId);
+                return (
+                    <div className="flex items-center gap-2">
+                        {status?.ui_color_code && (
+                            <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: status.ui_color_code }} />
+                        )}
+                        {status?.status_name || "N/A"}
+                    </div>
+                );
+            }
+        },
+        {
+            accessorFn: (row) => {
+                const statusId = typeof row.housekeeping_status_id === 'object' ? row.housekeeping_status_id?.id : row.housekeeping_status_id;
+                const status = hkStatuses.find(s => s.id === statusId);
+                return status ? status.status_name : "N/A";
+            },
+            id: "housekeeping_status_name",
+            header: "HK Status",
+            cell: ({ row }) => {
+                const statusId = typeof row.original.housekeeping_status_id === 'object' ? row.original.housekeeping_status_id?.id : row.original.housekeeping_status_id;
+                const status = hkStatuses.find(s => s.id === statusId);
                 return (
                     <div className="flex items-center gap-2">
                         {status?.ui_color_code && (
@@ -164,7 +195,8 @@ export function RoomDataTable() {
 
     const filteredData = data.filter((room) => {
         if (filterType !== "all" && room.type_id?.id?.toString() !== filterType && room.type_id?.toString() !== filterType) return false;
-        if (filterStatus !== "all" && room.status_id?.id?.toString() !== filterStatus && room.status_id?.toString() !== filterStatus) return false;
+        if (filterOpStatus !== "all" && room.operational_status_id?.id?.toString() !== filterOpStatus && room.operational_status_id?.toString() !== filterOpStatus) return false;
+        if (filterHkStatus !== "all" && room.housekeeping_status_id?.id?.toString() !== filterHkStatus && room.housekeeping_status_id?.toString() !== filterHkStatus) return false;
         return true;
     });
 
@@ -181,13 +213,24 @@ export function RoomDataTable() {
                     ))}
                 </SelectContent>
             </Select>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <Select value={filterOpStatus} onValueChange={setFilterOpStatus}>
                 <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="All Statuses" />
+                    <SelectValue placeholder="Op Status" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    {statuses.map((s) => (
+                    <SelectItem value="all">All Op Statuses</SelectItem>
+                    {opStatuses.map((s) => (
+                        <SelectItem key={s.id} value={s.id.toString()}>{s.status_name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Select value={filterHkStatus} onValueChange={setFilterHkStatus}>
+                <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="HK Status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All HK Statuses</SelectItem>
+                    {hkStatuses.map((s) => (
                         <SelectItem key={s.id} value={s.id.toString()}>{s.status_name}</SelectItem>
                     ))}
                 </SelectContent>
@@ -251,13 +294,41 @@ export function RoomDataTable() {
                                     <p className="text-sm font-medium text-muted-foreground">Type</p>
                                     <p className="mt-1">{viewingRoom.type_id?.type_name || "N/A"}</p>
                                 </div>
+                                <div></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 border-b pb-4">
                                 <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Status</p>
+                                    <p className="text-sm font-medium text-muted-foreground">Operational Status</p>
                                     <div className="flex items-center gap-2 mt-1">
-                                        {viewingRoom.status_id?.ui_color_code && (
-                                            <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: viewingRoom.status_id.ui_color_code }} />
-                                        )}
-                                        <p>{viewingRoom.status_id?.status_name || "N/A"}</p>
+                                        {(() => {
+                                            const statusId = typeof viewingRoom.operational_status_id === 'object' ? viewingRoom.operational_status_id?.id : viewingRoom.operational_status_id;
+                                            const status = opStatuses.find(s => s.id === statusId);
+                                            return (
+                                                <>
+                                                    {status?.ui_color_code && (
+                                                        <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: status.ui_color_code }} />
+                                                    )}
+                                                    <p>{status?.status_name || "N/A"}</p>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">Housekeeping Status</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        {(() => {
+                                            const statusId = typeof viewingRoom.housekeeping_status_id === 'object' ? viewingRoom.housekeeping_status_id?.id : viewingRoom.housekeeping_status_id;
+                                            const status = hkStatuses.find(s => s.id === statusId);
+                                            return (
+                                                <>
+                                                    {status?.ui_color_code && (
+                                                        <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: status.ui_color_code }} />
+                                                    )}
+                                                    <p>{status?.status_name || "N/A"}</p>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             </div>
