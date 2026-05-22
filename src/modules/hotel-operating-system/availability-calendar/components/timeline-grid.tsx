@@ -16,6 +16,11 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
         return Array.from({ length: numDays }).map((_, i) => addDays(startDate, i));
     }, [startDate, numDays]);
 
+    const getManilaISOString = (d: Date = new Date()) => {
+        const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+        return manilaDate.toISOString().replace('Z', '');
+    };
+
     const getStatusColors = (status: string) => {
         switch (status) {
             case "Pending":
@@ -64,12 +69,12 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                             const tRoomId = typeof t.room_id === 'object' && t.room_id !== null ? t.room_id.id : t.room_id;
                             if (Number(tRoomId) !== Number(roomId)) return false;
                             
-                            const start = t.start_time || t.created_at || new Date().toISOString();
+                            const start = t.start_time || t.created_at || getManilaISOString();
                             let end = t.target_completion_time || t.actual_completion_time;
                             if (!end) {
                                 const endDateObj = new Date(start);
                                 endDateObj.setDate(endDateObj.getDate() + 1); // Assume 1 day block if no target time
-                                end = endDateObj.toISOString();
+                                end = getManilaISOString(endDateObj);
                             }
                             
                             const blockStart = format(new Date(start), "yyyy-MM-dd");
@@ -87,14 +92,14 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
 
                     // Render Blocked Room Item
                     if (blockedTask) {
-                        const start = blockedTask.start_time || blockedTask.created_at || new Date().toISOString();
+                        const start = blockedTask.start_time || blockedTask.created_at || getManilaISOString();
                         const blockStart = format(new Date(start), "yyyy-MM-dd");
                         
                         let end = blockedTask.target_completion_time || blockedTask.actual_completion_time;
                         if (!end) {
                             const endDateObj = new Date(start);
                             endDateObj.setDate(endDateObj.getDate() + 1);
-                            end = endDateObj.toISOString();
+                            end = getManilaISOString(endDateObj);
                         }
                         const blockEnd = format(new Date(end), "yyyy-MM-dd");
 

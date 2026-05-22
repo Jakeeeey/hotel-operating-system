@@ -8,6 +8,18 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     try {
         if (!API_BASE_URL) return NextResponse.json({ error: 'Missing API config' }, { status: 500 });
         
+        const getManilaISOString = (d: Date = new Date()) => {
+            const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+            return manilaDate.toISOString().replace('Z', '');
+        };
+        
+        const addMinutesToManilaString = (manilaIso: string, minutes: number) => {
+            const isZ = manilaIso.endsWith('Z');
+            const d = new Date(manilaIso + (isZ ? '' : 'Z'));
+            d.setMinutes(d.getMinutes() + minutes);
+            return d.toISOString().replace('Z', '');
+        };
+        
         const params = await context.params;
         const taskId = params.id;
         
@@ -33,7 +45,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         // Handle virtual tasks (for rooms marked dirty without a physical task)
         if (taskId.startsWith('virtual-')) {
             const virtualRoomId = taskId.replace('virtual-', '');
-            const now = new Date().toISOString();
+            const now = getManilaISOString();
             
             if (status === 'Completed') {
                 await fetch(`${API_BASE_URL}/items/rooms/${virtualRoomId}`, {
@@ -58,7 +70,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
                         priority: 'Normal',
                         estimated_duration_minutes: 30,
                         start_time: startTime,
-                        target_completion_time: new Date(new Date(startTime).getTime() + 30 * 60000).toISOString(),
+                        target_completion_time: addMinutesToManilaString(startTime, 30),
                         blocks_availability: 0,
                         created_by: userId,
                         updated_by: userId
@@ -76,7 +88,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
         // 2. Prepare patch body
         const patchBody: Record<string, unknown> = { status, updated_by: userId };
-        const now = new Date().toISOString();
+        const now = getManilaISOString();
 
         if (status === 'In Progress') {
             const startTime = bodyStartTime || now;
@@ -86,8 +98,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
             // Auto-calculate target_completion_time from start_time + estimated_duration_minutes
             if (!task.target_completion_time) {
                 const durationMinutes = task.estimated_duration_minutes || 30;
-                const effectiveStart = new Date(task.start_time || startTime);
-                patchBody.target_completion_time = new Date(effectiveStart.getTime() + durationMinutes * 60000).toISOString();
+                patchBody.target_completion_time = addMinutesToManilaString(task.start_time || startTime, durationMinutes);
             }
         }
 
@@ -98,8 +109,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
             // If target_completion_time was never set, calculate it retroactively
             if (!task.target_completion_time) {
                 const durationMinutes = task.estimated_duration_minutes || 30;
-                const effectiveStart = task.start_time ? new Date(task.start_time) : new Date(now);
-                patchBody.target_completion_time = new Date(effectiveStart.getTime() + durationMinutes * 60000).toISOString();
+                patchBody.target_completion_time = addMinutesToManilaString(task.start_time || now, durationMinutes);
             }
         }
 

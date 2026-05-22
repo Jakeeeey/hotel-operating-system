@@ -33,15 +33,18 @@ export function BookingForm() {
     const [phone, setPhone] = useState("");
     const [idPassport, setIdPassport] = useState("");
 
-    // Date States (default: today to tomorrow)
-    const getTodayStr = () => {
-        const d = new Date();
-        return d.toISOString().split("T")[0];
+    // Helper
+    const getManilaDateString = (d: Date = new Date()) => {
+        const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+        return manilaDate.toISOString().replace('Z', '').split('T')[0];
     };
+
+    // Date States (default: today to tomorrow)
+    const getTodayStr = () => getManilaDateString();
     const getTomorrowStr = () => {
         const d = new Date();
         d.setDate(d.getDate() + 1);
-        return d.toISOString().split("T")[0];
+        return getManilaDateString(d);
     };
 
     const [checkInDate, setCheckInDate] = useState(getTodayStr());

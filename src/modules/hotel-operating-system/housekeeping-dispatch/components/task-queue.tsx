@@ -19,8 +19,14 @@ export function TaskQueue({ tasks, onTaskUpdated }: TaskQueueProps) {
 
     const handleUpdateStatus = async (taskId: string | number, newStatus: string) => {
         setUpdatingId(taskId.toString());
+        
+        const getManilaISOString = (d: Date = new Date()) => {
+            const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+            return manilaDate.toISOString().replace('Z', '');
+        };
+        
         try {
-            const now = new Date().toISOString();
+            const now = getManilaISOString();
             const payload: Record<string, unknown> = { status: newStatus };
 
             if (newStatus === "In Progress") {

@@ -26,7 +26,8 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
     const [description, setDescription] = useState("");
     const [priority, setPriority] = useState("Normal");
     const [duration, setDuration] = useState("30");
-    const [targetCompletionTime, setTargetCompletionTime] = useState("");
+    const [targetDate, setTargetDate] = useState("");
+    const [targetTime, setTargetTime] = useState("");
     const [blocksAvailability, setBlocksAvailability] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [taskTypes, setTaskTypes] = useState<{ id: number; status_name: string }[]>([]);
@@ -64,6 +65,18 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
 
         setSubmitting(true);
         try {
+            const getManilaISOString = (d: Date = new Date()) => {
+                const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+                return manilaDate.toISOString().replace('Z', '');
+            };
+
+            let finalTargetTime = null;
+            if (targetDate || targetTime) {
+                const d = targetDate || getManilaISOString().split('T')[0];
+                const t = targetTime || "23:59";
+                finalTargetTime = `${d}T${t}:00`;
+            }
+
             const res = await fetch("/api/hos/housekeeping", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -73,7 +86,7 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
                     task_description: description,
                     priority,
                     estimated_duration_minutes: parseInt(duration, 10),
-                    target_completion_time: targetCompletionTime ? new Date(targetCompletionTime).toISOString() : null,
+                    target_completion_time: finalTargetTime,
                     blocks_availability: blocksAvailability
                 })
             });
@@ -89,7 +102,8 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
             setDescription("");
             setPriority("Normal");
             setDuration("30");
-            setTargetCompletionTime("");
+            setTargetDate("");
+            setTargetTime("");
             setBlocksAvailability(false);
             
             onSuccess();
@@ -190,12 +204,19 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label>Target Completion Time</Label>
-                            <Input 
-                                type="datetime-local" 
-                                value={targetCompletionTime} 
-                                onChange={e => setTargetCompletionTime(e.target.value)} 
-                            />
+                            <Label>Target Completion</Label>
+                            <div className="flex gap-2">
+                                <Input 
+                                    type="date" 
+                                    value={targetDate} 
+                                    onChange={e => setTargetDate(e.target.value)} 
+                                />
+                                <Input 
+                                    type="time" 
+                                    value={targetTime} 
+                                    onChange={e => setTargetTime(e.target.value)} 
+                                />
+                            </div>
                         </div>
                     </div>
 

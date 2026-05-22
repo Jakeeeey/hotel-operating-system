@@ -113,8 +113,13 @@ export async function POST(request: Request) {
         const nightDates: string[] = [];
 
         const current = new Date(startDate);
+        const getManilaDateString = (d: Date = new Date()) => {
+            const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+            return manilaDate.toISOString().replace('Z', '').split('T')[0];
+        };
+        
         while (current < endDate) {
-            nightDates.push(current.toISOString().split('T')[0]);
+            nightDates.push(getManilaDateString(current));
             current.setDate(current.getDate() + 1);
         }
 

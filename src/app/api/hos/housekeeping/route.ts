@@ -10,6 +10,11 @@ export async function GET() {
             return NextResponse.json({ error: 'Missing API configuration.' }, { status: 500 });
         }
 
+        const getManilaISOString = (d: Date = new Date()) => {
+            const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+            return manilaDate.toISOString().replace('Z', '');
+        };
+
         const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -71,7 +76,7 @@ export async function GET() {
                     priority: 'Normal',
                     estimated_duration_minutes: 30,
                     blocks_availability: 0,
-                    created_at: new Date().toISOString()
+                    created_at: getManilaISOString()
                 });
             }
         });
