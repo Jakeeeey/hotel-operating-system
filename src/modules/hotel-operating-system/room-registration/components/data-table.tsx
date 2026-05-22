@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Plus, Eye, Edit, Trash, Image as ImageIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RoomForm } from "./room-form";
 import { toast } from "sonner";
 
@@ -20,7 +21,27 @@ export function RoomDataTable() {
     const [isViewOpen, setIsViewOpen] = useState(false);
     const [viewingRoom, setViewingRoom] = useState<any>(null);
 
+    const [types, setTypes] = useState<any[]>([]);
+    const [statuses, setStatuses] = useState<any[]>([]);
+    const [filterType, setFilterType] = useState("all");
+    const [filterStatus, setFilterStatus] = useState("all");
+
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL || "http://localhost:8055";
+
+    const fetchFilters = async () => {
+        try {
+            const [typeRes, statusRes] = await Promise.all([
+                fetch("/api/hos/room-type"),
+                fetch("/api/hos/room-status")
+            ]);
+            const typeData = await typeRes.json();
+            const statusData = await statusRes.json();
+            setTypes(typeData.data || []);
+            setStatuses(statusData.data || []);
+        } catch (error) {
+            console.error("Failed to fetch filters");
+        }
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -36,6 +57,7 @@ export function RoomDataTable() {
     };
 
     useEffect(() => {
+        fetchFilters();
         fetchData();
     }, []);
 
@@ -140,17 +162,47 @@ export function RoomDataTable() {
         },
     ];
 
+    const filteredData = data.filter((room) => {
+        if (filterType !== "all" && room.type_id?.id?.toString() !== filterType && room.type_id?.toString() !== filterType) return false;
+        if (filterStatus !== "all" && room.status_id?.id?.toString() !== filterStatus && room.status_id?.toString() !== filterStatus) return false;
+        return true;
+    });
+
     const actionComponent = (
-        <Button onClick={() => { setEditingRoom(null); setIsFormOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" /> Add Room
-        </Button>
+        <>
+            <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {types.map((t) => (
+                        <SelectItem key={t.id} value={t.id.toString()}>{t.type_name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    {statuses.map((s) => (
+                        <SelectItem key={s.id} value={s.id.toString()}>{s.status_name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Button onClick={() => { setEditingRoom(null); setIsFormOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" /> Add Room
+            </Button>
+        </>
     );
 
     return (
         <div className="space-y-4">
             <DataTable
                 columns={columns}
-                data={data}
+                data={filteredData}
                 isLoading={loading}
                 searchKey="room_number"
                 actionComponent={actionComponent}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { DataTable } from "./new-data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Plus, Eye, Edit } from "lucide-react";
+import { MoreHorizontal, Plus, Eye, Edit, Trash } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RoomTypeForm } from "./type-form";
@@ -30,6 +30,18 @@ export function RoomTypeDataTable() {
             toast.error("Failed to fetch room types");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this room type?")) return;
+        try {
+            const res = await fetch(`/api/hos/room-type/${id}`, { method: "DELETE" });
+            if (!res.ok) throw new Error("Delete failed");
+            toast.success("Room type deleted successfully");
+            fetchData();
+        } catch (error) {
+            toast.error("Failed to delete room type");
         }
     };
 
@@ -76,6 +88,10 @@ export function RoomTypeDataTable() {
                                 <DropdownMenuItem onClick={() => { setEditingType(record); setIsFormOpen(true); }}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDelete(record.id)} className="text-destructive">
+                                    <Trash className="mr-2 h-4 w-4" />
+                                    Delete
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

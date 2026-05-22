@@ -36,3 +36,23 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         return NextResponse.json({ error: 'Server Error' }, { status: 500 });
     }
 }
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+    try {
+        if (!API_BASE_URL) return NextResponse.json({ error: 'Missing API config' }, { status: 500 });
+        const { id } = await params;
+        const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
+        
+        const response = await fetch(`${API_BASE_URL}/items/room_types/${id}`, {
+            method: 'DELETE',
+            headers: {
+                ...(staticToken ? { 'Authorization': `Bearer ${staticToken}` } : {}),
+            },
+        });
+
+        if (!response.ok) throw new Error('Delete failed');
+        return new NextResponse(null, { status: 204 });
+    } catch (error) {
+        return NextResponse.json({ error: 'Server Error' }, { status: 500 });
+    }
+}

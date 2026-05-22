@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { DataTable } from "./new-data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Plus, Eye, Edit } from "lucide-react";
+import { MoreHorizontal, Plus, Eye, Edit, Trash } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RoomStatusForm } from "./status-form";
@@ -30,6 +30,18 @@ export function RoomStatusDataTable() {
             toast.error("Failed to fetch room statuses");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this room status?")) return;
+        try {
+            const res = await fetch(`/api/hos/room-status/${id}`, { method: "DELETE" });
+            if (!res.ok) throw new Error("Delete failed");
+            toast.success("Room status deleted successfully");
+            fetchData();
+        } catch (error) {
+            toast.error("Failed to delete room status");
         }
     };
 
@@ -86,6 +98,10 @@ export function RoomStatusDataTable() {
                                 <DropdownMenuItem onClick={() => { setEditingStatus(record); setIsFormOpen(true); }}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDelete(record.id)} className="text-destructive">
+                                    <Trash className="mr-2 h-4 w-4" />
+                                    Delete
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
