@@ -18,6 +18,7 @@ export default function HousekeepingDispatchModule() {
     // Filters
     const [statusFilter, setStatusFilter] = useState("All");
     const [typeFilter, setTypeFilter] = useState("All");
+    const [operationalFilter, setOperationalFilter] = useState("All");
 
     const fetchDashboardData = async () => {
         setLoading(true);
@@ -48,6 +49,16 @@ export default function HousekeepingDispatchModule() {
                 if (typeFilter === "Maintenance" && !task.task_type.includes("Maintenance")) return false;
                 if (typeFilter === "Cleaning" && task.task_type.includes("Maintenance")) return false;
             }
+
+            if (operationalFilter !== "All") {
+                // room_id could be an object, or null
+                const opStatusId = typeof task.room_id === "object" && task.room_id !== null 
+                    ? (task.room_id as any).operational_status_id 
+                    : null;
+                
+                if (operationalFilter === "Vacant" && opStatusId !== 1) return false;
+                if (operationalFilter === "Occupied" && opStatusId !== 2) return false;
+            }
             
             // By default, maybe hide "Completed" tasks from main view unless specifically asked for?
             // Actually, let's just show them if "All" is selected or specifically filtered.
@@ -58,7 +69,7 @@ export default function HousekeepingDispatchModule() {
 
             return true;
         });
-    }, [tasks, statusFilter, typeFilter]);
+    }, [tasks, statusFilter, typeFilter, operationalFilter]);
 
     return (
         <div className="p-4 md:p-6 space-y-8 w-full mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -150,6 +161,17 @@ export default function HousekeepingDispatchModule() {
                             <SelectItem value="All">All Types</SelectItem>
                             <SelectItem value="Cleaning">Cleaning</SelectItem>
                             <SelectItem value="Maintenance">Maintenance</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={operationalFilter} onValueChange={setOperationalFilter}>
+                        <SelectTrigger className="w-[180px] bg-background">
+                            <SelectValue placeholder="Operational Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="All">All Op Statuses</SelectItem>
+                            <SelectItem value="Vacant">Vacant</SelectItem>
+                            <SelectItem value="Occupied">Occupied</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

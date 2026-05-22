@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 interface NewTaskModalProps {
     open: boolean;
@@ -28,6 +29,26 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
     const [targetCompletionTime, setTargetCompletionTime] = useState("");
     const [blocksAvailability, setBlocksAvailability] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [taskTypes, setTaskTypes] = useState<{ id: number; status_name: string }[]>([]);
+
+    useEffect(() => {
+        if (!open) return;
+        const fetchStatuses = async () => {
+            try {
+                const res = await fetch("/api/hos/housekeeping-status");
+                if (res.ok) {
+                    const json = await res.json();
+                    const filtered = (json.data || []).filter((s: any) => 
+                        s.status_name !== "Clean"
+                    );
+                    setTaskTypes(filtered);
+                }
+            } catch (err) {
+                console.error("Failed to load task types", err);
+            }
+        };
+        fetchStatuses();
+    }, [open]);
 
 
 
@@ -126,10 +147,9 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
                                 <SelectValue placeholder="Select type..." />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="Stayover Refresh">Stayover Refresh</SelectItem>
-                                <SelectItem value="Deep Clean">Deep Clean</SelectItem>
-                                <SelectItem value="Maintenance: Fix AC">Maintenance: Fix AC</SelectItem>
-                                <SelectItem value="Maintenance: Plumbing">Maintenance: Plumbing</SelectItem>
+                                {taskTypes.map(type => (
+                                    <SelectItem key={type.id} value={type.status_name}>{type.status_name}</SelectItem>
+                                ))}
                                 <SelectItem value="Custom">Custom...</SelectItem>
                             </SelectContent>
                         </Select>

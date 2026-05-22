@@ -22,7 +22,7 @@ export async function GET() {
         // Fetch tasks and rooms in parallel
         const [tasksRes, roomsRes] = await Promise.all([
             fetch(`${API_BASE_URL}/items/housekeeping_tasks?limit=-1&fields=*,room_id.*`, { headers }),
-            fetch(`${API_BASE_URL}/items/rooms?limit=-1&fields=id,room_number,housekeeping_status_id.id`, { headers })
+            fetch(`${API_BASE_URL}/items/rooms?limit=-1&fields=id,room_number,housekeeping_status_id.id,operational_status_id`, { headers })
         ]);
 
         if (!tasksRes.ok || !roomsRes.ok) {
@@ -40,7 +40,7 @@ export async function GET() {
         const rooms = roomsData.data || [];
 
         // Calculate Stats
-        const dirtyRoomsList = rooms.filter((r: { housekeeping_status_id?: { id: number } | number }) => (typeof r.housekeeping_status_id === 'object' && r.housekeeping_status_id !== null ? r.housekeeping_status_id.id : r.housekeeping_status_id) === 2);
+        const dirtyRoomsList = rooms.filter((r: { housekeeping_status_id?: { id: number } | number }) => (typeof r.housekeeping_status_id === 'object' && r.housekeeping_status_id !== null ? r.housekeeping_status_id.id : r.housekeeping_status_id) !== 1);
         const dirtyRooms = dirtyRoomsList.length;
         
         const inProgress = tasks.filter((t: { status: string }) => 
