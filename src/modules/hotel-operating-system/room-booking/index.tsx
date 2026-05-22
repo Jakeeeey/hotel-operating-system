@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react";
 
 export default function RoomBookingModule() {
     return (
-        <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="p-4 md:p-6 space-y-6 w-full max-w-[1800px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-5">
                 <div className="space-y-1.5">

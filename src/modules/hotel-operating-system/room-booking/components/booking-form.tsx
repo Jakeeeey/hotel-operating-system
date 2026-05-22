@@ -107,11 +107,12 @@ export function BookingForm() {
         if (isWalkIn) {
             setCheckInDate(getTodayStr());
             setBookingSource("Walk-In");
-            // If was unassigned, reset or keep
+            if (selectedRoomId === "unassigned") setSelectedRoomId("");
         } else {
             setBookingSource("Website");
+            if (selectedRoomId === "") setSelectedRoomId("unassigned");
         }
-    }, [isWalkIn]);
+    }, [isWalkIn, selectedRoomId]);
 
     // Guest lookup trigger
     const handleEmailBlur = async () => {
@@ -152,7 +153,7 @@ export function BookingForm() {
     const totalPrice = basePrice * nights;
 
     // Reset Form
-    const handleClearForm = () => {
+    const handleClearForm = (silent = false) => {
         setFirstName("");
         setLastName("");
         setEmail("");
@@ -161,10 +162,10 @@ export function BookingForm() {
         setCheckInDate(getTodayStr());
         setCheckOutDate(getTomorrowStr());
         setSelectedRoomTypeId("");
-        setSelectedRoomId("unassigned");
+        setSelectedRoomId(isWalkIn ? "" : "unassigned");
         setBookingSource(isWalkIn ? "Walk-In" : "Website");
         setLookupStatus("idle");
-        toast.info("Form cleared.");
+        if (!silent) toast.info("Form cleared.");
     };
 
     // Validate and submit for review
@@ -233,9 +234,9 @@ export function BookingForm() {
                     : `Advance reservation saved successfully!`
             );
 
-            // Close review modal & Reset form
+            // Close review modal & Reset form silently
             setReviewOpen(false);
-            handleClearForm();
+            handleClearForm(true);
         } catch (error: any) {
             toast.error(error.message || "An error occurred while creating booking.");
         } finally {
@@ -279,7 +280,7 @@ export function BookingForm() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10 xl:gap-14">
                 {/* Columns 1 & 2: Forms */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* GUEST DETAILS CARD */}
@@ -312,7 +313,7 @@ export function BookingForm() {
                             </div>
                         </CardHeader>
                         <CardContent className="pt-6 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-6">
                                 <div className="space-y-1.5">
                                     <Label htmlFor="email" className="text-sm font-semibold">
                                         Email Address <span className="text-muted-foreground font-normal">(Used for lookups)</span>
@@ -347,7 +348,7 @@ export function BookingForm() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-6">
                                 <div className="space-y-1.5">
                                     <Label htmlFor="firstName" className="text-sm font-semibold">
                                         First Name <span className="text-destructive">*</span>
@@ -403,7 +404,7 @@ export function BookingForm() {
                         </CardHeader>
                         <CardContent className="pt-6 space-y-6">
                             {/* Dates */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-6">
                                 <div className="space-y-1.5">
                                     <Label htmlFor="checkInDate" className="text-sm font-semibold">
                                         Check-In Date
@@ -440,7 +441,7 @@ export function BookingForm() {
 
                             {/* Inner gray bg card for room selections */}
                             <div className="bg-muted/40 border border-muted/70 rounded-xl p-5 space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-6">
                                     <div className="space-y-1.5">
                                         <Label className="text-sm font-semibold">
                                             Room Type <span className="text-destructive">*</span>
@@ -614,7 +615,7 @@ export function BookingForm() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={handleClearForm}
+                                    onClick={() => handleClearForm(false)}
                                     className="w-full rounded-xl border border-muted-foreground/20 hover:bg-muted/80 py-5 text-sm transition-all duration-150 flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground"
                                 >
                                     <RotateCcw className="h-4 w-4" />
