@@ -58,7 +58,7 @@ export async function GET(request: Request) {
 
         // Filter blocking tasks locally to avoid Directus schema sync issues with newly added MySQL fields
         // Fallback: If blocks_availability is entirely missing from payload, assume Maintenance tasks block availability.
-        const blockingTasks = (rawTasksData.data || []).filter((t: any) => {
+        const blockingTasks = (rawTasksData.data || []).filter((t: { status?: string; blocks_availability?: number | boolean | string; task_type?: string; }) => {
             if (t.status === 'Completed') return false;
             
             if (t.blocks_availability !== undefined) {

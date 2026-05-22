@@ -5,8 +5,7 @@ import { Building2, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 
 interface StatsData {
     totalRooms: number;
-    occupiedRooms: number;
-    occupancyPercent: number;
+    availableRooms: number;
     pendingArrivals: number;
     totalArrivals: number;
     pendingDepartures: number;
@@ -22,9 +21,9 @@ interface StatCardsProps {
 export function StatCards({ stats, isLoading }: StatCardsProps) {
     const cards = [
         {
-            label: "Current Occupancy",
-            value: `${stats.occupancyPercent}%`,
-            sub: `${stats.occupiedRooms} of ${stats.totalRooms} rooms occupied`,
+            label: "Rooms Available",
+            value: stats.availableRooms?.toString() || "0",
+            sub: `${stats.availableRooms || 0} out of ${stats.totalRooms || 0} rooms available`,
             icon: Building2,
             color: "text-blue-600 dark:text-blue-400",
             bg: "bg-blue-50 dark:bg-blue-950/40",

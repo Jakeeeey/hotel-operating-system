@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,9 +18,7 @@ interface NewTaskModalProps {
 }
 
 export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProps) {
-    const [rooms, setRooms] = useState<any[]>([]);
-    const [loadingRooms, setLoadingRooms] = useState(false);
-    
+
     const [roomNumber, setRoomNumber] = useState("");
     const [taskType, setTaskType] = useState("");
     const [customTaskType, setCustomTaskType] = useState("");
@@ -30,40 +28,7 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
     const [blocksAvailability, setBlocksAvailability] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
-    useEffect(() => {
-        if (open) {
-            setLoadingRooms(true);
-            fetch("/api/hos/front-desk-dashboard/available-rooms")
-                .then(res => res.json())
-                .then(data => {
-                    // We actually want all rooms, not just available. 
-                    // Let's fetch from standard rooms API or just hit it manually.
-                    return fetch("/api/hos/room-booking/guest-lookup?dummy=1") // We don't have a plain rooms list API mapped directly in front-end yet
-                        .catch(() => {});
-                })
-                .catch(() => {});
-                
-            // Let's fetch all rooms from our new housekeeping API indirectly or create a dedicated fetch
-            fetch(`/api/hos/housekeeping`)
-                .then(res => res.json())
-                .then(data => {
-                    // Extract unique rooms from the tasks and dirty list? 
-                    // Wait, we need all rooms. Let's assume we can fetch them via a direct API call or just use a generic fetch.
-                });
-        }
-    }, [open]);
 
-    // To make it fully functional without a new API route, we'll fetch direct or from room-type
-    useEffect(() => {
-        if (open) {
-            // Fetching operational statuses and rooms can be done by a custom frontend fetch to /api/hos/operational-status... wait, let's use the front-desk one
-            fetch("/api/hos/front-desk-dashboard/available-rooms?all=true") 
-                .catch(() => {})
-                .finally(() => setLoadingRooms(false));
-                
-            // Workaround: We'll fetch room_types to get rooms, but since we just need a list of rooms, let's fetch from the generic endpoint if available, or we will just use a hardcoded fallback if API isn't present, but we should fetch from /api/hos/housekeeping which we just made!
-        }
-    }, [open]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -105,7 +70,7 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
             
             onSuccess();
             onOpenChange(false);
-        } catch (error) {
+        } catch {
             toast.error("Failed to create task.");
         } finally {
             setSubmitting(false);

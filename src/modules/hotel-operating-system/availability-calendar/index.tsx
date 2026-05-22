@@ -8,11 +8,11 @@ import { toast } from "sonner";
 import { format, addDays, subDays, startOfDay } from "date-fns";
 
 export interface CalendarData {
-    types: any[];
-    rooms: any[];
-    statuses: any[];
-    reservationItems: any[];
-    blockingTasks?: any[];
+    types: { id: number; type_name: string }[];
+    rooms: { id: number; type_id: number; room_number: string; operational_status_id?: { status_name?: string } }[];
+    statuses: { id: number; status_name: string }[];
+    reservationItems: { room_id?: number | null; room_type_id?: number; night_date?: string; reservation_id?: { check_in_date?: string; check_out_date?: string; status?: string; guest_id?: { first_name?: string; last_name?: string } }; locked_price?: number }[];
+    blockingTasks?: { room_id?: { id: number } | number; start_time?: string; created_at?: string; target_completion_time?: string; actual_completion_time?: string; task_type?: string; task_description?: string; status?: string; }[];
 }
 
 export default function AvailabilityCalendarModule() {
@@ -35,7 +35,7 @@ export default function AvailabilityCalendarModule() {
             
             const json = await res.json();
             setData(json.data);
-        } catch (error) {
+        } catch {
             toast.error("Error loading availability calendar.");
         } finally {
             setLoading(false);

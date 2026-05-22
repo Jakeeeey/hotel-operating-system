@@ -26,14 +26,14 @@ type RoomFormValues = z.infer<typeof formSchema>;
 interface RoomFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    initialData?: any;
+    initialData?: { id?: string; room_number?: string; floor_number?: number; type_id?: { id: number } | number; operational_status_id?: { id: number } | number; housekeeping_status_id?: { id: number } | number; main_image_url?: string; [key: string]: unknown };
     onSuccess: () => void;
 }
 
 export function RoomForm({ open, onOpenChange, initialData, onSuccess }: RoomFormProps) {
-    const [types, setTypes] = useState<any[]>([]);
-    const [opStatuses, setOpStatuses] = useState<any[]>([]);
-    const [hkStatuses, setHkStatuses] = useState<any[]>([]);
+    const [types, setTypes] = useState<{ id: number; type_name: string }[]>([]);
+    const [opStatuses, setOpStatuses] = useState<{ id: number; status_name: string; ui_color_code: string }[]>([]);
+    const [hkStatuses, setHkStatuses] = useState<{ id: number; status_name: string; ui_color_code: string }[]>([]);
     const [loading, setLoading] = useState(false);
 
     const form = useForm<RoomFormValues>({
@@ -54,9 +54,9 @@ export function RoomForm({ open, onOpenChange, initialData, onSuccess }: RoomFor
                 form.reset({
                     room_number: initialData.room_number,
                     floor_number: initialData.floor_number || 1,
-                    type_id: initialData.type_id?.id || initialData.type_id || 0,
-                    operational_status_id: initialData.operational_status_id?.id || initialData.operational_status_id || 1,
-                    housekeeping_status_id: initialData.housekeeping_status_id?.id || initialData.housekeeping_status_id || 1,
+                    type_id: (typeof initialData.type_id === 'object' && initialData.type_id !== null ? initialData.type_id.id : initialData.type_id) || 0,
+                    operational_status_id: (typeof initialData.operational_status_id === 'object' && initialData.operational_status_id !== null ? initialData.operational_status_id.id : initialData.operational_status_id) || 1,
+                    housekeeping_status_id: (typeof initialData.housekeeping_status_id === 'object' && initialData.housekeeping_status_id !== null ? initialData.housekeeping_status_id.id : initialData.housekeeping_status_id) || 1,
                     main_image_url: initialData.main_image_url || "",
                 });
             } else {
@@ -105,7 +105,7 @@ export function RoomForm({ open, onOpenChange, initialData, onSuccess }: RoomFor
             toast.success(`Room ${initialData ? "updated" : "created"} successfully`);
             onSuccess();
             onOpenChange(false);
-        } catch (error) {
+        } catch {
             toast.error("An error occurred while saving");
         } finally {
             setLoading(false);

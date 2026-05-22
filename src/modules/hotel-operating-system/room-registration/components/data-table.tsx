@@ -11,19 +11,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RoomForm } from "./room-form";
 import { toast } from "sonner";
 
+interface RoomRecord {
+    id: string;
+    main_image_url?: string;
+    room_number: string;
+    floor_number?: number;
+    type_id?: { id: number; type_name: string } | number;
+    operational_status_id?: { id: number; status_name: string } | number;
+    housekeeping_status_id?: { id: number; status_name: string } | number;
+    [key: string]: unknown;
+}
+
 export function RoomDataTable() {
-    const [data, setData] = useState<any[]>([]);
+    const [data, setData] = useState<RoomRecord[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editingRoom, setEditingRoom] = useState<any>(null);
+    const [editingRoom, setEditingRoom] = useState<RoomRecord | null>(null);
 
     const [isViewOpen, setIsViewOpen] = useState(false);
-    const [viewingRoom, setViewingRoom] = useState<any>(null);
+    const [viewingRoom, setViewingRoom] = useState<RoomRecord | null>(null);
 
-    const [types, setTypes] = useState<any[]>([]);
-    const [opStatuses, setOpStatuses] = useState<any[]>([]);
-    const [hkStatuses, setHkStatuses] = useState<any[]>([]);
+    const [types, setTypes] = useState<{ id: number; type_name: string }[]>([]);
+    const [opStatuses, setOpStatuses] = useState<{ id: number; status_name: string; ui_color_code: string }[]>([]);
+    const [hkStatuses, setHkStatuses] = useState<{ id: number; status_name: string; ui_color_code: string }[]>([]);
     const [filterType, setFilterType] = useState("all");
     const [filterOpStatus, setFilterOpStatus] = useState("all");
     const [filterHkStatus, setFilterHkStatus] = useState("all");
@@ -43,7 +54,7 @@ export function RoomDataTable() {
             setTypes(typeData.data || []);
             setOpStatuses(opData.data || []);
             setHkStatuses(hkData.data || []);
-        } catch (error) {
+        } catch {
             console.error("Failed to fetch filters");
         }
     };
@@ -54,7 +65,7 @@ export function RoomDataTable() {
             const res = await fetch("/api/hos/room-registration");
             const result = await res.json();
             setData(result.data || []);
-        } catch (error) {
+        } catch {
             toast.error("Failed to fetch rooms");
         } finally {
             setLoading(false);
@@ -73,7 +84,7 @@ export function RoomDataTable() {
             if (!res.ok) throw new Error("Delete failed");
             toast.success("Room deleted successfully");
             fetchData();
-        } catch (error) {
+        } catch {
             toast.error("Failed to delete room");
         }
     };
@@ -84,12 +95,12 @@ export function RoomDataTable() {
         return `${API_BASE_URL}/assets/${urlOrUuid}`;
     };
 
-    const columns: ColumnDef<any>[] = [
+    const columns: ColumnDef<RoomRecord>[] = [
         {
             accessorKey: "main_image_url",
             header: "Image",
             cell: ({ row }) => {
-                const imageUrl = getImageUrl(row.original.main_image_url);
+                const imageUrl = getImageUrl(row.original.main_image_url || "");
                 return (
                     imageUrl ? (
                         <div className="w-12 h-12 rounded-md overflow-hidden border relative">
@@ -113,7 +124,7 @@ export function RoomDataTable() {
             header: "Floor",
         },
         {
-            accessorFn: (row) => row.type_id?.type_name || "N/A",
+            accessorFn: (row) => (typeof row.type_id === 'object' && row.type_id !== null ? row.type_id.type_name : "N/A"),
             id: "type_name",
             header: "Type",
         },
@@ -194,9 +205,13 @@ export function RoomDataTable() {
     ];
 
     const filteredData = data.filter((room) => {
-        if (filterType !== "all" && room.type_id?.id?.toString() !== filterType && room.type_id?.toString() !== filterType) return false;
-        if (filterOpStatus !== "all" && room.operational_status_id?.id?.toString() !== filterOpStatus && room.operational_status_id?.toString() !== filterOpStatus) return false;
-        if (filterHkStatus !== "all" && room.housekeeping_status_id?.id?.toString() !== filterHkStatus && room.housekeeping_status_id?.toString() !== filterHkStatus) return false;
+        const typeIdStr = typeof room.type_id === 'object' && room.type_id !== null ? room.type_id.id?.toString() : room.type_id?.toString();
+        const opStatusIdStr = typeof room.operational_status_id === 'object' && room.operational_status_id !== null ? room.operational_status_id.id?.toString() : room.operational_status_id?.toString();
+        const hkStatusIdStr = typeof room.housekeeping_status_id === 'object' && room.housekeeping_status_id !== null ? room.housekeeping_status_id.id?.toString() : room.housekeeping_status_id?.toString();
+
+        if (filterType !== "all" && typeIdStr !== filterType) return false;
+        if (filterOpStatus !== "all" && opStatusIdStr !== filterOpStatus) return false;
+        if (filterHkStatus !== "all" && hkStatusIdStr !== filterHkStatus) return false;
         return true;
     });
 
@@ -256,7 +271,7 @@ export function RoomDataTable() {
             <RoomForm
                 open={isFormOpen}
                 onOpenChange={setIsFormOpen}
-                initialData={editingRoom}
+                initialData={editingRoom || undefined}
                 onSuccess={fetchData}
             />
 
@@ -268,10 +283,10 @@ export function RoomDataTable() {
                     {viewingRoom && (
                         <div className="space-y-4 mt-4">
                             <div className="flex justify-center mb-6">
-                                {getImageUrl(viewingRoom.main_image_url) ? (
+                                {getImageUrl(viewingRoom.main_image_url || "") ? (
                                     <div className="w-48 h-48 rounded-xl overflow-hidden border shadow-sm">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={getImageUrl(viewingRoom.main_image_url)!} alt={viewingRoom.room_number} className="object-cover w-full h-full" />
+                                        <img src={getImageUrl(viewingRoom.main_image_url || "")!} alt={viewingRoom.room_number} className="object-cover w-full h-full" />
                                     </div>
                                 ) : (
                                     <div className="w-48 h-48 rounded-xl border flex items-center justify-center bg-muted shadow-sm">
@@ -292,7 +307,7 @@ export function RoomDataTable() {
                             <div className="grid grid-cols-2 gap-4 border-b pb-4">
                                 <div>
                                     <p className="text-sm font-medium text-muted-foreground">Type</p>
-                                    <p className="mt-1">{viewingRoom.type_id?.type_name || "N/A"}</p>
+                                    <p className="mt-1">{typeof viewingRoom.type_id === 'object' && viewingRoom.type_id !== null ? viewingRoom.type_id.type_name : "N/A"}</p>
                                 </div>
                                 <div></div>
                             </div>

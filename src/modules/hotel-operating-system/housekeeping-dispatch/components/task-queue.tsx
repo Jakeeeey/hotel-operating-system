@@ -10,7 +10,7 @@ import { Loader2, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 
 interface TaskQueueProps {
-    tasks: any[];
+    tasks: { id: string | number; room_id?: { room_number?: string }; task_type?: string; estimated_duration_minutes?: number; task_description?: string; blocks_availability?: number; status?: string; priority?: string; actual_completion_time?: string; }[];
     onTaskUpdated: () => void;
 }
 
@@ -30,7 +30,7 @@ export function TaskQueue({ tasks, onTaskUpdated }: TaskQueueProps) {
 
             toast.success(`Task marked as ${newStatus}`);
             onTaskUpdated();
-        } catch (error) {
+        } catch {
             toast.error("Failed to update task status.");
         } finally {
             setUpdatingId(null);
@@ -64,7 +64,7 @@ export function TaskQueue({ tasks, onTaskUpdated }: TaskQueueProps) {
         }
     };
 
-    const columns: ColumnDef<any>[] = [
+    const columns: ColumnDef<{ id: string | number; room_id?: { room_number?: string }; task_type?: string; estimated_duration_minutes?: number; task_description?: string; blocks_availability?: number; status?: string; priority?: string; actual_completion_time?: string; }>[] = [
         {
             accessorKey: "room_id",
             header: "Room #",

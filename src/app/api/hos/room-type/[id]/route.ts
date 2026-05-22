@@ -32,7 +32,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         if (!response.ok) throw new Error('Update failed');
         const data = await response.json();
         return NextResponse.json(data);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Server Error' }, { status: 500 });
     }
 }
@@ -52,7 +52,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
         if (!response.ok) throw new Error('Delete failed');
         return new NextResponse(null, { status: 204 });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Server Error' }, { status: 500 });
     }
 }

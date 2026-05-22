@@ -14,8 +14,7 @@ import { CheckInDialog } from "./components/check-in-dialog";
 
 interface StatsData {
     totalRooms: number;
-    occupiedRooms: number;
-    occupancyPercent: number;
+    availableRooms: number;
     pendingArrivals: number;
     totalArrivals: number;
     pendingDepartures: number;
@@ -44,8 +43,7 @@ interface DepartureItem {
 
 const defaultStats: StatsData = {
     totalRooms: 0,
-    occupiedRooms: 0,
-    occupancyPercent: 0,
+    availableRooms: 0,
     pendingArrivals: 0,
     totalArrivals: 0,
     pendingDepartures: 0,

@@ -22,7 +22,7 @@ type RoomTypeFormValues = z.infer<typeof formSchema>;
 interface RoomTypeFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    initialData?: any;
+    initialData?: { id?: string; type_name?: string; base_price?: number; max_occupancy?: number; bed_configuration?: string };
     onSuccess: () => void;
 }
 
@@ -76,7 +76,7 @@ export function RoomTypeForm({ open, onOpenChange, initialData, onSuccess }: Roo
             toast.success(`Room type ${initialData ? "updated" : "created"} successfully`);
             onSuccess();
             onOpenChange(false);
-        } catch (error) {
+        } catch {
             toast.error("An error occurred while saving");
         } finally {
             setLoading(false);

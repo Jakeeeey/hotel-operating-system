@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
         const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
         
-        let filter: any = {};
+        const filter: Record<string, unknown> = {};
         if (floor) filter.floor_number = { _eq: floor };
         if (type) filter.type_id = { _eq: type };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -237,8 +237,8 @@ export function BookingForm() {
             // Close review modal & Reset form silently
             setReviewOpen(false);
             handleClearForm(true);
-        } catch (error: any) {
-            toast.error(error.message || "An error occurred while creating booking.");
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : "An error occurred while creating booking.");
         } finally {
             setSubmitting(false);
         }

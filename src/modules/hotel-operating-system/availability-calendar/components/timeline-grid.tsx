@@ -50,7 +50,7 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                     const dateStr = format(d, "yyyy-MM-dd");
 
                     // Find if there's a reservation item for this exact room + date
-                    const item = data.reservationItems.find((i: any) => {
+                    const item = data.reservationItems.find((i) => {
                         const matchesRoom = isUnassigned
                             ? i.room_id === null && i.room_type_id === typeId
                             : i.room_id === roomId;
@@ -60,8 +60,8 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                     // Check for blocking tasks
                     let blockedTask = null;
                     if (!item && !isUnassigned && data.blockingTasks) {
-                        blockedTask = data.blockingTasks.find((t: any) => {
-                            const tRoomId = t.room_id?.id ? t.room_id.id : t.room_id;
+                        blockedTask = data.blockingTasks.find((t) => {
+                            const tRoomId = typeof t.room_id === 'object' && t.room_id !== null ? t.room_id.id : t.room_id;
                             if (Number(tRoomId) !== Number(roomId)) return false;
                             
                             const start = t.start_time || t.created_at || new Date().toISOString();
@@ -135,6 +135,7 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                     }
 
                     // Render Reservation Block
+                    if (!item) return null; // Should never happen
                     const resInfo = item.reservation_id;
                     const isStart = resInfo?.check_in_date === dateStr;
                     

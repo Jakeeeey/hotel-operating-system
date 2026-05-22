@@ -28,7 +28,7 @@ export async function GET(request: Request) {
         if (!response.ok) throw new Error('Fetch failed');
         const data = await response.json();
         return NextResponse.json(data);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Server Error' }, { status: 500 });
     }
 }
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         if (!response.ok) throw new Error('Create failed');
         const data = await response.json();
         return NextResponse.json(data);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Server Error' }, { status: 500 });
     }
 }

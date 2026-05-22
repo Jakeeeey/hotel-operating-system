@@ -11,14 +11,14 @@ import { RoomTypeForm } from "./type-form";
 import { toast } from "sonner";
 
 export function RoomTypeDataTable() {
-    const [data, setData] = useState<any[]>([]);
+    const [data, setData] = useState<{ id: string; type_name: string; base_price: number; max_occupancy: number; bed_configuration: string }[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editingType, setEditingType] = useState<any>(null);
+    const [editingType, setEditingType] = useState<{ id: string; type_name: string; base_price: number; max_occupancy: number; bed_configuration: string } | null>(null);
 
     const [isViewOpen, setIsViewOpen] = useState(false);
-    const [viewingType, setViewingType] = useState<any>(null);
+    const [viewingType, setViewingType] = useState<{ id: string; type_name: string; base_price: number; max_occupancy: number; bed_configuration: string } | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -26,7 +26,7 @@ export function RoomTypeDataTable() {
             const res = await fetch("/api/hos/room-type");
             const result = await res.json();
             setData(result.data || []);
-        } catch (error) {
+        } catch {
             toast.error("Failed to fetch room types");
         } finally {
             setLoading(false);
@@ -40,7 +40,7 @@ export function RoomTypeDataTable() {
             if (!res.ok) throw new Error("Delete failed");
             toast.success("Room type deleted successfully");
             fetchData();
-        } catch (error) {
+        } catch {
             toast.error("Failed to delete room type");
         }
     };
@@ -49,7 +49,7 @@ export function RoomTypeDataTable() {
         fetchData();
     }, []);
 
-    const columns: ColumnDef<any>[] = [
+    const columns: ColumnDef<{ id: string; type_name: string; base_price: number; max_occupancy: number; bed_configuration: string }>[] = [
         {
             accessorKey: "type_name",
             header: "Type Name",
@@ -122,7 +122,7 @@ export function RoomTypeDataTable() {
             <RoomTypeForm
                 open={isFormOpen}
                 onOpenChange={setIsFormOpen}
-                initialData={editingType}
+                initialData={editingType || undefined}
                 onSuccess={fetchData}
             />
 

@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { decodeJwtPayload, COOKIE_NAME } from '@/lib/auth-utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL;
 
@@ -20,7 +18,7 @@ export async function GET() {
         const data = await response.json();
         
         return NextResponse.json(data);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Server Error' }, { status: 500 });
     }
 }

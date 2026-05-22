@@ -10,7 +10,7 @@ import { AlertTriangle, Clock, CheckCircle2, Loader2, Wrench, Filter } from "luc
 import { toast } from "sonner";
 
 export default function HousekeepingDispatchModule() {
-    const [tasks, setTasks] = useState<any[]>([]);
+    const [tasks, setTasks] = useState<{ id: string | number; room_id?: { room_number?: string }; task_type: string; estimated_duration_minutes?: number; task_description?: string; blocks_availability?: number; status: string; priority?: string; actual_completion_time?: string; }[]>([]);
     const [stats, setStats] = useState({ dirtyRooms: 0, inProgress: 0, cleanedToday: 0 });
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -28,7 +28,7 @@ export default function HousekeepingDispatchModule() {
             
             setStats(json.data.stats);
             setTasks(json.data.tasks);
-        } catch (error) {
+        } catch {
             toast.error("Failed to load housekeeping dashboard");
         } finally {
             setLoading(false);

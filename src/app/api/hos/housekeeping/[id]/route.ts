@@ -73,7 +73,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         const task = taskData.data;
 
         // 2. Prepare patch body
-        const patchBody: any = { status, updated_by: userId };
+        const patchBody: Record<string, unknown> = { status, updated_by: userId };
         const now = new Date().toISOString();
 
         if (status === 'In Progress' && !task.start_time) {
@@ -106,8 +106,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         }
 
         return NextResponse.json({ success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error updating task:', error);
-        return NextResponse.json({ error: error.message || 'Server Error' }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Server Error' }, { status: 500 });
     }
 }

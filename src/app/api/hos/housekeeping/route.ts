@@ -4,7 +4,7 @@ import { decodeJwtPayload, COOKIE_NAME } from '@/lib/auth-utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL;
 
-export async function GET(request: Request) {
+export async function GET() {
     try {
         if (!API_BASE_URL) {
             return NextResponse.json({ error: 'Missing API configuration.' }, { status: 500 });
@@ -40,23 +40,23 @@ export async function GET(request: Request) {
         const rooms = roomsData.data || [];
 
         // Calculate Stats
-        const dirtyRoomsList = rooms.filter((r: any) => r.housekeeping_status_id?.id === 2 || r.housekeeping_status_id === 2);
+        const dirtyRoomsList = rooms.filter((r: { housekeeping_status_id?: { id: number } | number }) => (typeof r.housekeeping_status_id === 'object' && r.housekeeping_status_id !== null ? r.housekeeping_status_id.id : r.housekeeping_status_id) === 2);
         const dirtyRooms = dirtyRoomsList.length;
         
-        const inProgress = tasks.filter((t: any) => 
+        const inProgress = tasks.filter((t: { status: string }) => 
             t.status === 'In Progress' || t.status === 'Inspecting'
         ).length;
 
-        const cleanedToday = tasks.filter((t: any) => {
+        const cleanedToday = tasks.filter((t: { status: string; actual_completion_time?: string }) => {
             if (t.status !== 'Completed' || !t.actual_completion_time) return false;
             const completionDate = new Date(t.actual_completion_time);
             return completionDate >= todayStart;
         }).length;
 
         // Auto-inject virtual tasks for dirty rooms missing a task
-        const pendingOrActiveTasks = tasks.filter((t: any) => t.status !== 'Completed');
-        dirtyRoomsList.forEach((room: any) => {
-            const hasTask = pendingOrActiveTasks.some((t: any) => t.room_id?.id === room.id || t.room_id === room.id);
+        const pendingOrActiveTasks = tasks.filter((t: { status: string }) => t.status !== 'Completed');
+        dirtyRoomsList.forEach((room: { id: number; room_number: string; operational_status_id?: number }) => {
+            const hasTask = pendingOrActiveTasks.some((t: { room_id?: { id: number } | number }) => (typeof t.room_id === 'object' && t.room_id !== null ? t.room_id.id : t.room_id) === room.id);
             if (!hasTask) {
                 tasks.unshift({
                     id: `virtual-${room.id}`,
@@ -77,7 +77,7 @@ export async function GET(request: Request) {
         });
 
         // Sort tasks descending by created_at
-        tasks.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+        tasks.sort((a: { created_at?: string }, b: { created_at?: string }) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
 
         return NextResponse.json({
             data: {
@@ -153,7 +153,7 @@ export async function POST(request: Request) {
             console.error('Directus POST Error:', errBody);
             
             let parsedErr;
-            try { parsedErr = JSON.parse(errBody); } catch (e) {}
+            try { parsedErr = JSON.parse(errBody); } catch { }
             
             const errMsg = parsedErr?.errors?.[0]?.message || parsedErr?.error || errBody || 'Failed to create task';
             throw new Error(errMsg);
@@ -161,8 +161,8 @@ export async function POST(request: Request) {
 
         const created = await res.json();
         return NextResponse.json({ success: true, data: created.data });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error creating task:', error);
-        return NextResponse.json({ error: error.message || 'Server Error' }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Server Error' }, { status: 500 });
     }
 }
