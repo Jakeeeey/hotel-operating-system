@@ -57,9 +57,80 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                         return matchesRoom && i.night_date === dateStr;
                     });
 
-                    if (!item) {
+                    // Check for blocking tasks
+                    let blockedTask = null;
+                    if (!item && !isUnassigned && data.blockingTasks) {
+                        blockedTask = data.blockingTasks.find((t: any) => {
+                            const tRoomId = t.room_id?.id ? t.room_id.id : t.room_id;
+                            if (Number(tRoomId) !== Number(roomId)) return false;
+                            
+                            const start = t.start_time || t.created_at || new Date().toISOString();
+                            let end = t.target_completion_time || t.actual_completion_time;
+                            if (!end) {
+                                const endDateObj = new Date(start);
+                                endDateObj.setDate(endDateObj.getDate() + 1); // Assume 1 day block if no target time
+                                end = endDateObj.toISOString();
+                            }
+                            
+                            const blockStart = format(new Date(start), "yyyy-MM-dd");
+                            const blockEnd = format(new Date(end), "yyyy-MM-dd");
+                            
+                            return dateStr >= blockStart && dateStr <= blockEnd;
+                        });
+                    }
+
+                    if (!item && !blockedTask) {
                         return (
                             <div key={dateStr} className="w-[70px] md:w-[90px] shrink-0 border-r border-muted/20 p-1" />
+                        );
+                    }
+
+                    // Render Blocked Room Item
+                    if (blockedTask) {
+                        const start = blockedTask.start_time || blockedTask.created_at || new Date().toISOString();
+                        const blockStart = format(new Date(start), "yyyy-MM-dd");
+                        
+                        let end = blockedTask.target_completion_time || blockedTask.actual_completion_time;
+                        if (!end) {
+                            const endDateObj = new Date(start);
+                            endDateObj.setDate(endDateObj.getDate() + 1);
+                            end = endDateObj.toISOString();
+                        }
+                        const blockEnd = format(new Date(end), "yyyy-MM-dd");
+
+                        const isStart = dateStr === blockStart;
+                        const isEnd = dateStr === blockEnd;
+                        const colorClasses = "bg-red-100 border-red-300 text-red-800 dark:bg-red-900/40 dark:border-red-700 dark:text-red-300";
+                        
+                        return (
+                            <div key={dateStr} className="w-[70px] md:w-[90px] shrink-0 border-r border-muted/20 relative py-1.5 px-0.5">
+                                <TooltipProvider delayDuration={200}>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div
+                                                className={`absolute inset-y-1.5 inset-x-0 border-y ${colorClasses} shadow-sm z-10 flex items-center overflow-hidden cursor-pointer
+                                                    ${isStart ? "rounded-l-lg border-l ml-1" : "border-l-0"}
+                                                    ${isEnd ? "rounded-r-lg border-r mr-1" : "border-r-0"}
+                                                `}
+                                            >
+                                                {(isStart || dateStr === format(startDate, "yyyy-MM-dd")) && (
+                                                    <span className="text-[10px] md:text-xs font-semibold px-2 truncate whitespace-nowrap z-20 sticky left-0">
+                                                        Maintenance
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="space-y-1.5 p-3 rounded-xl shadow-xl border-red-200">
+                                            <div className="font-bold border-b pb-1 mb-1 text-red-600">Room Blocked</div>
+                                            <div className="text-xs">
+                                                <span className="font-semibold block">{blockedTask.task_type}</span>
+                                                <span className="text-muted-foreground block mt-1">{blockedTask.task_description || 'No description provided'}</span>
+                                                <span className="text-muted-foreground block mt-2 text-[10px]">Status: {blockedTask.status}</span>
+                                            </div>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
                         );
                     }
 

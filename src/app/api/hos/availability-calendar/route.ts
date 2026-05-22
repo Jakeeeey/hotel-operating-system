@@ -28,6 +28,7 @@ export async function GET(request: Request) {
             roomsRes,
             statusesRes,
             itemsRes,
+            tasksRes
         ] = await Promise.all([
             // 1. Room Types
             fetch(`${API_BASE_URL}/items/room_types?limit=-1&sort=id`, { headers }),
@@ -39,16 +40,34 @@ export async function GET(request: Request) {
             fetch(`${API_BASE_URL}/items/reservation_items?limit=-1&fields=id,night_date,locked_price,room_id,room_type_id,reservation_id.id,reservation_id.status,reservation_id.check_in_date,reservation_id.check_out_date,reservation_id.guest_id.first_name,reservation_id.guest_id.last_name&filter=${encodeURIComponent(JSON.stringify({
                 night_date: { _between: [start, end] }
             }))}`, { headers }),
+            // 5. Blocking Maintenance Tasks
+            fetch(`${API_BASE_URL}/items/housekeeping_tasks?limit=-1&fields=*`, { headers })
         ]);
 
-        if (!typesRes.ok || !roomsRes.ok || !statusesRes.ok || !itemsRes.ok) {
-            throw new Error('Failed to fetch data from Directus.');
+        if (!typesRes.ok || !roomsRes.ok || !statusesRes.ok || !itemsRes.ok || !tasksRes.ok) {
+            const taskErr = !tasksRes.ok ? await tasksRes.text() : null;
+            console.error('Calendar Fetch Error:', taskErr);
+            throw new Error(`Failed to fetch data from Directus. ${taskErr || ''}`);
         }
 
         const typesData = await typesRes.json();
         const roomsData = await roomsRes.json();
         const statusesData = await statusesRes.json();
         const itemsData = await itemsRes.json();
+        const rawTasksData = await tasksRes.json();
+
+        // Filter blocking tasks locally to avoid Directus schema sync issues with newly added MySQL fields
+        // Fallback: If blocks_availability is entirely missing from payload, assume Maintenance tasks block availability.
+        const blockingTasks = (rawTasksData.data || []).filter((t: any) => {
+            if (t.status === 'Completed') return false;
+            
+            if (t.blocks_availability !== undefined) {
+                return t.blocks_availability === 1 || t.blocks_availability === true || t.blocks_availability === '1';
+            }
+            
+            // Fallback for unsynced Directus fields
+            return t.task_type && t.task_type.includes('Maintenance');
+        });
 
         return NextResponse.json({
             data: {
@@ -56,6 +75,7 @@ export async function GET(request: Request) {
                 rooms: roomsData.data || [],
                 statuses: statusesData.data || [],
                 reservationItems: itemsData.data || [],
+                blockingTasks: blockingTasks,
             }
         });
     } catch (error) {

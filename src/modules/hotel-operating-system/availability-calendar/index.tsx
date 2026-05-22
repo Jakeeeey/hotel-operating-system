@@ -12,6 +12,7 @@ export interface CalendarData {
     rooms: any[];
     statuses: any[];
     reservationItems: any[];
+    blockingTasks?: any[];
 }
 
 export default function AvailabilityCalendarModule() {

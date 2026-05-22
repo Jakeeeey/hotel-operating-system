@@ -30,6 +30,42 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
             ...(staticToken ? { 'Authorization': `Bearer ${staticToken}` } : {}),
         };
 
+        // Handle virtual tasks (for rooms marked dirty without a physical task)
+        if (taskId.startsWith('virtual-')) {
+            const virtualRoomId = taskId.replace('virtual-', '');
+            const now = new Date().toISOString();
+            
+            if (status === 'Completed') {
+                await fetch(`${API_BASE_URL}/items/rooms/${virtualRoomId}`, {
+                    method: 'PATCH',
+                    headers,
+                    body: JSON.stringify({
+                        housekeeping_status_id: 1, // Clean
+                        updated_by: userId
+                    })
+                });
+            } else if (status === 'In Progress') {
+                // Create a real task so it can be tracked as In Progress
+                await fetch(`${API_BASE_URL}/items/housekeeping_tasks`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        room_id: virtualRoomId,
+                        task_type: 'Checkout Clean',
+                        task_description: 'Auto-generated cleaning task',
+                        status: 'In Progress',
+                        priority: 'Normal',
+                        estimated_duration_minutes: 30,
+                        start_time: now,
+                        blocks_availability: 0,
+                        created_by: userId,
+                        updated_by: userId
+                    })
+                });
+            }
+            return NextResponse.json({ success: true, message: 'Virtual task handled' });
+        }
+
         // 1. Fetch current task to know its type and room
         const taskRes = await fetch(`${API_BASE_URL}/items/housekeeping_tasks/${taskId}`, { headers });
         if (!taskRes.ok) throw new Error('Task not found');

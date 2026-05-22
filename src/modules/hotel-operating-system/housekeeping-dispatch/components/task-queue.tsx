@@ -14,10 +14,10 @@ interface TaskQueueProps {
 }
 
 export function TaskQueue({ tasks, onTaskUpdated }: TaskQueueProps) {
-    const [updatingId, setUpdatingId] = useState<number | null>(null);
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-    const handleUpdateStatus = async (taskId: number, newStatus: string) => {
-        setUpdatingId(taskId);
+    const handleUpdateStatus = async (taskId: string | number, newStatus: string) => {
+        setUpdatingId(taskId.toString());
         try {
             const res = await fetch(`/api/hos/housekeeping/${taskId}`, {
                 method: "PATCH",

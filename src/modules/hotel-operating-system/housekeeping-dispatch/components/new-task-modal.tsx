@@ -21,7 +21,7 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
     const [rooms, setRooms] = useState<any[]>([]);
     const [loadingRooms, setLoadingRooms] = useState(false);
     
-    const [roomId, setRoomId] = useState("");
+    const [roomNumber, setRoomNumber] = useState("");
     const [taskType, setTaskType] = useState("");
     const [customTaskType, setCustomTaskType] = useState("");
     const [description, setDescription] = useState("");
@@ -56,7 +56,6 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
     // To make it fully functional without a new API route, we'll fetch direct or from room-type
     useEffect(() => {
         if (open) {
-            setLoadingRooms(true);
             // Fetching operational statuses and rooms can be done by a custom frontend fetch to /api/hos/operational-status... wait, let's use the front-desk one
             fetch("/api/hos/front-desk-dashboard/available-rooms?all=true") 
                 .catch(() => {})
@@ -71,8 +70,8 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
         
         const finalTaskType = taskType === "Custom" ? customTaskType : taskType;
         
-        if (!roomId || !finalTaskType) {
-            toast.error("Room and Task Type are required.");
+        if (!roomNumber || !finalTaskType) {
+            toast.error("Room Number and Task Type are required.");
             return;
         }
 
@@ -82,7 +81,7 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    room_id: parseInt(roomId, 10),
+                    room_number: roomNumber,
                     task_type: finalTaskType,
                     task_description: description,
                     priority,
@@ -96,7 +95,7 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
             toast.success("Task created successfully");
             
             // Reset
-            setRoomId("");
+            setRoomNumber("");
             setTaskType("");
             setCustomTaskType("");
             setDescription("");
@@ -126,11 +125,11 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
                 <form onSubmit={handleSubmit} className="space-y-5 py-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <Label>Room ID <span className="text-destructive">*</span></Label>
+                            <Label>Room Number <span className="text-destructive">*</span></Label>
                             <Input 
-                                placeholder="e.g. 1 (Requires valid ID)" 
-                                value={roomId} 
-                                onChange={e => setRoomId(e.target.value)} 
+                                placeholder="e.g. 101" 
+                                value={roomNumber} 
+                                onChange={e => setRoomNumber(e.target.value)} 
                                 required 
                             />
                             {/* In a real app, this is a dropdown of fetched rooms */}
