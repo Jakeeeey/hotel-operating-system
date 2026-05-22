@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "./new-data-table";
+import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -63,88 +64,120 @@ export function TaskQueue({ tasks, onTaskUpdated }: TaskQueueProps) {
         }
     };
 
+    const columns: ColumnDef<any>[] = [
+        {
+            accessorKey: "room_id",
+            header: "Room #",
+            cell: ({ row }) => {
+                const task = row.original;
+                return (
+                    <div className="font-bold text-base">
+                        Room {task.room_id?.room_number || "N/A"}
+                    </div>
+                );
+            }
+        },
+        {
+            accessorKey: "task_type",
+            header: "Task Type",
+            cell: ({ row }) => {
+                const task = row.original;
+                return (
+                    <div>
+                        <div className="font-semibold">{task.task_type}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                            Est. {task.estimated_duration_minutes || '--'} mins
+                        </div>
+                    </div>
+                );
+            }
+        },
+        {
+            accessorKey: "task_description",
+            header: "Details",
+            cell: ({ row }) => {
+                const task = row.original;
+                return (
+                    <div className="text-sm max-w-[200px] truncate" title={task.task_description}>
+                        {task.task_description || "-"}
+                        {task.blocks_availability === 1 && (
+                            <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800">
+                                Blocks Room
+                            </span>
+                        )}
+                    </div>
+                );
+            }
+        },
+        {
+            accessorKey: "priority",
+            header: "Priority",
+            cell: ({ row }) => {
+                const priority = row.getValue("priority") as string;
+                return getPriorityBadge(priority);
+            }
+        },
+        {
+            accessorKey: "status",
+            header: "Current Status",
+            cell: ({ row }) => {
+                const status = row.getValue("status") as string;
+                return getStatusDisplay(status);
+            }
+        },
+        {
+            id: "actions",
+            header: () => <div className="text-right font-bold w-[120px]">Action</div>,
+            cell: ({ row }) => {
+                const task = row.original;
+                return (
+                    <div className="flex justify-end w-full pr-4">
+                        {task.status === "Pending" && (
+                            <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="w-[120px] text-xs font-bold border-primary text-primary hover:bg-primary/10"
+                                disabled={updatingId === task.id}
+                                onClick={() => handleUpdateStatus(task.id, "In Progress")}
+                            >
+                                {updatingId === task.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Start Task"}
+                            </Button>
+                        )}
+                        {task.status === "In Progress" && (
+                            <Button 
+                                size="sm" 
+                                className="w-[120px] text-xs font-bold bg-primary hover:bg-primary/90"
+                                disabled={updatingId === task.id}
+                                onClick={() => handleUpdateStatus(task.id, "Completed")}
+                            >
+                                {updatingId === task.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Mark Complete"}
+                            </Button>
+                        )}
+                        {task.status === "Completed" && (
+                            <span className="text-xs text-muted-foreground w-[120px] text-right inline-block">
+                                Done {task.actual_completion_time ? format(new Date(task.actual_completion_time), "HH:mm") : ""}
+                            </span>
+                        )}
+                    </div>
+                );
+            }
+        }
+    ];
+
     return (
-        <div className="rounded-xl border bg-card overflow-hidden">
-            <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
+        <div className="w-full space-y-4">
+            <div className="bg-muted/30 px-4 py-3 border rounded-xl flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
                 <h3 className="font-bold text-foreground">Pending Tasks Queue</h3>
             </div>
             
-            <div className="overflow-x-auto">
-                <Table>
-                    <TableHeader className="bg-muted/10">
-                        <TableRow>
-                            <TableHead className="font-bold w-[120px]">Room #</TableHead>
-                            <TableHead className="font-bold">Task Type</TableHead>
-                            <TableHead className="font-bold">Details</TableHead>
-                            <TableHead className="font-bold w-[100px]">Priority</TableHead>
-                            <TableHead className="font-bold w-[140px]">Current Status</TableHead>
-                            <TableHead className="font-bold text-right w-[150px]">Action</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {tasks.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                    No tasks found matching the current filters.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            tasks.map((task) => (
-                                <TableRow key={task.id} className="hover:bg-muted/20 transition-colors">
-                                    <TableCell className="font-bold text-base">
-                                        Room {task.room_id?.room_number || "N/A"}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="font-semibold">{task.task_type}</div>
-                                        <div className="text-xs text-muted-foreground mt-0.5">
-                                            Est. {task.estimated_duration_minutes} mins
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-sm max-w-[200px] truncate" title={task.task_description}>
-                                        {task.task_description || "-"}
-                                        {task.blocks_availability === 1 && (
-                                            <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800">
-                                                Blocks Room
-                                            </span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>{getPriorityBadge(task.priority)}</TableCell>
-                                    <TableCell>{getStatusDisplay(task.status)}</TableCell>
-                                    <TableCell className="text-right">
-                                        {task.status === "Pending" && (
-                                            <Button 
-                                                size="sm" 
-                                                variant="outline"
-                                                className="w-full text-xs font-bold border-primary text-primary hover:bg-primary/10"
-                                                disabled={updatingId === task.id}
-                                                onClick={() => handleUpdateStatus(task.id, "In Progress")}
-                                            >
-                                                {updatingId === task.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Start Task"}
-                                            </Button>
-                                        )}
-                                        {task.status === "In Progress" && (
-                                            <Button 
-                                                size="sm" 
-                                                className="w-full text-xs font-bold bg-primary hover:bg-primary/90"
-                                                disabled={updatingId === task.id}
-                                                onClick={() => handleUpdateStatus(task.id, "Completed")}
-                                            >
-                                                {updatingId === task.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Mark Complete"}
-                                            </Button>
-                                        )}
-                                        {task.status === "Completed" && (
-                                            <span className="text-xs text-muted-foreground">
-                                                Done {task.actual_completion_time ? format(new Date(task.actual_completion_time), "HH:mm") : ""}
-                                            </span>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+            <DataTable 
+                columns={columns} 
+                data={tasks} 
+                searchKey="task_type" 
+                emptyTitle="No Tasks Found"
+                emptyDescription="There are no tasks matching your filters."
+            />
         </div>
     );
 }

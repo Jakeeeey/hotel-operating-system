@@ -61,7 +61,7 @@ export default function HousekeepingDispatchModule() {
     }, [tasks, statusFilter, typeFilter]);
 
     return (
-        <div className="p-4 md:p-6 space-y-8 w-full max-w-[1400px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="p-4 md:p-6 space-y-8 w-full mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b pb-6">
                 <div className="space-y-2">
