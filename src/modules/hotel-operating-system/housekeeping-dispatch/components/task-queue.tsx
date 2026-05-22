@@ -20,10 +20,17 @@ export function TaskQueue({ tasks, onTaskUpdated }: TaskQueueProps) {
     const handleUpdateStatus = async (taskId: string | number, newStatus: string) => {
         setUpdatingId(taskId.toString());
         try {
+            const now = new Date().toISOString();
+            const payload: Record<string, unknown> = { status: newStatus };
+
+            if (newStatus === "In Progress") {
+                payload.start_time = now;
+            }
+
             const res = await fetch(`/api/hos/housekeeping/${taskId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: newStatus }),
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) throw new Error("Failed to update task");

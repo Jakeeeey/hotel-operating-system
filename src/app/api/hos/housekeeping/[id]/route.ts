@@ -22,7 +22,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         }
 
         const body = await request.json();
-        const { status } = body;
+        const { status, start_time: bodyStartTime } = body;
 
         const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
         const headers: Record<string, string> = {
@@ -45,6 +45,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
                     })
                 });
             } else if (status === 'In Progress') {
+                const startTime = bodyStartTime || now;
                 // Create a real task so it can be tracked as In Progress
                 await fetch(`${API_BASE_URL}/items/housekeeping_tasks`, {
                     method: 'POST',
@@ -56,7 +57,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
                         status: 'In Progress',
                         priority: 'Normal',
                         estimated_duration_minutes: 30,
-                        start_time: now,
+                        start_time: startTime,
+                        target_completion_time: new Date(new Date(startTime).getTime() + 30 * 60000).toISOString(),
                         blocks_availability: 0,
                         created_by: userId,
                         updated_by: userId
@@ -76,12 +78,29 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         const patchBody: Record<string, unknown> = { status, updated_by: userId };
         const now = new Date().toISOString();
 
-        if (status === 'In Progress' && !task.start_time) {
-            patchBody.start_time = now;
+        if (status === 'In Progress') {
+            const startTime = bodyStartTime || now;
+            if (!task.start_time) {
+                patchBody.start_time = startTime;
+            }
+            // Auto-calculate target_completion_time from start_time + estimated_duration_minutes
+            if (!task.target_completion_time) {
+                const durationMinutes = task.estimated_duration_minutes || 30;
+                const effectiveStart = new Date(task.start_time || startTime);
+                patchBody.target_completion_time = new Date(effectiveStart.getTime() + durationMinutes * 60000).toISOString();
+            }
         }
 
-        if (status === 'Completed' && !task.actual_completion_time) {
-            patchBody.actual_completion_time = now;
+        if (status === 'Completed') {
+            if (!task.actual_completion_time) {
+                patchBody.actual_completion_time = now;
+            }
+            // If target_completion_time was never set, calculate it retroactively
+            if (!task.target_completion_time) {
+                const durationMinutes = task.estimated_duration_minutes || 30;
+                const effectiveStart = task.start_time ? new Date(task.start_time) : new Date(now);
+                patchBody.target_completion_time = new Date(effectiveStart.getTime() + durationMinutes * 60000).toISOString();
+            }
         }
 
         // 3. Update the task

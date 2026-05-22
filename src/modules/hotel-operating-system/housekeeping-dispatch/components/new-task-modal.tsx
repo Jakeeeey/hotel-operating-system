@@ -25,6 +25,7 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
     const [description, setDescription] = useState("");
     const [priority, setPriority] = useState("Normal");
     const [duration, setDuration] = useState("30");
+    const [targetCompletionTime, setTargetCompletionTime] = useState("");
     const [blocksAvailability, setBlocksAvailability] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
@@ -51,6 +52,7 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
                     task_description: description,
                     priority,
                     estimated_duration_minutes: parseInt(duration, 10),
+                    target_completion_time: targetCompletionTime ? new Date(targetCompletionTime).toISOString() : null,
                     blocks_availability: blocksAvailability
                 })
             });
@@ -66,6 +68,7 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
             setDescription("");
             setPriority("Normal");
             setDuration("30");
+            setTargetCompletionTime("");
             setBlocksAvailability(false);
             
             onSuccess();
@@ -166,18 +169,25 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
                             />
                         </div>
 
-                        <div className="flex flex-col justify-end pb-2">
-                            <div className="flex items-center space-x-2 bg-muted/50 p-2 rounded-lg border">
-                                <Checkbox 
-                                    id="blocks" 
-                                    checked={blocksAvailability} 
-                                    onCheckedChange={(c) => setBlocksAvailability(c as boolean)} 
-                                />
-                                <Label htmlFor="blocks" className="text-xs font-semibold cursor-pointer">
-                                    Blocks Availability
-                                </Label>
-                            </div>
+                        <div className="space-y-1.5">
+                            <Label>Target Completion Time</Label>
+                            <Input 
+                                type="datetime-local" 
+                                value={targetCompletionTime} 
+                                onChange={e => setTargetCompletionTime(e.target.value)} 
+                            />
                         </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 bg-muted/50 p-2 rounded-lg border">
+                        <Checkbox 
+                            id="blocks" 
+                            checked={blocksAvailability} 
+                            onCheckedChange={(c) => setBlocksAvailability(c as boolean)} 
+                        />
+                        <Label htmlFor="blocks" className="text-xs font-semibold cursor-pointer">
+                            Blocks Availability
+                        </Label>
                     </div>
 
                     <DialogFooter className="pt-2">
