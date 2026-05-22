@@ -6,13 +6,13 @@ import { Sidebar } from "@/components/ui/sidebar";
 
 export async function AppSidebar(props: ComponentProps<typeof Sidebar>) {
     // 1. Fetch data on the server using the shared action
-    const items = await getSidebarNavigation("hrm");
+    const items = await getSidebarNavigation("hos");
 
     return (
-        <AppSidebarClient 
-            {...props} 
-            initialItems={items} 
-            subsystemTitle="Human Resource Management"
+        <AppSidebarClient
+            {...props}
+            initialItems={items}
+            subsystemTitle="Hotel Operating System"
         />
     );
 }
