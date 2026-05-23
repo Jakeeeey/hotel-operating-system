@@ -86,7 +86,7 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
 
                     if (!item && !blockedTask) {
                         return (
-                            <div key={dateStr} className="w-[70px] md:w-[90px] shrink-0 border-r border-muted/20 p-1" />
+                            <div key={dateStr} className="flex-1 min-w-[70px] md:min-w-[90px] border-r border-muted/20 p-1" />
                         );
                     }
 
@@ -108,7 +108,7 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                         const colorClasses = "bg-red-100 border-red-300 text-red-800 dark:bg-red-900/40 dark:border-red-700 dark:text-red-300";
                         
                         return (
-                            <div key={dateStr} className="w-[70px] md:w-[90px] shrink-0 border-r border-muted/20 relative py-1.5 px-0.5">
+                            <div key={dateStr} className="flex-1 min-w-[70px] md:min-w-[90px] border-r border-muted/20 relative py-1.5 px-0.5">
                                 <TooltipProvider delayDuration={200}>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
@@ -155,7 +155,7 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                         : "Unknown Guest";
 
                     return (
-                        <div key={dateStr} className="w-[70px] md:w-[90px] shrink-0 border-r border-muted/20 relative py-1.5 px-0.5">
+                        <div key={dateStr} className="flex-1 min-w-[70px] md:min-w-[90px] border-r border-muted/20 relative py-1.5 px-0.5">
                             <TooltipProvider delayDuration={200}>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -197,7 +197,7 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
 
     return (
         <div className="overflow-x-auto w-full pb-4 hide-scrollbar">
-            <div className="min-w-max">
+            <div className="w-full min-w-max">
                 {/* Header Row (Dates) */}
                 <div className="flex border-b bg-muted/10 sticky top-0 z-30">
                     <div className="w-[200px] shrink-0 border-r p-3 sticky left-0 z-40 bg-card/95 backdrop-blur-md shadow-[1px_0_5px_-2px_rgba(0,0,0,0.1)] flex items-end">
@@ -210,7 +210,7 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                         return (
                             <div 
                                 key={d.toISOString()} 
-                                className={`w-[70px] md:w-[90px] shrink-0 border-r p-2 flex flex-col items-center justify-center
+                                className={`flex-1 min-w-[70px] md:min-w-[90px] border-r p-2 flex flex-col items-center justify-center
                                     ${isWeekend ? "bg-muted/30" : ""}
                                     ${isToday ? "bg-primary/5 border-b-2 border-b-primary" : ""}
                                 `}
@@ -229,6 +229,7 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                 {/* Body Rows */}
                 {data.types.map((type) => {
                     const typeRooms = data.rooms.filter((r) => r.type_id === type.id);
+                    if (typeRooms.length === 0) return null;
                     
                     return (
                         <div key={type.id}>
@@ -254,16 +255,6 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                                     false
                                 );
                             })}
-
-                            {/* Unassigned Row for this type */}
-                            {renderRow(
-                                `unassigned-${type.id}`,
-                                "Unassigned",
-                                "Pending Room Assignment",
-                                null,
-                                type.id,
-                                true
-                            )}
                         </div>
                     );
                 })}
