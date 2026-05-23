@@ -19,21 +19,19 @@ const dmSans = DM_Sans({
   weight: ["400", "500", "600", "700", "800"],
 });
 
-export default function HotelLandingPage(): React.JSX.Element {
+export default function HotelLandingPage() {
   return (
     <div
-      className={`${dmSans.className} bg-[#f5f5f5] min-h-screen scroll-smooth overflow-x-hidden`}
+      className={`${dmSans.className} min-h-screen scroll-smooth overflow-x-hidden`}
     >
       <NavBar />
       <HeroBanner />
-      <div className="max-w-[1200px] mx-auto bg-white shadow-none relative z-10">
-        <HotelOverview />
-        <BrowseRooms />
-        <GuestReviews />
-        <PromoOffers />
-        <PartnerLogos />
-        <BottomFeatureGrid />
-      </div>
+      <HotelOverview />
+      <BrowseRooms />
+      <GuestReviews />
+      <PromoOffers />
+      <PartnerLogos />
+      <BottomFeatureGrid />
       <Footer />
     </div>
   );

@@ -9,7 +9,6 @@ export function HeroBanner() {
       {/* ── Container ── */}
       {/* Changed h-[28vh] to min-h-[28vh] md:h-screen so it can stretch safely if a device window is small */}
       <div className="relative w-full  min-h-[58vh] md:h-screen overflow-hidden flex flex-col justify-end">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <Image
           width={100}
           height={100}

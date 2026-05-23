@@ -1,75 +1,91 @@
-"use client"
+"use client";
 
-import { Tag, ArrowRight } from "lucide-react"
+import { Tag, ArrowRight } from "lucide-react";
+import Image from "next/image";
 
-export function PromoOffers(){ 
+export function PromoOffers() {
   const promos = [
     {
       id: 1,
-      badge: "Valid only on 14 Jan - 28 Jan 2025",
-      label: "Early Bird Discount — Azure Oasis",
-      percentage: "30%",
-      terms: "*Book 30 days in advance. T&C apply.",
-      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300",
+      badge: "Valid only on 14 Jan - 20 Jan 2024",
+      label: "Get Extra Discount at Azure Oasis Hotel",
+      percentage: "50%",
+      terms: "*with Terms and Condition",
+      image:
+        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800",
     },
     {
       id: 2,
-      badge: "Valid only on 20 Feb - 10 Mar 2025",
-      label: "Honeymoon Special — Azure Oasis",
-      percentage: "50%",
-      terms: "*On Honeymoon Suite. T&C apply.",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300",
+      badge: "Valid only on 16 Jan - 28 Jan 2024",
+      label: "Exclusive Deals Just For You",
+      percentage: "75%",
+      terms: "*with Terms and Condition",
+      image:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800",
     },
-  ]
+  ];
 
   return (
-    <section className="max-w-[1200px] mx-auto py-14 px-10 bg-white">
-      {/* Header */}
+    <section className="w-full max-w-[1400px] mx-auto px-4 md:px-4">
+      {/* Header Action Row */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-[26px] font-bold text-[#111111]">
+        <h2 className="text-[24px] md:text-3xl font-normal tracking-tight">
           Get promo for a cheaper price
         </h2>
-        <button className="flex items-center gap-1 text-xs text-[#111111] font-semibold hover:underline transition-all duration-200">
+        <button className="flex items-center gap-1.5 text-md font-semibold transition-opacity duration-200 border border-zinc-100 hover:border-zinc-200 rounded-lg px-6 py-2">
           See All
-          <ArrowRight size={14} />
+          <ArrowRight size={14} strokeWidth={2.5} />
         </button>
       </div>
 
-      {/* Promo Cards */}
-      <div className="grid grid-cols-2 gap-5">
+      {/* Grid Container Matrix */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {promos.map((promo) => (
           <div
             key={promo.id}
-            className="relative bg-[#2c2c2c] rounded-[16px] overflow-hidden min-h-[170px] flex items-stretch animate-fade-in"
+            className="relative rounded-xl overflow-hidden min-h-[240px] md:min-h-[260px] flex flex-col justify-between p-6 md:p-8"
           >
-            {/* Left Content (60% width) */}
-            <div className="w-[60%] shrink-0 relative z-10 p-6 flex flex-col justify-center">
-              {/* Date Badge: positioned at right-[42%] so it stays on the dark background */}
-              <span className="absolute top-3 right-[42%] bg-white/10 text-white text-[10px] rounded-full px-2.5 py-0.5 border border-white/20 z-20 whitespace-nowrap">
+            {/* Background Image Layer — Fully spanning container boundaries */}
+            <Image
+              fill
+              unoptimized
+              src={promo.image}
+              alt={promo.label}
+              className="object-cover z-0"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
+
+            {/* Tinted Background Overlay Mask to preserve text legibility */}
+            <div className="absolute inset-0 bg-black/45 z-10" />
+
+            {/* Top Row Segment Area */}
+            <div className="relative z-20 flex justify-between items-start w-full">
+              {/* Yellow Round Tag Icon */}
+              <div className="w-9 h-9 bg-[#f5a623] rounded-full flex items-center justify-center shrink-0 shadow-sm">
+                <Tag size={16} className="text-white fill-current" />
+              </div>
+
+              {/* Date Validity Badge */}
+              <span className="bg-transparent/60 backdrop-blur-sm text-white text-sm font-light rounded-full px-3 py-1.5 border border-white/10 tracking-wide">
                 {promo.badge}
               </span>
-              {/* Icon */}
-              <div className="w-10 h-10 bg-[#f5a623] rounded-full flex items-center justify-center mb-2.5">
-                <Tag size={18} className="text-white" />
-              </div>
-              <p className="text-xs text-white/90 mb-1">{promo.label}</p>
-              <p className="text-[52px] font-extrabold text-white leading-none">
+            </div>
+
+            {/* Bottom Content Area */}
+            <div className="relative z-20 max-w-[200px] text-white mt-auto pt-6">
+              <p className="text-[14px] md:text-xl font-medium text-white/95 tracking-tight mb-1 max-w-[280px] md:max-w-[320px] leading-snug">
+                {promo.label}
+              </p>
+              <p className="text-[48px] md:text-7xl tracking-tighter leading-none my-1">
                 {promo.percentage}
               </p>
-              <p className="text-[10px] text-white/50 mt-2">{promo.terms}</p>
-            </div>
-            {/* Right Image (40% width, absolute) */}
-            <div className="absolute right-0 top-0 bottom-0 w-[40%]">
-              <img
-                src={promo.image}
-                alt={promo.label}
-                className="h-full w-full object-cover"
-              />
+              <p className="text-sm tracking-normal font-light mt-4">
+                {promo.terms}
+              </p>
             </div>
           </div>
         ))}
       </div>
     </section>
-  )
+  );
 }
-

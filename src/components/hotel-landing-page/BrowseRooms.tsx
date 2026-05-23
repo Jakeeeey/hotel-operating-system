@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { ArrowRight, ChevronRight } from "lucide-react"
-import { rooms } from "./data"
-import { RoomCard } from "./RoomCard"
+import { useState } from "react";
+import { ArrowRight, ChevronRight } from "lucide-react";
+import { rooms } from "./data";
+import { RoomCard } from "./RoomCard";
 
-export function BrowseRooms(): React.JSX.Element {
-  const [activeFilter, setActiveFilter] = useState<string>("All")
+export function BrowseRooms() {
+  const [activeFilter, setActiveFilter] = useState<string>("All");
   const filterTabs = [
     "All",
     "Deluxe Room",
@@ -14,7 +14,7 @@ export function BrowseRooms(): React.JSX.Element {
     "Pool Villa",
     "Ocean View",
     "Overwater Bungalow",
-  ]
+  ];
 
   const filterMap: Record<string, string[]> = {
     All: [],
@@ -23,15 +23,15 @@ export function BrowseRooms(): React.JSX.Element {
     "Pool Villa": ["villa"],
     "Ocean View": ["deluxe", "suite"],
     "Overwater Bungalow": ["overwater"],
-  }
+  };
 
   const filteredRooms =
     activeFilter === "All"
       ? rooms
-      : rooms.filter((r) => filterMap[activeFilter]?.includes(r.type))
+      : rooms.filter((r) => filterMap[activeFilter]?.includes(r.type));
 
   return (
-    <section className="max-w-[1200px] mx-auto py-14 px-10 bg-white">
+    <section className="max-w-[1400px] mx-auto py-4 px-4">
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
@@ -39,7 +39,8 @@ export function BrowseRooms(): React.JSX.Element {
             Browse Our Rooms
           </h2>
           <p className="text-xs text-[#6b6b6b]">
-            Choose from our curated selection of rooms and villas for your perfect stay.
+            Choose from our curated selection of rooms and villas for your
+            perfect stay.
           </p>
         </div>
         <button className="flex items-center gap-1 text-xs text-[#111111] font-semibold hover:underline transition-all duration-200">
@@ -78,5 +79,5 @@ export function BrowseRooms(): React.JSX.Element {
         </button>
       </div>
     </section>
-  )
+  );
 }

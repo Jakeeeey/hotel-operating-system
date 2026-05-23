@@ -1,44 +1,50 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Heart, Star, Crown } from "lucide-react"
-import { RoomData } from "./types"
+import { useState } from "react";
+import { Heart, Star, Crown } from "lucide-react";
+import { RoomData } from "./types";
+import Image from "next/image";
 
 function formatPrice(price: number): string {
-  return price >= 1000 ? `$${price.toLocaleString()}` : `$${price}`
+  return price >= 1000 ? `$${price.toLocaleString()}` : `$${price}`;
 }
 
-function getAvailabilityClasses(availability: RoomData["availability"]): string {
+function getAvailabilityClasses(
+  availability: RoomData["availability"],
+): string {
   switch (availability) {
     case "available":
-      return "bg-[#e6f4ea] text-[#2d7a3a]"
+      return "bg-[#e6f4ea] text-[#2d7a3a]";
     case "low":
-      return "bg-[#fff3cd] text-[#856404]"
+      return "bg-[#fff3cd] text-[#856404]";
     case "critical":
-      return "bg-[#fde8e8] text-[#b91c1c]"
+      return "bg-[#fde8e8] text-[#b91c1c]";
   }
 }
 
 function getAvailabilityText(availability: RoomData["availability"]): string {
   switch (availability) {
     case "available":
-      return "Available"
+      return "Available";
     case "low":
-      return "2+ rooms left"
+      return "2+ rooms left";
     case "critical":
-      return "1 room left"
+      return "1 room left";
   }
 }
 
-export function RoomCard({ room }: { room: RoomData }){
-  const [liked, setLiked] = useState(false)
+export function RoomCard({ room }: { room: RoomData }) {
+  const [liked, setLiked] = useState(false);
 
   return (
     <div className="bg-white rounded-[12px] shadow-sm border border-[#eeeeee] overflow-hidden hover:-translate-y-[3px] hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between">
       <div>
         {/* Image Area */}
-        <div className="relative aspect-[3/2] w-full overflow-hidden">
-          <img
+        <div className="relative aspect-3/2 w-full overflow-hidden">
+          <Image
+            width={100}
+            height={100}
+            unoptimized
             src={room.image}
             alt={room.name}
             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
@@ -50,8 +56,8 @@ export function RoomCard({ room }: { room: RoomData }){
           {/* Heart */}
           <button
             onClick={(e) => {
-              e.stopPropagation()
-              setLiked(!liked)
+              e.stopPropagation();
+              setLiked(!liked);
             }}
             className="absolute top-2 right-2 transition-colors duration-200 z-10"
             aria-label={liked ? "Unlike room" : "Like room"}
@@ -64,7 +70,7 @@ export function RoomCard({ room }: { room: RoomData }){
           {/* Availability Badge */}
           <span
             className={`absolute bottom-2 left-2 text-[10px] rounded-[4px] px-2 py-0.5 font-medium z-10 ${getAvailabilityClasses(
-              room.availability
+              room.availability,
             )}`}
           >
             {getAvailabilityText(room.availability)}
@@ -75,11 +81,17 @@ export function RoomCard({ room }: { room: RoomData }){
         <div className="p-3">
           {/* Row 1: Name + Rating */}
           <div className="flex justify-between items-start gap-2">
-            <span className="text-sm font-semibold text-[#111111] line-clamp-1 flex-1">{room.name}</span>
+            <span className="text-sm font-semibold text-[#111111] line-clamp-1 flex-1">
+              {room.name}
+            </span>
             <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
               <Star size={11} className="text-[#f5a623] fill-[#f5a623]" />
-              <span className="text-xs text-[#111111] font-semibold">{room.rating}</span>
-              <span className="text-[10px] text-[#6b6b6b]">({room.reviews})</span>
+              <span className="text-xs text-[#111111] font-semibold">
+                {room.rating}
+              </span>
+              <span className="text-[10px] text-[#6b6b6b]">
+                ({room.reviews})
+              </span>
             </div>
           </div>
 
@@ -118,9 +130,13 @@ export function RoomCard({ room }: { room: RoomData }){
                   {formatPrice(room.originalPrice)}
                 </span>
               )}
-              <span className="text-[10px] text-[#999999] font-medium">/night</span>
+              <span className="text-[10px] text-[#999999] font-medium">
+                /night
+              </span>
             </div>
-            <p className="text-[10px] text-[#999999] leading-none mt-1">Includes taxes & fees</p>
+            <p className="text-[10px] text-[#999999] leading-none mt-1">
+              Includes taxes & fees
+            </p>
           </div>
           <button className="bg-[#111111] text-white rounded-[8px] px-3 py-1.5 text-[11px] font-medium hover:bg-[#333333] transition-colors duration-200 shrink-0">
             Book Now →
@@ -128,5 +144,5 @@ export function RoomCard({ room }: { room: RoomData }){
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { Star, Crown, ThumbsUp, ArrowRight } from "lucide-react"
-import { reviews } from "./data"
+import { Star, Crown, ThumbsUp, ArrowRight } from "lucide-react";
+import { reviews } from "./data";
 
 export function GuestReviews() {
   return (
-    <section className="max-w-[1200px] mx-auto py-14 px-10 bg-white">
+    <section className="max-w-[1400px] mx-auto py-8 px-4">
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
@@ -13,7 +13,8 @@ export function GuestReviews() {
             What Our Guests Say
           </h2>
           <p className="text-xs text-[#6b6b6b]">
-            Real reviews from guests who&apos;ve experienced the Azure Oasis difference.
+            Real reviews from guests who&apos;ve experienced the Azure Oasis
+            difference.
           </p>
         </div>
         <button className="flex items-center gap-1 text-xs text-[#111111] font-semibold hover:underline transition-all duration-200">
@@ -24,7 +25,9 @@ export function GuestReviews() {
 
       {/* Overall Rating */}
       <div className="flex items-center mb-6 select-none">
-        <span className="text-[40px] font-extrabold text-[#111111] leading-none">4.9</span>
+        <span className="text-[40px] font-extrabold text-[#111111] leading-none">
+          4.9
+        </span>
         <span className="text-lg text-[#999] ml-0.5 leading-none">/5</span>
         <div className="flex gap-0.5 items-center ml-2.5">
           {[1, 2, 3, 4, 5].map((s) => (
@@ -52,15 +55,23 @@ export function GuestReviews() {
                   {review.initials}
                 </div>
                 <div className="flex flex-col">
-                  <p className="text-sm font-semibold text-[#111111] leading-tight">{review.name}</p>
-                  <p className="text-[11px] text-[#999] mt-0.5 leading-none">{review.date}</p>
+                  <p className="text-sm font-semibold text-[#111111] leading-tight">
+                    {review.name}
+                  </p>
+                  <p className="text-[11px] text-[#999] mt-0.5 leading-none">
+                    {review.date}
+                  </p>
                 </div>
               </div>
 
               {/* Stars Row */}
               <div className="flex gap-0.5 mb-2">
                 {[1, 2, 3, 4, 5].map((s) => (
-                  <Star key={s} size={11} className="text-[#f5a623] fill-[#f5a623]" />
+                  <Star
+                    key={s}
+                    size={11}
+                    className="text-[#f5a623] fill-[#f5a623]"
+                  />
                 ))}
               </div>
 
@@ -87,6 +98,5 @@ export function GuestReviews() {
         ))}
       </div>
     </section>
-  )
+  );
 }
-

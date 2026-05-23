@@ -30,7 +30,7 @@ export function NavBar() {
       <nav
         className={`fixed top-0 left-0 right-0 z-50 h-[60px] px-4 sm:px-6 flex items-center mt-2 transition-all duration-300 ${
           isScrolled
-            ? "bg-white/80 backdrop-blur-md border-b border-neutral-200/50 shadow-xs !mt-0"
+            ? "bg-white backdrop-blur-md border-b border-neutral-200/50 shadow-xs mt-0!"
             : "bg-transparent"
         }`}
       >
@@ -89,7 +89,7 @@ export function NavBar() {
                 <input
                   type="text"
                   placeholder="Search rooms..."
-                  className={`w-full h-full rounded-full border backdrop-blur-xl pl-12 pr-6 text-sm outline-none transition-all duration-300 ${
+                  className={`w-full h-full rounded-full border backdrop-blur-xl pl-12 pr-6 text-sm font-extralight outline-none transition-all duration-300 ${
                     isScrolled
                       ? "bg-neutral-100 border-neutral-200 text-black placeholder:text-neutral-400 focus:bg-neutral-200/50"
                       : "bg-white/10 border-white/15 text-white placeholder:text-white/55 focus:bg-white/20 focus:border-white/30"
@@ -98,7 +98,7 @@ export function NavBar() {
                 <Search
                   size={16}
                   className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-300 ${
-                    isScrolled ? "text-neutral-400" : "text-white/65"
+                    isScrolled ? "text-neutral-400" : "text-white"
                   }`}
                 />
               </div>

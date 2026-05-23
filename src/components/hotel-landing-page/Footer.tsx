@@ -12,16 +12,12 @@ import {
 export function Footer() {
   return (
     <footer className="w-full bg-[#000000] text-white pt-16 pb-12 font-sans antialiased">
-      {/* This outer layout wrapper sets the bounding container width to align 
-        with the application's upper content sections, with zero horizontal internal padding.
-      */}
-      <div className="w-full mx-auto px-8 sm:px-6 lg:px-12">
-        {/* Main Links Grid Grid Split Mapping */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-y-10 gap-x-8 pb-14">
-          {/* Column 1 — Brand and Mission */}
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6">
+        {/* Top level grid: Vertically stacked on mobile, 12-columns on desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-y-10 gap-x-8 pb-14 border-b border-zinc-800/50">
+          {/* Column 1 — Brand and Mission Description */}
           <div className="md:col-span-5 flex flex-col gap-4">
             <div className="flex items-center gap-2.5">
-              {/* Perfect Hourglass Horizone Brand Logo Icon Replicated */}
               <svg
                 className="w-[22px] h-[22px] text-white fill-current"
                 viewBox="0 0 24 24"
@@ -29,7 +25,7 @@ export function Footer() {
               >
                 <path d="M18 2H6c-1.1 0-2 .9-2 2v4c0 2.2 1.8 4 4 4s4-1.8 4-4V4h4v4c0 2.2 1.8 4 4 4s4-1.8 4-4V4c0-1.1-.9-2-2-2zm-6 10c-2.2 0-4 1.8-4 4v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c0-2.2-1.8-4-4-4h-4zm2 8h-4v-4c0-1.1.9-2 2-2s2 .9 2 2v4z" />
               </svg>
-              <span className="text-xl font-bold tracking-tight">Horizone</span>
+              <span className="text-xl font-bold tracking-tight">Brand</span>
             </div>
             <p className="text-[13px] text-[#aaaaaa] leading-relaxed max-w-[280px]">
               Our mission is to equip modern explorers with cutting-edge,
@@ -37,79 +33,81 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Column 2 — About Links */}
-          <div className="md:col-span-2 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-white tracking-wide">
-              About
-            </h3>
-            <ul className="flex flex-col gap-2.5 text-[13px] text-[#aaaaaa]">
-              <li>
-                <Link
-                  href="/about"
-                  className="hover:text-white transition-colors duration-200"
-                >
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/blog"
-                  className="hover:text-white transition-colors duration-200"
-                >
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/career"
-                  className="hover:text-white transition-colors duration-200"
-                >
-                  Career
-                </Link>
-              </li>
-            </ul>
+          {/* Unified Links Row Layer */}
+          <div className="col-span-full md:col-span-4 grid grid-cols-2 gap-x-8">
+            {/* Sub-Column A — About Navigation Links */}
+            <div className="flex flex-col gap-4">
+              <h3 className="text-sm font-semibold text-white tracking-wide">
+                About
+              </h3>
+              <ul className="flex flex-col gap-2.5 text-[13px] text-[#aaaaaa]">
+                <li>
+                  <Link
+                    href="/about"
+                    className="hover:text-white transition-colors duration-200"
+                  >
+                    About Us
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/blog"
+                    className="hover:text-white transition-colors duration-200"
+                  >
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/career"
+                    className="hover:text-white transition-colors duration-200"
+                  >
+                    Career
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Sub-Column B — Support Navigation Links */}
+            <div className="flex flex-col gap-4">
+              <h3 className="text-sm font-semibold text-white tracking-wide">
+                Support
+              </h3>
+              <ul className="flex flex-col gap-2.5 text-[13px] text-[#aaaaaa]">
+                <li>
+                  <Link
+                    href="/contact"
+                    className="hover:text-white transition-colors duration-200"
+                  >
+                    Contact Us
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/returns"
+                    className="hover:text-white transition-colors duration-200"
+                  >
+                    Return
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/faq"
+                    className="hover:text-white transition-colors duration-200"
+                  >
+                    FAQ
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          {/* Column 3 — Support Links */}
-          <div className="md:col-span-2 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-white tracking-wide">
-              Support
-            </h3>
-            <ul className="flex flex-col gap-2.5 text-[13px] text-[#aaaaaa]">
-              <li>
-                <Link
-                  href="/contact"
-                  className="hover:text-white transition-colors duration-200"
-                >
-                  Contact Us
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/returns"
-                  className="hover:text-white transition-colors duration-200"
-                >
-                  Return
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/faq"
-                  className="hover:text-white transition-colors duration-200"
-                >
-                  FAQ
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 4 — Newsletter Signup & Social Badges */}
-          <div className="md:col-span-3 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-white tracking-wide w-full">
+          {/* Column 4 — Newsletter Updates Block */}
+          <div className="md:col-span-3 flex flex-col gap-4 w-full">
+            <h3 className="text-md sm:text-sm font-semibold text-white tracking-wide w-full">
               Get Updates
             </h3>
 
-            {/* Inline Capsule Input Block with Unified Radius */}
             <div className="flex items-center bg-[#222222] border border-[#2b2b2b] rounded-lg p-1 focus-within:border-zinc-700 transition-colors duration-200 w-full">
               <input
                 type="email"
@@ -121,8 +119,11 @@ export function Footer() {
               </button>
             </div>
 
-            {/* Social Circle Badges with Precise Warm Matte Grey Background */}
-            <div className="flex items-center gap-3 mt-1">
+            {/* Updated Social Container Wrapper:
+              - Swapped grid logic for 'flex justify-between' to force icons to push all the way to both absolute edges of the wrapper box.
+              - Set 'w-full' to accurately lock the element size with the exact physical width of the subscription bar container directly above it.
+            */}
+            <div className="flex items-center justify-between w-full mt-1">
               {[
                 { icon: Instagram, href: "https://instagram.com" },
                 { icon: Twitter, href: "https://x.com" },
@@ -137,9 +138,12 @@ export function Footer() {
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-10 h-10 rounded-full bg-[#222222] flex items-center justify-center text-white hover:bg-[#2c2c2c] transition-colors duration-200 shrink-0"
+                    className="w-16 sm:w-14 h-16 sm:h-14 rounded-full bg-[#222222] flex items-center justify-center text-white hover:bg-[#2c2c2c] transition-colors duration-200"
                   >
-                    <Icon size={16} strokeWidth={2} />
+                    <Icon
+                      strokeWidth={2}
+                      className="w-8 h-8 sm:w-[24px] sm:h-[24px]"
+                    />
                   </a>
                 );
               })}
@@ -147,9 +151,11 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Legal Footer Info Section Alignment */}
-        <div className="pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-[13px] text-[#666666]">
-          <span>©2024 Horizone. All rights reserved.</span>
+        {/* Legal Footer Section */}
+        <div className="pt-6 flex flex-col gap-4 sm:flex-row justify-between items-center text-[13px] text-[#666666]">
+          <span className="text-center sm:text-left">
+            ©2024 Brand. All rights reserved.
+          </span>
           <div className="flex items-center gap-6">
             <Link
               href="/privacy"
