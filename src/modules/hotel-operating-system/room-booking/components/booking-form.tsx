@@ -21,6 +21,18 @@ interface AvailableRoom {
     room_number: string;
     floor_number: number | null;
 }
+// Helpers
+const getManilaDateString = (d: Date = new Date()) => {
+    const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+    return manilaDate.toISOString().replace('Z', '').split('T')[0];
+};
+
+const getTodayStr = () => getManilaDateString();
+const getTomorrowStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return getManilaDateString(d);
+};
 
 export function BookingForm() {
     // Mode State
@@ -33,20 +45,7 @@ export function BookingForm() {
     const [phone, setPhone] = useState("");
     const [idPassport, setIdPassport] = useState("");
 
-    // Helper
-    const getManilaDateString = (d: Date = new Date()) => {
-        const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
-        return manilaDate.toISOString().replace('Z', '').split('T')[0];
-    };
-
     // Date States (default: today to tomorrow)
-    const getTodayStr = () => getManilaDateString();
-    const getTomorrowStr = () => {
-        const d = new Date();
-        d.setDate(d.getDate() + 1);
-        return getManilaDateString(d);
-    };
-
     const [checkInDate, setCheckInDate] = useState(getTodayStr());
     const [checkOutDate, setCheckOutDate] = useState(getTomorrowStr());
 
