@@ -11,11 +11,12 @@ import { SmoothScrollProvider } from "@/components/theme/SmoothScrollProvider"
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
+    const isHotelLanding = pathname.startsWith("/hotel-landing-page")
 
     return (
         <div className="min-h-dvh flex flex-col bg-background text-foreground overflow-x-hidden">
-            <Preloader />
-            <Header />
+            {!isHotelLanding && <Preloader />}
+            {!isHotelLanding && <Header />}
             <AnimatePresence mode="wait">
                 <motion.main 
                     key={pathname}
@@ -25,12 +26,14 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                     className="flex-1"
                 >
-                    <SmoothScrollProvider>
-                        {children}
-                    </SmoothScrollProvider>
+                    {isHotelLanding ? children : (
+                        <SmoothScrollProvider>
+                            {children}
+                        </SmoothScrollProvider>
+                    )}
                 </motion.main>
             </AnimatePresence>
-            {pathname !== '/login' && <Footer />}
+            {!isHotelLanding && pathname !== '/login' && <Footer />}
         </div>
     )
 }
