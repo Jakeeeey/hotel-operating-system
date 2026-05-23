@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 export default function HousekeepingDispatchModule() {
     const [tasks, setTasks] = useState<{ id: string | number; room_id?: { room_number?: string }; task_type: string; estimated_duration_minutes?: number; task_description?: string; blocks_availability?: number; status: string; priority?: string; actual_completion_time?: string; }[]>([]);
-    const [stats, setStats] = useState({ dirtyRooms: 0, inProgress: 0, cleanedToday: 0 });
+    const [stats, setStats] = useState({ dirtyRooms: 0, cleaningAndMaintenanceTasks: 0, inProgress: 0, cleanedToday: 0, clearedAllTime: 0 });
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
 
@@ -20,8 +20,8 @@ export default function HousekeepingDispatchModule() {
     const [typeFilter, setTypeFilter] = useState("All");
     const [operationalFilter, setOperationalFilter] = useState("All");
 
-    const fetchDashboardData = async () => {
-        setLoading(true);
+    const fetchDashboardData = async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
             const res = await fetch("/api/hos/housekeeping");
             if (!res.ok) throw new Error("Failed to load data");
@@ -32,7 +32,7 @@ export default function HousekeepingDispatchModule() {
         } catch {
             toast.error("Failed to load housekeeping dashboard");
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     };
 
@@ -96,15 +96,15 @@ export default function HousekeepingDispatchModule() {
             </div>
 
             {/* Metric Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card className="border-t-4 border-t-red-500 shadow-sm rounded-2xl">
                     <CardContent className="p-6">
                         <div className="flex items-center gap-2 text-red-600 mb-2">
                             <AlertTriangle className="h-5 w-5" />
-                            <span className="font-semibold">Dirty Rooms (Needs Turn)</span>
+                            <span className="font-semibold">Cleaning & Maintenance</span>
                         </div>
                         <div className="text-4xl font-extrabold text-foreground">
-                            {loading ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /> : stats.dirtyRooms}
+                            {loading ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /> : stats.cleaningAndMaintenanceTasks}
                         </div>
                     </CardContent>
                 </Card>
@@ -125,10 +125,22 @@ export default function HousekeepingDispatchModule() {
                     <CardContent className="p-6">
                         <div className="flex items-center gap-2 text-emerald-600 mb-2">
                             <CheckCircle2 className="h-5 w-5" />
-                            <span className="font-semibold">Cleaned Today</span>
+                            <span className="font-semibold">Task Cleared Today</span>
                         </div>
                         <div className="text-4xl font-extrabold text-foreground">
                             {loading ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /> : stats.cleanedToday}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-t-4 border-t-blue-500 shadow-sm rounded-2xl">
+                    <CardContent className="p-6">
+                        <div className="flex items-center gap-2 text-blue-600 mb-2">
+                            <CheckCircle2 className="h-5 w-5" />
+                            <span className="font-semibold">Task Cleared All Time</span>
+                        </div>
+                        <div className="text-4xl font-extrabold text-foreground">
+                            {loading ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /> : stats.clearedAllTime}
                         </div>
                     </CardContent>
                 </Card>
@@ -181,14 +193,14 @@ export default function HousekeepingDispatchModule() {
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
                 ) : (
-                    <TaskQueue tasks={filteredTasks} onTaskUpdated={fetchDashboardData} />
+                    <TaskQueue tasks={filteredTasks} onTaskUpdated={() => fetchDashboardData(true)} />
                 )}
             </div>
 
             <NewTaskModal 
                 open={modalOpen} 
                 onOpenChange={setModalOpen} 
-                onSuccess={fetchDashboardData} 
+                onSuccess={() => fetchDashboardData(true)} 
             />
         </div>
     );

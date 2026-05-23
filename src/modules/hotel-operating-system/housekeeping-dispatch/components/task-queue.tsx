@@ -167,9 +167,7 @@ export function TaskQueue({ tasks, onTaskUpdated }: TaskQueueProps) {
                             </Button>
                         )}
                         {task.status === "Completed" && (
-                            <span className="text-xs text-muted-foreground w-[120px] text-right inline-block">
-                                Done {task.actual_completion_time ? format(new Date(task.actual_completion_time), "HH:mm") : ""}
-                            </span>
+                            <div className="w-[120px]"></div>
                         )}
                     </div>
                 );
