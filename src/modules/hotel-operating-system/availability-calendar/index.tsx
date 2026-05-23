@@ -156,6 +156,27 @@ export default function AvailabilityCalendarModule() {
                     />
                 )}
             </div>
+
+            {/* Legend Map */}
+            <div className="flex flex-wrap items-center gap-6 px-4 py-2 border rounded-xl bg-card shadow-sm text-sm">
+                <span className="font-bold text-muted-foreground">Legend:</span>
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-amber-100 border border-amber-300 dark:bg-amber-900/40 dark:border-amber-700"></div>
+                    <span className="font-medium text-foreground">Pending</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-blue-100 border border-blue-300 dark:bg-blue-900/40 dark:border-blue-700"></div>
+                    <span className="font-medium text-foreground">Checked-In</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-slate-100 border border-slate-300 dark:bg-slate-800 dark:border-slate-700"></div>
+                    <span className="font-medium text-foreground">Checked-Out</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-red-100 border border-red-300 dark:bg-red-900/40 dark:border-red-700"></div>
+                    <span className="font-medium text-foreground">Maintenance / Blocked</span>
+                </div>
+            </div>
         </div>
     );
 }
