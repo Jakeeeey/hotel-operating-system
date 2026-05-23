@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
-import { format } from "date-fns";
 
 interface TaskQueueProps {
     tasks: { id: string | number; room_id?: { room_number?: string }; task_type?: string; estimated_duration_minutes?: number; task_description?: string; blocks_availability?: number; status?: string; priority?: string; actual_completion_time?: string; }[];
@@ -19,11 +18,24 @@ export function TaskQueue({ tasks, onTaskUpdated }: TaskQueueProps) {
 
     const handleUpdateStatus = async (taskId: string | number, newStatus: string) => {
         setUpdatingId(taskId.toString());
+        
+        const getManilaISOString = (d: Date = new Date()) => {
+            const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+            return manilaDate.toISOString().replace('Z', '');
+        };
+        
         try {
+            const now = getManilaISOString();
+            const payload: Record<string, unknown> = { status: newStatus };
+
+            if (newStatus === "In Progress") {
+                payload.start_time = now;
+            }
+
             const res = await fetch(`/api/hos/housekeeping/${taskId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: newStatus }),
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) throw new Error("Failed to update task");
@@ -154,9 +166,7 @@ export function TaskQueue({ tasks, onTaskUpdated }: TaskQueueProps) {
                             </Button>
                         )}
                         {task.status === "Completed" && (
-                            <span className="text-xs text-muted-foreground w-[120px] text-right inline-block">
-                                Done {task.actual_completion_time ? format(new Date(task.actual_completion_time), "HH:mm") : ""}
-                            </span>
+                            <div className="w-[120px]"></div>
                         )}
                     </div>
                 );

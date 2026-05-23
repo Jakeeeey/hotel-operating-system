@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format, addDays, subDays, startOfDay } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export interface CalendarData {
     types: { id: number; type_name: string }[];
-    rooms: { id: number; type_id: number; room_number: string; operational_status_id?: { status_name?: string } }[];
+    rooms: { id: number; type_id: number; room_number: string; floor_number?: string | number; operational_status_id?: { status_name?: string } }[];
     statuses: { id: number; status_name: string }[];
     reservationItems: { room_id?: number | null; room_type_id?: number; night_date?: string; reservation_id?: { check_in_date?: string; check_out_date?: string; status?: string; guest_id?: { first_name?: string; last_name?: string } }; locked_price?: number }[];
     blockingTasks?: { room_id?: { id: number } | number; start_time?: string; created_at?: string; target_completion_time?: string; actual_completion_time?: string; task_type?: string; task_description?: string; status?: string; }[];
@@ -20,9 +21,26 @@ export default function AvailabilityCalendarModule() {
     const [startDate, setStartDate] = useState<Date>(startOfDay(new Date()));
     const [data, setData] = useState<CalendarData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [selectedFloor, setSelectedFloor] = useState<string>("all");
 
     const numDays = viewMode === "2-week" ? 14 : 30;
     const endDate = useMemo(() => addDays(startDate, numDays - 1), [startDate, numDays]);
+
+    const availableFloors = useMemo(() => {
+        if (!data) return [];
+        const floors = new Set(data.rooms.map(r => r.floor_number).filter(f => f !== null && f !== undefined && f !== ""));
+        return Array.from(floors).sort((a, b) => Number(a) - Number(b));
+    }, [data]);
+
+    const filteredData = useMemo(() => {
+        if (!data) return null;
+        if (selectedFloor === "all") return data;
+        
+        return {
+            ...data,
+            rooms: data.rooms.filter(r => String(r.floor_number) === selectedFloor)
+        };
+    }, [data, selectedFloor]);
 
     const fetchCalendarData = async (start: Date, end: Date) => {
         setLoading(true);
@@ -67,6 +85,21 @@ export default function AvailabilityCalendarModule() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
+                    {/* Floor Filter */}
+                    <Select value={selectedFloor} onValueChange={setSelectedFloor}>
+                        <SelectTrigger className="w-[140px] rounded-xl bg-background border shadow-sm">
+                            <SelectValue placeholder="All Floors" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Floors</SelectItem>
+                            {availableFloors.map((floor) => (
+                                <SelectItem key={floor} value={String(floor)}>
+                                    Floor {floor}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
                     {/* View Mode Toggle */}
                     <div className="bg-muted p-1 rounded-xl flex items-center gap-1 border shadow-sm">
                         <button
@@ -115,13 +148,34 @@ export default function AvailabilityCalendarModule() {
                     </div>
                 )}
                 
-                {data && (
+                {filteredData && (
                     <TimelineGrid 
-                        data={data} 
+                        data={filteredData} 
                         startDate={startDate} 
                         numDays={numDays} 
                     />
                 )}
+            </div>
+
+            {/* Legend Map */}
+            <div className="flex flex-wrap items-center gap-6 px-4 py-2 border rounded-xl bg-card shadow-sm text-sm">
+                <span className="font-bold text-muted-foreground">Legend:</span>
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-amber-100 border border-amber-300 dark:bg-amber-900/40 dark:border-amber-700"></div>
+                    <span className="font-medium text-foreground">Pending</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-blue-100 border border-blue-300 dark:bg-blue-900/40 dark:border-blue-700"></div>
+                    <span className="font-medium text-foreground">Checked-In</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-slate-100 border border-slate-300 dark:bg-slate-800 dark:border-slate-700"></div>
+                    <span className="font-medium text-foreground">Checked-Out</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-red-100 border border-red-300 dark:bg-red-900/40 dark:border-red-700"></div>
+                    <span className="font-medium text-foreground">Maintenance / Blocked</span>
+                </div>
             </div>
         </div>
     );

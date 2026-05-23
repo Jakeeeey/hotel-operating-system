@@ -8,6 +8,18 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     try {
         if (!API_BASE_URL) return NextResponse.json({ error: 'Missing API config' }, { status: 500 });
         
+        const getManilaISOString = (d: Date = new Date()) => {
+            const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+            return manilaDate.toISOString().replace('Z', '');
+        };
+        
+        const addMinutesToManilaString = (manilaIso: string, minutes: number) => {
+            const isZ = manilaIso.endsWith('Z');
+            const d = new Date(manilaIso + (isZ ? '' : 'Z'));
+            d.setMinutes(d.getMinutes() + minutes);
+            return d.toISOString().replace('Z', '');
+        };
+        
         const params = await context.params;
         const taskId = params.id;
         
@@ -22,7 +34,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         }
 
         const body = await request.json();
-        const { status } = body;
+        const { status, start_time: bodyStartTime } = body;
 
         const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
         const headers: Record<string, string> = {
@@ -33,7 +45,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         // Handle virtual tasks (for rooms marked dirty without a physical task)
         if (taskId.startsWith('virtual-')) {
             const virtualRoomId = taskId.replace('virtual-', '');
-            const now = new Date().toISOString();
+            const now = getManilaISOString();
             
             if (status === 'Completed') {
                 await fetch(`${API_BASE_URL}/items/rooms/${virtualRoomId}`, {
@@ -45,6 +57,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
                     })
                 });
             } else if (status === 'In Progress') {
+                const startTime = bodyStartTime || now;
                 // Create a real task so it can be tracked as In Progress
                 await fetch(`${API_BASE_URL}/items/housekeeping_tasks`, {
                     method: 'POST',
@@ -56,7 +69,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
                         status: 'In Progress',
                         priority: 'Normal',
                         estimated_duration_minutes: 30,
-                        start_time: now,
+                        start_time: startTime,
+                        target_completion_time: addMinutesToManilaString(startTime, 30),
                         blocks_availability: 0,
                         created_by: userId,
                         updated_by: userId
@@ -74,14 +88,29 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
         // 2. Prepare patch body
         const patchBody: Record<string, unknown> = { status, updated_by: userId };
-        const now = new Date().toISOString();
+        const now = getManilaISOString();
 
-        if (status === 'In Progress' && !task.start_time) {
-            patchBody.start_time = now;
+        if (status === 'In Progress') {
+            const startTime = bodyStartTime || now;
+            if (!task.start_time) {
+                patchBody.start_time = startTime;
+            }
+            // Auto-calculate target_completion_time from start_time + estimated_duration_minutes
+            if (!task.target_completion_time) {
+                const durationMinutes = task.estimated_duration_minutes || 30;
+                patchBody.target_completion_time = addMinutesToManilaString(task.start_time || startTime, durationMinutes);
+            }
         }
 
-        if (status === 'Completed' && !task.actual_completion_time) {
-            patchBody.actual_completion_time = now;
+        if (status === 'Completed') {
+            if (!task.actual_completion_time) {
+                patchBody.actual_completion_time = now;
+            }
+            // If target_completion_time was never set, calculate it retroactively
+            if (!task.target_completion_time) {
+                const durationMinutes = task.estimated_duration_minutes || 30;
+                patchBody.target_completion_time = addMinutesToManilaString(task.start_time || now, durationMinutes);
+            }
         }
 
         // 3. Update the task

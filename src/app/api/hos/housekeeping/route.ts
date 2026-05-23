@@ -4,6 +4,11 @@ import { decodeJwtPayload, COOKIE_NAME } from '@/lib/auth-utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL;
 
+const getManilaISOString = (d: Date = new Date()) => {
+    const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+    return manilaDate.toISOString().replace('Z', '');
+};
+
 export async function GET() {
     try {
         if (!API_BASE_URL) {
@@ -22,7 +27,7 @@ export async function GET() {
         // Fetch tasks and rooms in parallel
         const [tasksRes, roomsRes] = await Promise.all([
             fetch(`${API_BASE_URL}/items/housekeeping_tasks?limit=-1&fields=*,room_id.*`, { headers }),
-            fetch(`${API_BASE_URL}/items/rooms?limit=-1&fields=id,room_number,housekeeping_status_id.id`, { headers })
+            fetch(`${API_BASE_URL}/items/rooms?limit=-1&fields=id,room_number,housekeeping_status_id.id,operational_status_id`, { headers })
         ]);
 
         if (!tasksRes.ok || !roomsRes.ok) {
@@ -40,7 +45,7 @@ export async function GET() {
         const rooms = roomsData.data || [];
 
         // Calculate Stats
-        const dirtyRoomsList = rooms.filter((r: { housekeeping_status_id?: { id: number } | number }) => (typeof r.housekeeping_status_id === 'object' && r.housekeeping_status_id !== null ? r.housekeeping_status_id.id : r.housekeeping_status_id) === 2);
+        const dirtyRoomsList = rooms.filter((r: { housekeeping_status_id?: { id: number } | number }) => (typeof r.housekeeping_status_id === 'object' && r.housekeeping_status_id !== null ? r.housekeeping_status_id.id : r.housekeeping_status_id) !== 1);
         const dirtyRooms = dirtyRoomsList.length;
         
         const inProgress = tasks.filter((t: { status: string }) => 
@@ -52,6 +57,8 @@ export async function GET() {
             const completionDate = new Date(t.actual_completion_time);
             return completionDate >= todayStart;
         }).length;
+        
+        const clearedAllTime = tasks.filter((t: { status: string }) => t.status === 'Completed').length;
 
         // Auto-inject virtual tasks for dirty rooms missing a task
         const pendingOrActiveTasks = tasks.filter((t: { status: string }) => t.status !== 'Completed');
@@ -71,10 +78,16 @@ export async function GET() {
                     priority: 'Normal',
                     estimated_duration_minutes: 30,
                     blocks_availability: 0,
-                    created_at: new Date().toISOString()
+                    created_at: getManilaISOString()
                 });
             }
         });
+
+        // Calculate cleaningAndMaintenanceTasks: all tasks that belong to rooms with status != 1
+        const cleaningAndMaintenanceTasks = tasks.filter((t: { room_id?: { id: number } | number, status: string }) => {
+            const roomId = typeof t.room_id === 'object' && t.room_id !== null ? t.room_id.id : t.room_id;
+            return dirtyRoomsList.some((r: { id: number }) => r.id === roomId);
+        }).length;
 
         // Sort tasks descending by created_at
         tasks.sort((a: { created_at?: string }, b: { created_at?: string }) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
@@ -83,8 +96,10 @@ export async function GET() {
             data: {
                 stats: {
                     dirtyRooms,
+                    cleaningAndMaintenanceTasks,
                     inProgress,
-                    cleanedToday
+                    cleanedToday,
+                    clearedAllTime
                 },
                 tasks: tasks
             }
@@ -138,6 +153,7 @@ export async function POST(request: Request) {
             estimated_duration_minutes: estimated_duration_minutes || 30,
             target_completion_time: target_completion_time || null,
             blocks_availability: blocks_availability ? 1 : 0,
+            created_at: getManilaISOString(),
             created_by: userId,
             updated_by: userId
         };
@@ -160,6 +176,43 @@ export async function POST(request: Request) {
         }
 
         const created = await res.json();
+
+        // Update the room's housekeeping_status if task_type matches a status name
+        try {
+            const statusesRes = await fetch(`${API_BASE_URL}/items/housekeeping_statuses`, { headers });
+            if (statusesRes.ok) {
+                const statusesData = await statusesRes.json();
+                const statuses = statusesData.data || [];
+                let matchedStatus = statuses.find((s: { status_name: string }) => s.status_name === task_type);
+                
+                // Fallback for custom tasks that imply dirty
+                if (!matchedStatus) {
+                    const typeLower = task_type.toLowerCase();
+                    if (typeLower.includes('dirty') || typeLower.includes('clean')) {
+                        matchedStatus = statuses.find((s: { id: number }) => s.id === 2); // 2 = Dirty
+                    }
+                }
+
+                if (matchedStatus) {
+                    const patchRes = await fetch(`${API_BASE_URL}/items/rooms/${room_id}`, {
+                        method: 'PATCH',
+                        headers,
+                        body: JSON.stringify({ housekeeping_status_id: matchedStatus.id })
+                    });
+                    
+                    if (!patchRes.ok) {
+                        const errText = await patchRes.text();
+                        console.error('Directus Room PATCH Error:', errText);
+                    }
+                }
+            } else {
+                console.error('Failed to fetch housekeeping statuses:', await statusesRes.text());
+            }
+        } catch (statusUpdateError) {
+            console.error('Failed to update room housekeeping status:', statusUpdateError);
+            // Non-fatal, proceed to return task success
+        }
+
         return NextResponse.json({ success: true, data: created.data });
     } catch (error: unknown) {
         console.error('Error creating task:', error);

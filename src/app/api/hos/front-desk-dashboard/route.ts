@@ -14,7 +14,11 @@ export async function GET() {
             ...(staticToken ? { 'Authorization': `Bearer ${staticToken}` } : {}),
         };
 
-        const today = new Date().toISOString().split('T')[0];
+        const getManilaDateString = (d: Date = new Date()) => {
+            const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+            return manilaDate.toISOString().replace('Z', '').split('T')[0];
+        };
+        const today = getManilaDateString();
 
         // --- Parallel fetch: stats + arrivals + departures ---
         const [

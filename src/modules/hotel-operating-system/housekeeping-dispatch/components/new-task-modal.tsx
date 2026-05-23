@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 interface NewTaskModalProps {
     open: boolean;
@@ -25,8 +26,30 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
     const [description, setDescription] = useState("");
     const [priority, setPriority] = useState("Normal");
     const [duration, setDuration] = useState("30");
+    const [targetDate, setTargetDate] = useState("");
+    const [targetTime, setTargetTime] = useState("");
     const [blocksAvailability, setBlocksAvailability] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [taskTypes, setTaskTypes] = useState<{ id: number; status_name: string }[]>([]);
+
+    useEffect(() => {
+        if (!open) return;
+        const fetchStatuses = async () => {
+            try {
+                const res = await fetch("/api/hos/housekeeping-status");
+                if (res.ok) {
+                    const json = await res.json();
+                    const filtered = (json.data || []).filter((s: { status_name: string }) => 
+                        s.status_name !== "Clean"
+                    );
+                    setTaskTypes(filtered);
+                }
+            } catch (err) {
+                console.error("Failed to load task types", err);
+            }
+        };
+        fetchStatuses();
+    }, [open]);
 
 
 
@@ -42,6 +65,18 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
 
         setSubmitting(true);
         try {
+            const getManilaISOString = (d: Date = new Date()) => {
+                const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+                return manilaDate.toISOString().replace('Z', '');
+            };
+
+            let finalTargetTime = null;
+            if (targetDate || targetTime) {
+                const d = targetDate || getManilaISOString().split('T')[0];
+                const t = targetTime || "23:59";
+                finalTargetTime = `${d}T${t}:00`;
+            }
+
             const res = await fetch("/api/hos/housekeeping", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -51,6 +86,7 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
                     task_description: description,
                     priority,
                     estimated_duration_minutes: parseInt(duration, 10),
+                    target_completion_time: finalTargetTime,
                     blocks_availability: blocksAvailability
                 })
             });
@@ -66,6 +102,8 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
             setDescription("");
             setPriority("Normal");
             setDuration("30");
+            setTargetDate("");
+            setTargetTime("");
             setBlocksAvailability(false);
             
             onSuccess();
@@ -123,10 +161,9 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
                                 <SelectValue placeholder="Select type..." />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="Stayover Refresh">Stayover Refresh</SelectItem>
-                                <SelectItem value="Deep Clean">Deep Clean</SelectItem>
-                                <SelectItem value="Maintenance: Fix AC">Maintenance: Fix AC</SelectItem>
-                                <SelectItem value="Maintenance: Plumbing">Maintenance: Plumbing</SelectItem>
+                                {taskTypes.map(type => (
+                                    <SelectItem key={type.id} value={type.status_name}>{type.status_name}</SelectItem>
+                                ))}
                                 <SelectItem value="Custom">Custom...</SelectItem>
                             </SelectContent>
                         </Select>
@@ -166,18 +203,32 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
                             />
                         </div>
 
-                        <div className="flex flex-col justify-end pb-2">
-                            <div className="flex items-center space-x-2 bg-muted/50 p-2 rounded-lg border">
-                                <Checkbox 
-                                    id="blocks" 
-                                    checked={blocksAvailability} 
-                                    onCheckedChange={(c) => setBlocksAvailability(c as boolean)} 
+                        <div className="space-y-1.5">
+                            <Label>Target Completion</Label>
+                            <div className="flex gap-2">
+                                <Input 
+                                    type="date" 
+                                    value={targetDate} 
+                                    onChange={e => setTargetDate(e.target.value)} 
                                 />
-                                <Label htmlFor="blocks" className="text-xs font-semibold cursor-pointer">
-                                    Blocks Availability
-                                </Label>
+                                <Input 
+                                    type="time" 
+                                    value={targetTime} 
+                                    onChange={e => setTargetTime(e.target.value)} 
+                                />
                             </div>
                         </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 bg-muted/50 p-2 rounded-lg border">
+                        <Checkbox 
+                            id="blocks" 
+                            checked={blocksAvailability} 
+                            onCheckedChange={(c) => setBlocksAvailability(c as boolean)} 
+                        />
+                        <Label htmlFor="blocks" className="text-xs font-semibold cursor-pointer">
+                            Blocks Availability
+                        </Label>
                     </div>
 
                     <DialogFooter className="pt-2">
