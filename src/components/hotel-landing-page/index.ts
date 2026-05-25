@@ -11,3 +11,4 @@ export * from "./BottomFeatureGrid";
 export * from "./Footer";
 export * from "./types";
 export * from "./data";
+export * from "./CallToAction";

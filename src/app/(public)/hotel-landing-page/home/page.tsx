@@ -11,6 +11,7 @@ import {
   PromoOffers,
   PartnerLogos,
   BottomFeatureGrid,
+  CallToAction,
   Footer,
 } from "@/components/hotel-landing-page";
 
@@ -32,6 +33,7 @@ export default function HotelLandingPage() {
       <PromoOffers />
       <PartnerLogos />
       <BottomFeatureGrid />
+      <CallToAction />
       <Footer />
     </div>
   );
