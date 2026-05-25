@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   Star, 
@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { RoomData } from "../../types/types";
+import { CompactCalendarPopover } from "../calendar/CompactCalendarPopover";
 
 interface RoomDetailsViewProps {
   room: RoomData;
@@ -27,6 +28,7 @@ interface RoomDetailsViewProps {
 export function RoomDetailsView({ room }: RoomDetailsViewProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Extract ongoing selection variables from the session parameters
   const existingRoomIdsRaw = searchParams.get("roomIds") || searchParams.get("roomId") || "";
@@ -41,6 +43,15 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
   }, [existingRoomIdsRaw]);
 
   const isAlreadySelected = activeSelectedIds.includes(room.id);
+
+  const handleApplyStay = (newCheckin: string, newCheckout: string, newGuests: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("checkin", newCheckin);
+    params.set("checkout", newCheckout);
+    params.set("guests", String(newGuests));
+    router.replace(`/hotel-landing-page/rooms/${room.id}?${params.toString()}`, { scroll: false });
+    setIsDatePickerOpen(false);
+  };
 
   // Append logic execution loop
   const handleSelectionAction = () => {
@@ -178,40 +189,66 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
           </div>
 
           <div className="space-y-3.5">
-            <div className="border border-zinc-200 rounded-xl divide-y divide-zinc-200 overflow-hidden">
-              <div className="grid grid-cols-2 divide-x divide-zinc-200">
-                <div className="p-3 bg-zinc-50/50">
-                  <label className="block text-[10px] uppercase font-bold text-zinc-400 mb-1 flex items-center gap-1">
-                    <Calendar size={10} /> Check-In
-                  </label>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={checkinStr} 
-                    className="bg-transparent text-zinc-800 text-xs font-normal focus:outline-none w-full select-none" 
-                  />
+            <div className="relative group/date overflow-hidden rounded-xl border border-zinc-200 transition-all duration-300 hover:border-zinc-450 shadow-sm">
+              <div className="divide-y divide-zinc-200">
+                <div className="grid grid-cols-2 divide-x divide-zinc-200">
+                  <div className="p-3 bg-zinc-50/50">
+                    <label className="block text-[10px] uppercase font-bold text-zinc-400 mb-1 flex items-center gap-1">
+                      <Calendar size={10} /> Check-In
+                    </label>
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={checkinStr} 
+                      className="bg-transparent text-zinc-800 text-xs font-normal focus:outline-none w-full select-none" 
+                    />
+                  </div>
+                  <div className="p-3 bg-zinc-50/50">
+                    <label className="block text-[10px] uppercase font-bold text-zinc-400 mb-1 flex items-center gap-1">
+                      <Calendar size={10} /> Check-Out
+                    </label>
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={checkoutStr} 
+                      className="bg-transparent text-zinc-800 text-xs font-normal focus:outline-none w-full select-none" 
+                    />
+                  </div>
                 </div>
                 <div className="p-3 bg-zinc-50/50">
                   <label className="block text-[10px] uppercase font-bold text-zinc-400 mb-1 flex items-center gap-1">
-                    <Calendar size={10} /> Check-Out
+                    <Users size={10} /> Total Occupants
                   </label>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={checkoutStr} 
-                    className="bg-transparent text-zinc-800 text-xs font-normal focus:outline-none w-full select-none" 
-                  />
+                  <select disabled className="bg-transparent text-zinc-700 text-xs font-light focus:outline-none w-full cursor-not-allowed">
+                    <option>{guestCount} Guests Registered</option>
+                  </select>
                 </div>
               </div>
-              <div className="p-3 bg-zinc-50/50">
-                <label className="block text-[10px] uppercase font-bold text-zinc-400 mb-1 flex items-center gap-1">
-                  <Users size={10} /> Total Occupants
-                </label>
-                <select disabled className="bg-transparent text-zinc-700 text-xs font-light focus:outline-none w-full cursor-not-allowed">
-                  <option>{guestCount} Guests Registered</option>
-                </select>
-              </div>
+
+              {/* Dynamic Edit Dates Link Overlay */}
+              <button 
+                type="button"
+                onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                className="absolute inset-0 flex items-center justify-center bg-zinc-950/5 opacity-0 group-hover/date:opacity-100 transition-all duration-200 backdrop-blur-[1px] cursor-pointer w-full text-center"
+              >
+                <span className="bg-white text-zinc-900 font-semibold px-3.5 py-2 rounded-xl shadow-lg text-[11px] flex items-center gap-1.5 border border-zinc-150 transform scale-95 group-hover/date:scale-100 transition-all duration-200">
+                  <Calendar size={13} className="text-zinc-500" />
+                  Change Stay Dates
+                </span>
+              </button>
             </div>
+
+            {isDatePickerOpen && (
+              <div className="relative">
+                <CompactCalendarPopover
+                  initialCheckin={checkinStr}
+                  initialCheckout={checkoutStr}
+                  initialGuests={Number(guestCount)}
+                  onApply={handleApplyStay}
+                  onClose={() => setIsDatePickerOpen(false)}
+                />
+              </div>
+            )}
 
             {/* Smart Contextual Submission Dispatcher Action Buttons */}
             {isAlreadySelected ? (

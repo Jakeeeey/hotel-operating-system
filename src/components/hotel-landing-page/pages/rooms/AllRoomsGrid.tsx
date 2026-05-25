@@ -3,18 +3,46 @@
 import { useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Star, BedDouble, Maximize, SlidersHorizontal, Eye, Check, Plus } from "lucide-react";
+import { Star, BedDouble, Maximize, SlidersHorizontal, Eye, Check, Plus, Calendar, Users, ArrowRight, Building } from "lucide-react";
 import { rooms } from "../../data/data";
+import { CompactCalendarPopover } from "../calendar/CompactCalendarPopover";
+
+function formatDisplayDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
 
 export function AllRoomsGrid() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("All");
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const existingRoomIdsRaw = searchParams.get("roomIds") || searchParams.get("roomId") || "";
   const checkinStr = searchParams.get("checkin") || "2026-06-01";
   const checkoutStr = searchParams.get("checkout") || "2026-06-04";
   const guestCount = searchParams.get("guests") || "2";
+
+  const calculatedNights = useMemo(() => {
+    if (!checkinStr || !checkoutStr) return 0;
+    return Math.round(
+      (new Date(checkoutStr).getTime() - new Date(checkinStr).getTime()) / 86400000
+    );
+  }, [checkinStr, checkoutStr]);
+
+  const handleApplyStay = (newCheckin: string, newCheckout: string, newGuests: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("checkin", newCheckin);
+    params.set("checkout", newCheckout);
+    params.set("guests", String(newGuests));
+    router.replace(`/hotel-landing-page/rooms?${params.toString()}`, { scroll: false });
+    setIsDatePickerOpen(false);
+  };
 
   const activeSelectedIds = useMemo(() => {
     if (!existingRoomIdsRaw) return [];
@@ -36,17 +64,77 @@ export function AllRoomsGrid() {
   return (
     <div className="max-w-[1300px] mx-auto px-6">
       
+      {/* Persistent Stay Dates Bar */}
+      {checkinStr && checkoutStr && (
+        <div className="relative mb-8 p-4 bg-zinc-50 border border-zinc-200/80 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm animate-in fade-in duration-300">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-zinc-600">
+            <div className="flex items-center gap-2">
+              <Calendar size={14} className="text-zinc-400" />
+              <span className="font-semibold uppercase tracking-wider text-[10px] text-zinc-400">Stay Period:</span>
+              <span className="font-semibold text-zinc-900">{formatDisplayDate(checkinStr)}</span>
+              <ArrowRight size={12} className="text-zinc-400" />
+              <span className="font-semibold text-zinc-900">{formatDisplayDate(checkoutStr)}</span>
+              <span className="bg-zinc-200/60 text-zinc-700 font-semibold px-2 py-0.5 rounded-full text-[9px] uppercase tracking-wider">
+                {calculatedNights} {calculatedNights === 1 ? "night" : "nights"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 sm:border-l sm:border-zinc-200 sm:pl-6">
+              <Users size={14} className="text-zinc-400" />
+              <span className="font-semibold uppercase tracking-wider text-[10px] text-zinc-400">Occupants:</span>
+              <span className="font-semibold text-zinc-900">{guestCount} Guests</span>
+            </div>
+            {activeSelectedIds.length > 0 && (
+              <div className="flex items-center gap-2 sm:border-l sm:border-zinc-200 sm:pl-6">
+                <Building size={14} className="text-zinc-400" />
+                <span className="font-semibold uppercase tracking-wider text-[10px] text-zinc-400">Selection:</span>
+                <span className="font-semibold text-zinc-900">{activeSelectedIds.length} space(s) selected</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+              className={`px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-200 shadow-sm cursor-pointer border
+                ${isDatePickerOpen 
+                  ? "bg-zinc-900 border-zinc-900 text-white" 
+                  : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50"}`}
+            >
+              Change Stay Dates
+            </button>
+            {activeSelectedIds.length > 0 && (
+              <Link
+                href={`/hotel-landing-page/booking?${searchParams.toString()}`}
+                className="px-4 py-2 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition-all duration-200 shadow-sm cursor-pointer"
+              >
+                Review Booking ({activeSelectedIds.length})
+              </Link>
+            )}
+          </div>
+
+          {isDatePickerOpen && (
+            <CompactCalendarPopover
+              initialCheckin={checkinStr}
+              initialCheckout={checkoutStr}
+              initialGuests={Number(guestCount)}
+              onApply={handleApplyStay}
+              onClose={() => setIsDatePickerOpen(false)}
+            />
+          )}
+        </div>
+      )}
+
       {activeSelectedIds.length > 0 && (
         <div className="mb-6 p-4 bg-zinc-900 text-white rounded-xl flex items-center justify-between text-xs animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex items-center gap-2">
-        
             <p className="font-light">
               Active Selection Session: You have <span className="font-semibold">{activeSelectedIds.length} space(s)</span> ready. Select another card below to examine details.
             </p>
           </div>
           <Link 
             href={`/hotel-landing-page/booking?roomIds=${existingRoomIdsRaw}&checkin=${checkinStr}&checkout=${checkoutStr}&guests=${guestCount}`}
-            className="underline hover:text-zinc-200 font-medium transition-colors"
+            className="underline hover:text-zinc-200 font-medium transition-colors cursor-pointer"
           >
             Return to Checkout Summary →
           </Link>

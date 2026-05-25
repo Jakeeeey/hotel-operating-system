@@ -1,4 +1,6 @@
-import { GlobalCalendar } from "@/components/hotel-landing-page/pages/availability/GlobalCalendar";
+import { CalendarLayout } from "@/components/hotel-landing-page/pages/calendar/CalendarLayout";
+import { Suspense } from "react";
+// Pointing to your new modular layout
 
 export const metadata = {
   title: "Resort Availability Calendar Dashboard",
@@ -7,8 +9,16 @@ export const metadata = {
 
 export default function AvailabilityPage() {
   return (
-    <main className="min-h-screen bg-white pt-24 pb-16">
-      <GlobalCalendar />
+    <main className="min-h-screen bg-white pt-6 pb-16">
+      <Suspense 
+        fallback={
+          <div className="max-w-[1200px] mx-auto px-6 py-6 text-sm text-zinc-400">
+            Loading interactive calendar…
+          </div>
+        }
+      >
+        <CalendarLayout />
+      </Suspense>
     </main>
   );
 }
