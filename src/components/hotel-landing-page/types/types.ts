@@ -28,3 +28,27 @@ export interface ReviewData {
   review: string
   helpful: number
 }
+
+export interface PromoOfferData {
+  id: number;
+  discountPercentage: number;
+  title: string;
+  subtitle: string;
+  backgroundImage: string;
+  badgeText: string;
+  ctaText: string;
+}
+
+export interface OverviewStatData {
+  id: number;
+  label: string;
+  value: string;
+  iconName: string;
+  description: string;
+}
+
+export interface PartnerLogoData {
+  id: number;
+  brandName: string;
+  logoUrl: string;
+}

@@ -13,6 +13,7 @@ import {
   BottomFeatureGrid,
   CallToAction,
   Footer,
+  WhyChooseUs,
 } from "@/components/hotel-landing-page";
 
 const dmSans = DM_Sans({
@@ -27,13 +28,16 @@ export default function HotelLandingPage() {
     >
       <NavBar />
       <HeroBanner />
-      <HotelOverview />
-      <BrowseRooms />
-      <GuestReviews />
-      <PromoOffers />
-      <PartnerLogos />
-      <BottomFeatureGrid />
-      <CallToAction />
+      <div className="bg-white">
+        <PromoOffers />
+        <WhyChooseUs />
+        <HotelOverview />
+        <BottomFeatureGrid />
+        <BrowseRooms />
+        <GuestReviews />
+        <PartnerLogos />
+        <CallToAction />
+      </div>
       <Footer />
     </div>
   );

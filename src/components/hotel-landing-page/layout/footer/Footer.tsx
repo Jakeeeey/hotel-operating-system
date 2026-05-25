@@ -10,10 +10,19 @@ import {
 } from "lucide-react";
 
 export function Footer() {
+  const brandText = "Your Brand Name Here";
+  const charCount = brandText.length || 5;
+
+  // Dynamically calculate font-size using CSS clamp to guarantee edge-to-edge fit
+  const fontSizeStyle = {
+    fontSize: `clamp(24px, calc(145vw / ${charCount}), calc(1900px / ${charCount}))`
+  };
+
   return (
-    <footer className="w-full bg-[#000000] text-white pt-16 pb-12 font-sans antialiased">
-      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6">
-        {/* Top level grid: Vertically stacked on mobile, 12-columns on desktop */}
+    <footer className="w-full bg-[#000000] text-white pt-16 font-sans antialiased relative overflow-hidden select-none">
+      {/* 1. Main Content Container - Kept safely within interactive z-index bounds */}
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 relative z-10">
+        {/* Top level link layout grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-y-10 gap-x-8 pb-14 border-b border-zinc-800/50">
           {/* Column 1 — Brand and Mission Description */}
           <div className="md:col-span-5 flex flex-col gap-4">
@@ -119,10 +128,6 @@ export function Footer() {
               </button>
             </div>
 
-            {/* Updated Social Container Wrapper:
-              - Swapped grid logic for 'flex justify-between' to force icons to push all the way to both absolute edges of the wrapper box.
-              - Set 'w-full' to accurately lock the element size with the exact physical width of the subscription bar container directly above it.
-            */}
             <div className="flex items-center justify-between w-full mt-1">
               {[
                 { icon: Instagram, href: "https://instagram.com" },
@@ -151,10 +156,10 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Legal Footer Section */}
-        <div className="pt-6 flex flex-col gap-4 sm:flex-row justify-between items-center text-[13px] text-[#666666]">
+        {/* 2. Legal Row Area - Stays layout-aligned above the giant text overflow path */}
+        <div className="pt-6 pb-4 flex flex-col gap-4 sm:flex-row justify-between items-center text-[13px] text-[#666666] relative z-20">
           <span className="text-center sm:text-left">
-            ©2024 Brand. All rights reserved.
+            Realest©2025 . All rights reserved.
           </span>
           <div className="flex items-center gap-6">
             <Link
@@ -171,6 +176,16 @@ export function Footer() {
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* 3. Giant Footer Brand Text Watermark */}
+      <div className="w-full max-w-[1400px] mx-auto flex justify-center pointer-events-none select-none overflow-hidden">
+        <h1
+          style={fontSizeStyle}
+          className="font-bold leading-[1.3] bg-linear-to-b from-[#222222] to-[#111111] bg-clip-text text-transparent w-full text-center whitespace-nowrap"
+        >
+          {brandText}
+        </h1>
       </div>
     </footer>
   );

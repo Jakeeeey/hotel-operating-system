@@ -26,15 +26,15 @@ export function PromoOffers() {
   ];
 
   return (
-    <section className="w-full max-w-[1400px] mx-auto px-4 md:px-4">
+    <section className="w-full max-w-[1400px] mx-auto py-16 md:py-20 px-4">
       {/* Header Action Row */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-8">
         <h2 className="text-[24px] md:text-3xl font-normal tracking-tight">
-          Get promo for a cheaper price
+          Get promo for a <span className="font-serif italic font-normal">cheaper price</span>
         </h2>
-        <button className="flex items-center gap-1.5 text-md font-semibold transition-opacity duration-200 border border-zinc-100 hover:border-zinc-200 rounded-lg px-6 py-2">
+        <button className="flex items-center gap-2 bg-zinc-900 text-white text-[14px] font-medium px-5 py-2.5 rounded-md hover:bg-black transition-all duration-200 group shrink-0">
           See All
-          <ArrowRight size={14} strokeWidth={2.5} />
+          <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
         </button>
       </div>
 
@@ -72,14 +72,23 @@ export function PromoOffers() {
             </div>
 
             {/* Bottom Content Area */}
-            <div className="relative z-20 max-w-[200px] text-white mt-auto pt-6">
+            <div className="relative z-20 text-white mt-auto pt-6">
               <p className="text-[14px] md:text-xl font-medium text-white/95 tracking-tight mb-1 max-w-[280px] md:max-w-[320px] leading-snug">
-                {promo.label}
+                <span className="font-serif italic font-normal">{promo.label}</span>
               </p>
-              <p className="text-[48px] md:text-7xl tracking-tighter leading-none my-1">
+              <p className="text-[48px] md:text-7xl font-light tracking-tighter leading-none my-1">
                 {promo.percentage}
               </p>
-              <p className="text-sm tracking-normal font-light mt-4">
+
+              {/* Book Now CTA */}
+              <button className="flex items-center gap-3 bg-white text-black rounded-full pl-5 pr-2 py-1.5 mt-5 hover:bg-zinc-100 transition-all duration-200 group w-fit shadow-sm">
+                <span className="font-medium text-[13px]">Claim Offer</span>
+                <div className="w-7 h-7 rounded-full bg-zinc-900 text-white flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <ArrowRight size={13} strokeWidth={2.5} />
+                </div>
+              </button>
+
+              <p className="text-[12px] tracking-normal font-light mt-4 text-white/50">
                 {promo.terms}
               </p>
             </div>

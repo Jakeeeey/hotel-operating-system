@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export function BottomFeatureGrid() {
   return (
-    <section className="w-full max-w-[1400px] mx-auto pb-10 pt-2 px-4 md:px-4">
+    <section className="w-full max-w-[1400px] mx-auto px-4 md:px-4">
       <div className="grid grid-cols-1 md:grid-cols-12 md:grid-rows-[1fr_1fr] gap-4 w-full md:h-[520px] lg:h-[580px]">
         {/* 1. Top-Left Experience Card */}
         <div className="md:col-span-5 md:row-start-1 md:row-end-2 bg-[#1a1a1a] rounded-xl p-6 lg:p-8 flex flex-col justify-between min-h-[190px] md:min-h-0">
@@ -14,7 +14,7 @@ export function BottomFeatureGrid() {
               <Globe size={20} className="text-white" />
             </div>
             <h3 className="text-2xl lg:text-[28px] font-semibold text-white tracking-tight leading-snug mb-2">
-              Explore more to get your comfort zone
+              Explore more to get your <span className="font-serif italic font-normal text-white/95">comfort zone</span>
             </h3>
             <p className="text-sm lg:text-md text-[#a3a3a3] font-normal">
               Book your perfect stay with us.
@@ -22,7 +22,7 @@ export function BottomFeatureGrid() {
           </div>
 
           <button className="mt-4 border border-white bg-white text-black rounded-md px-5 py-2 text-sm flex items-center gap-2 w-fit hover:bg-transparent hover:text-white transition-colors duration-200 font-medium">
-            Booking Now
+            Book Now
             <ArrowRight size={14} strokeWidth={2.5} />
           </button>
         </div>
@@ -40,8 +40,8 @@ export function BottomFeatureGrid() {
           <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent" />
 
           <div className="absolute bottom-0 left-0 p-4 sm:p-6 z-10 text-white">
-            <p className="text-md text-white/85 mb-0.5 font-medium ">
-              Hotel Available
+            <p className="text-md text-white/85 mb-0.5 font-medium">
+              Hotel <span className="font-serif italic font-normal text-white/90">Available</span>
             </p>
             <p className="text-3xl lg:text-4xl font-medium tracking-tight leading-none">
               1,764,980
@@ -63,7 +63,7 @@ export function BottomFeatureGrid() {
 
           <div className="absolute inset-0 flex items-center justify-center p-8 lg:p-12 z-20">
             <p className="text-xl sm:text-2xl lg:text-[32px] font-medium text-white leading-tight tracking-tight text-center max-w-[480px]">
-              Beyond accommodation, creating memories of a lifetime
+              Beyond accommodation, creating <span className="font-serif italic font-normal text-white/95">memories of a lifetime</span>
             </p>
           </div>
         </div>

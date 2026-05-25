@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 
 export function CallToAction() {
   return (
-    <section className="w-full max-w-[1400px] mx-auto py-8 px-4">
+    <section className="w-full max-w-[1400px] mx-auto py-4 px-4">
       <div className="relative w-full h-[380px] md:h-[480px] rounded-[24px] overflow-hidden flex flex-col items-center justify-center text-center px-4 shadow-sm">
         {/* Background Image - using a beautiful tropical house/sky image to match the vibe */}
         <Image
