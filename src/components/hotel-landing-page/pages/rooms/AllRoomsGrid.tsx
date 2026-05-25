@@ -133,7 +133,7 @@ export function AllRoomsGrid() {
                   </div>
 
                   <span className="text-xs font-medium text-zinc-800 group-hover:text-zinc-950 transition-colors flex items-center gap-1">
-                    <Plus size={14} /> Add
+                    <Plus size={14} /> View & Add
                   </span>
                 </div>
               </div>

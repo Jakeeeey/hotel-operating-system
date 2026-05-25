@@ -238,7 +238,7 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
                   </>
                 ) : (
                   <>
-                    <ShoppingBag size={14} /> Proceed to Secure Reservation
+                    Proceed to Secure Reservation
                   </>
                 )}
               </button>

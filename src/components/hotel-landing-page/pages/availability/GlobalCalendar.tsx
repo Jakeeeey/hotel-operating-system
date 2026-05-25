@@ -1,57 +1,70 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Calendar as CalendarIcon, 
-  Users, 
-  ArrowRight, 
-  ShieldCheck, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar as CalendarIcon,
+  Users,
+  ArrowRight,
+  ShieldCheck,
   Info,
-  Check
+  Check,
+  Moon,
 } from "lucide-react";
-import { DayStatusCache, InventoryNight, RoomType, InventoryLookupMap } from "./types";
+import {
+  DayStatusCache,
+  InventoryNight,
+  RoomType,
+  InventoryLookupMap,
+} from "./types";
 
-// Generates comprehensive dynamic inventory mock arrays across June & July 2026 deterministically to prevent hydration mismatch
+// ---------------------------------------------------------------------------
+// Mock Inventory — deterministic to avoid SSR hydration mismatch
+// ---------------------------------------------------------------------------
 const generateMockInventoryData = (): InventoryNight[] => {
   const data: InventoryNight[] = [];
-  const roomTypes: Exclude<RoomType, "all">[] = ["deluxe", "suite", "villa", "overwater"];
+  const roomTypes: Exclude<RoomType, "all">[] = [
+    "deluxe",
+    "suite",
+    "villa",
+    "overwater",
+  ];
   const totalCounts: Record<Exclude<RoomType, "all">, number> = {
     deluxe: 12,
     suite: 8,
     villa: 4,
-    overwater: 3
+    overwater: 3,
   };
 
-  // Build dates across June (30 days) and July (31 days) 2026
-  const targetedMonths = [
-    { month: 5, days: 30 }, // June (0-indexed base date helper = 5)
-    { month: 6, days: 31 }  // July
+  // Cover June → September 2026
+  const months = [
+    { month: 5, days: 30 },
+    { month: 6, days: 31 },
+    { month: 7, days: 31 },
+    { month: 8, days: 30 },
   ];
 
-  targetedMonths.forEach(({ month, days }) => {
+  months.forEach(({ month, days }) => {
     for (let day = 1; day <= days; day++) {
       const dateString = `2026-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      
+
       roomTypes.forEach((type) => {
-        // Simple deterministic hash function based on date string and room type
         const seedStr = `${dateString}-${type}`;
         let hash = 0;
         for (let i = 0; i < seedStr.length; i++) {
           hash = seedStr.charCodeAt(i) + ((hash << 5) - hash);
         }
-        const pseudoRandom = Math.abs(hash % 100) / 100; // Value between 0 and 0.99
+        const pseudoRandom = Math.abs(hash % 100) / 100;
         let allocated = Math.floor(pseudoRandom * (totalCounts[type] - 1));
-        
-        // Simulating artificial high-demand sold out weekends (Fridays/Saturdays)
+
         const dayOfWeek = new Date(2026, month, day).getDay();
         if (dayOfWeek === 5 || dayOfWeek === 6) {
           allocated = Math.min(totalCounts[type], allocated + 3);
         }
 
-        // Hardcoding a complete blackout sold-out block for testing (June 12 - June 14)
+        // Blackout block: June 12-14
         if (month === 5 && day >= 12 && day <= 14) {
           allocated = totalCounts[type];
         }
@@ -61,7 +74,7 @@ const generateMockInventoryData = (): InventoryNight[] => {
           roomType: type,
           totalInventory: totalCounts[type],
           allocatedCount: allocated,
-          remainingAvailable: totalCounts[type] - allocated
+          remainingAvailable: totalCounts[type] - allocated,
         });
       });
     }
@@ -72,372 +85,562 @@ const generateMockInventoryData = (): InventoryNight[] => {
 
 const mockInventoryDb: InventoryNight[] = generateMockInventoryData();
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+interface CalendarCell {
+  dateStr: string | null;
+  dayNumber: number | null;
+}
+
+// ---------------------------------------------------------------------------
+// Helper — build calendar grid for a given year/month
+// ---------------------------------------------------------------------------
+function buildGridCells(year: number, month: number): CalendarCell[] {
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  const cells: CalendarCell[] = [];
+
+  for (let i = 0; i < firstDayIndex; i++) {
+    cells.push({ dateStr: null, dayNumber: null });
+  }
+  for (let d = 1; d <= totalDays; d++) {
+    cells.push({
+      dateStr: `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
+      dayNumber: d,
+    });
+  }
+  return cells;
+}
+
+// ---------------------------------------------------------------------------
+// Helper — format date for display
+// ---------------------------------------------------------------------------
+function formatDisplayDate(iso: string): string {
+  // Parse manually to avoid timezone shift
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Sub-component — single month pane
+// ---------------------------------------------------------------------------
+interface MonthPaneProps {
+  year: number;
+  month: number;
+  inventoryLookup: InventoryLookupMap;
+  activeCategory: RoomType;
+  checkInDate: string | null;
+  checkOutDate: string | null;
+  hoverDate: string | null;
+  onCellClick: (dateStr: string, isSoldOut: boolean) => void;
+  onCellHover: (dateStr: string | null) => void;
+}
+
+function MonthPane({
+  year,
+  month,
+  inventoryLookup,
+  activeCategory,
+  checkInDate,
+  checkOutDate,
+  hoverDate,
+  onCellClick,
+  onCellHover,
+}: MonthPaneProps) {
+  const cells = useMemo(() => buildGridCells(year, month), [year, month]);
+
+  const label = new Date(year, month).toLocaleString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const getStatus = useCallback(
+    (dateStr: string): DayStatusCache => {
+      const dayRecords = inventoryLookup[dateStr];
+      if (!dayRecords) {
+        return {
+          isFullySoldOut: false,
+          lowInventoryAlert: false,
+          availableRoomsCount: 0,
+        };
+      }
+
+      if (activeCategory !== "all") {
+        const target = dayRecords[activeCategory];
+        const available = target ? target.remainingAvailable : 0;
+        return {
+          isFullySoldOut: available === 0,
+          lowInventoryAlert: available > 0 && available <= 2,
+          availableRoomsCount: available,
+        };
+      }
+
+      let total = 0;
+      Object.values(dayRecords).forEach((r) => (total += r.remainingAvailable));
+      return {
+        isFullySoldOut: total === 0,
+        lowInventoryAlert: total > 0 && total <= 4,
+        availableRoomsCount: total,
+      };
+    },
+    [inventoryLookup, activeCategory]
+  );
+
+  // Effective end for range highlight (checkout or hover)
+  const rangeEnd = checkOutDate ?? (checkInDate ? hoverDate : null);
+
+  const isInRange = (dateStr: string): boolean => {
+    if (!checkInDate || !rangeEnd) return false;
+    const d = new Date(dateStr);
+    const start = new Date(checkInDate);
+    const end = new Date(rangeEnd);
+    if (start >= end) return false;
+    return d > start && d < end;
+  };
+
+  const isStart = (dateStr: string) => dateStr === checkInDate;
+  const isEnd = (dateStr: string) =>
+    dateStr === checkOutDate ||
+    (!!checkInDate && !checkOutDate && dateStr === hoverDate && dateStr !== checkInDate);
+
+  return (
+    <div className="flex-1 min-w-0">
+      {/* Month label */}
+      <h3 className="text-sm font-semibold text-zinc-800 tracking-tight mb-5 text-center">
+        {label}
+      </h3>
+
+      {/* Day headers */}
+      <div className="grid grid-cols-7 mb-1">
+        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+          <span
+            key={d}
+            className="text-center text-[10px] font-medium text-zinc-400 uppercase tracking-wider py-1"
+          >
+            {d}
+          </span>
+        ))}
+      </div>
+
+      {/* Day cells */}
+      <div className="grid grid-cols-7">
+        {cells.map((cell, i) => {
+          if (!cell.dateStr || !cell.dayNumber) {
+            return <div key={`empty-${i}`} className="min-h-[52px]" />;
+          }
+
+          const { isFullySoldOut, lowInventoryAlert, availableRoomsCount } = getStatus(cell.dateStr);
+          const start = isStart(cell.dateStr);
+          const end = isEnd(cell.dateStr);
+          const inRange = isInRange(cell.dateStr);
+          const isEndpoint = start || end;
+
+          // Today
+          const [cy, cm, cd] = cell.dateStr.split("-").map(Number);
+          const cellDate = new Date(cy, cm - 1, cd);
+          const today = new Date(2026, 4, 25); // pinned to avoid hydration mismatch
+          const isPast = cellDate < today;
+
+          return (
+            <div
+              key={cell.dateStr}
+              className={`relative flex items-center justify-center
+                ${inRange ? "bg-zinc-100" : ""}
+                ${start && rangeEnd && rangeEnd !== checkInDate ? "rounded-l-lg" : ""}
+                ${end && checkInDate && cell.dateStr !== checkInDate ? "rounded-r-lg" : ""}
+              `}
+            >
+              <button
+                disabled={isFullySoldOut || isPast}
+                onClick={() => onCellClick(cell.dateStr!, isFullySoldOut || isPast)}
+                onMouseEnter={() => onCellHover(cell.dateStr)}
+                onMouseLeave={() => onCellHover(null)}
+                className={`
+                  relative w-full min-h-[52px] rounded-lg flex flex-col items-start justify-between
+                  p-1.5 text-xs font-medium transition-all duration-150
+                  ${isPast ? "text-zinc-300 cursor-not-allowed" : ""}
+                  ${isFullySoldOut && !isPast ? "text-zinc-300 cursor-not-allowed" : ""}
+                  ${isEndpoint
+                    ? "bg-zinc-900 text-white shadow-md z-10"
+                    : inRange
+                    ? "bg-transparent text-zinc-800"
+                    : !isFullySoldOut && !isPast
+                    ? "hover:bg-zinc-100 text-zinc-800 cursor-pointer"
+                    : ""
+                  }
+                `}
+              >
+                {/* Day number */}
+                <span className="leading-none font-medium">{cell.dayNumber}</span>
+
+                {/* Availability count text — left aligned */}
+                {!isFullySoldOut && !isPast && !isEndpoint && (
+                  <span
+                    className={`text-[9px] font-semibold leading-none
+                      ${lowInventoryAlert ? "text-amber-500" : "text-emerald-500"}
+                    `}
+                  >
+                    {lowInventoryAlert ? "Low" : `${availableRoomsCount} left`}
+                  </span>
+                )}
+
+                {/* Endpoint availability hint */}
+                {isEndpoint && !isFullySoldOut && (
+                  <span className="text-[9px] font-medium leading-none text-zinc-400">
+                    {start ? "In" : "Out"}
+                  </span>
+                )}
+
+                {/* Sold-out slash overlay */}
+                {isFullySoldOut && !isPast && (
+                  <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="block w-5 h-px bg-zinc-300 rotate-45 rounded-full" />
+                  </span>
+                )}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 export function GlobalCalendar() {
   const router = useRouter();
-  
-  // Date tracking viewport states
-  const [currentDate, setCurrentDate] = useState<Date>(new Date(2026, 5, 1)); // Starts at June 2026
+
+  const [leftMonth, setLeftMonth] = useState<Date>(new Date(2026, 5, 1));
   const [activeCategory, setActiveCategory] = useState<RoomType>("all");
-  
-  // Selection ranges parameters
   const [checkInDate, setCheckInDate] = useState<string | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<string | null>(null);
+  const [hoverDate, setHoverDate] = useState<string | null>(null);
   const [guestCount, setGuestCount] = useState<number>(2);
 
-  const viewYear = currentDate.getFullYear();
-  const viewMonth = currentDate.getMonth();
+  // Right pane = left + 1 month
+  const rightMonth = useMemo(
+    () => new Date(leftMonth.getFullYear(), leftMonth.getMonth() + 1, 1),
+    [leftMonth]
+  );
 
-  // Create an indexed, cached O(1) table map representing [date][roomType] records
-  const inventoryLookupTable = useMemo<InventoryLookupMap>(() => {
+  const inventoryLookup = useMemo<InventoryLookupMap>(() => {
     const table: InventoryLookupMap = {};
-    mockInventoryDb.forEach((record) => {
-      if (!table[record.date]) {
-        table[record.date] = {};
-      }
-      table[record.date][record.roomType] = record;
+    mockInventoryDb.forEach((r) => {
+      if (!table[r.date]) table[r.date] = {};
+      table[r.date][r.roomType] = r;
     });
     return table;
   }, []);
 
-  // Generate dynamic day structural objects inside the month viewport grid block
-  const calendarGridCells = useMemo(() => {
-    const firstDayIndex = new Date(viewYear, viewMonth, 1).getDay();
-    const totalDaysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    
-    const elements: { dateStr: string | null; dayNumber: number | null }[] = [];
-    
-    // Fill empty padding grids leading up to first weekday
-    for (let i = 0; i < firstDayIndex; i++) {
-      elements.push({ dateStr: null, dayNumber: null });
-    }
-    
-    // Build actual calendar calendar numbers
-    for (let day = 1; day <= totalDaysInMonth; day++) {
-      const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      elements.push({ dateStr, dayNumber: day });
-    }
-    
-    return elements;
-  }, [viewYear, viewMonth]);
+  const handleCellClick = useCallback(
+    (dateStr: string, isUnavailable: boolean) => {
+      if (isUnavailable) return;
 
-  // Compute availability calculations for a targeted calendar date cell
-  const getDateStatus = (dateStr: string): DayStatusCache => {
-    const dayRecords = inventoryLookupTable[dateStr];
-    if (!dayRecords) {
-      return { isFullySoldOut: false, lowInventoryAlert: false, availableRoomsCount: 0 };
-    }
+      if (!checkInDate || checkOutDate) {
+        setCheckInDate(dateStr);
+        setCheckOutDate(null);
+        return;
+      }
 
-    if (activeCategory !== "all") {
-      const targetRoom = dayRecords[activeCategory];
-      const available = targetRoom ? targetRoom.remainingAvailable : 0;
-      return {
-        isFullySoldOut: available === 0,
-        lowInventoryAlert: available > 0 && available <= 2,
-        availableRoomsCount: available
-      };
-    } else {
-      // "All" filter aggregations loop calculations
-      let globalAvailable = 0;
-      let totalCategoriesAvailable = 0;
-      
-      Object.values(dayRecords).forEach((room) => {
-        globalAvailable += room.remainingAvailable;
-        if (room.remainingAvailable > 0) totalCategoriesAvailable++;
-      });
-
-      return {
-        isFullySoldOut: globalAvailable === 0,
-        lowInventoryAlert: globalAvailable > 0 && globalAvailable <= 4,
-        availableRoomsCount: globalAvailable
-      };
-    }
-  };
-
-  // Manage cell clicks inside the user selection timeline sequence
-  const handleCellSelection = (dateStr: string, isSoldOut: boolean) => {
-    if (isSoldOut) return;
-
-    if (!checkInDate || (checkInDate && checkOutDate)) {
-      setCheckInDate(dateStr);
-      setCheckOutDate(null);
-    } else if (checkInDate && !checkOutDate) {
       if (new Date(dateStr) < new Date(checkInDate)) {
         setCheckInDate(dateStr);
-      } else if (dateStr === checkInDate) {
-        // Can't checkout same day
         return;
-      } else {
-        setCheckOutDate(dateStr);
       }
-    }
-  };
 
-  // Validation checking helper determining highlighted states
-  const verifyDayIsHighlighted = (dateStr: string): boolean => {
-    if (!dateStr) return false;
-    if (dateStr === checkInDate || dateStr === checkOutDate) return true;
-    if (checkInDate && checkOutDate) {
-      const current = new Date(dateStr);
-      return current > new Date(checkInDate) && current < new Date(checkOutDate);
-    }
-    return false;
-  };
+      if (dateStr === checkInDate) return;
 
-  // Month navigation increments handlers
-  const adjustMonthViewport = (direction: "prev" | "next") => {
-    setCurrentDate(prev => {
-      const adjusted = new Date(prev.getFullYear(), prev.getMonth() + (direction === "next" ? 1 : -1), 1);
-      return adjusted;
+      setCheckOutDate(dateStr);
+    },
+    [checkInDate, checkOutDate]
+  );
+
+  const calculatedNights = useMemo<number>(() => {
+    if (!checkInDate || !checkOutDate) return 0;
+    return Math.round(
+      (new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) /
+        86400000
+    );
+  }, [checkInDate, checkOutDate]);
+
+  const navigateMonths = (dir: "prev" | "next") => {
+    setLeftMonth((prev) => {
+      const next = new Date(prev);
+      next.setMonth(next.getMonth() + (dir === "next" ? 1 : -1));
+      return next;
     });
   };
 
-  // Total calculated sequence metrics parameters
-  const calculatedNights = useMemo<number>(() => {
-    if (!checkInDate || !checkOutDate) return 0;
-    const diffTime = Math.abs(new Date(checkOutDate).getTime() - new Date(checkInDate).getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  }, [checkInDate, checkOutDate]);
-
-  // Dispatch redirection parameters directly down to search funnel templates
-  const forwardToBookingSearch = () => {
+  const handleSearch = () => {
     if (!checkInDate || !checkOutDate) return;
     router.push(
-      `/hotel-landing-page/rooms?roomIds=&checkin=${checkInDate}&checkout=${checkOutDate}&guests=${guestCount}`
+      `/hotel-landing-page/rooms?checkin=${checkInDate}&checkout=${checkOutDate}&guests=${guestCount}`
     );
   };
 
-  const monthLabel = currentDate.toLocaleString("en-US", { month: "long", year: "numeric" });
+  const categoryLabels: Record<RoomType, string> = {
+    all: "All Rooms",
+    deluxe: "Deluxe",
+    suite: "Suite",
+    villa: "Villa",
+    overwater: "Overwater",
+  };
+
+  const selectionComplete = !!checkInDate && !!checkOutDate;
 
   return (
-    <div className="max-w-[1300px] mx-auto px-6 py-10">
-      
-      {/* Title Segment */}
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-12">
+
+      {/* Page Header */}
       <div className="mb-10">
-        <span className="text-xs uppercase tracking-widest font-semibold text-zinc-400 block mb-2">Live Resort Inventory</span>
-        <h1 className="text-3xl md:text-5xl font-medium tracking-tight text-zinc-900">Availability Calendar</h1>
-        <p className="text-sm font-light text-zinc-500 mt-2 max-w-xl">
-          Review our real-time operational capacity by category nights. Select your arrival and departure markers below to build an open stay timeline.
+        <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-widest font-semibold text-zinc-400 mb-3">
+          <span className="w-4 h-px bg-zinc-300 inline-block" />
+          Live Resort Inventory
+        </span>
+        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900">
+          Availability Calendar
+        </h1>
+        <p className="text-sm text-zinc-500 mt-2 max-w-lg font-light leading-relaxed">
+          Select your check-in and check-out dates to see real-time room availability across all categories.
         </p>
       </div>
 
-      {/* Pill Filters Selector Layout Row */}
-      <div className="flex flex-wrap items-center gap-2 mb-8 border-b border-zinc-100 pb-6">
-        {(["all", "deluxe", "suite", "villa", "overwater"] as RoomType[]).map((category) => (
+      {/* Category Filters */}
+      <div className="flex items-center gap-2 flex-wrap mb-8">
+        {(Object.keys(categoryLabels) as RoomType[]).map((cat) => (
           <button
-            key={category}
+            key={cat}
             onClick={() => {
-              setActiveCategory(category);
+              setActiveCategory(cat);
               setCheckInDate(null);
               setCheckOutDate(null);
             }}
-            className={`px-5 py-2.5 rounded-full text-xs font-medium transition-all cursor-pointer capitalize ${
-              activeCategory === category 
-                ? "bg-zinc-950 text-white shadow-sm" 
-                : "bg-zinc-50 hover:bg-zinc-100 text-zinc-600 border border-zinc-200/40"
-            }`}
+            className={`px-4 py-2 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer
+              ${activeCategory === cat
+                ? "bg-zinc-900 text-white shadow-sm"
+                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 border border-zinc-200/60"
+              }`}
           >
-            {category === "all" ? "All Accommodations" : `${category} categories`}
+            {categoryLabels[cat]}
           </button>
         ))}
       </div>
 
-      {/* Main Split Multi-Column Grid Panel block */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-        
-        {/* Left Aspect Side Column Frame - Custom Grid Calendar Controller */}
-        <div className="lg:col-span-8 bg-white border border-zinc-100 rounded-2xl p-6 shadow-sm">
-          
-          {/* Calendar Pagination Banner Wrapper */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-base font-medium text-zinc-900 tracking-tight">{monthLabel}</h2>
-            <div className="flex items-center gap-1">
-              <button 
-                onClick={() => adjustMonthViewport("prev")}
-                className="p-2 border border-zinc-200 rounded-lg hover:bg-zinc-50 text-zinc-600 transition-colors cursor-pointer"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button 
-                onClick={() => adjustMonthViewport("next")}
-                className="p-2 border border-zinc-200 rounded-lg hover:bg-zinc-50 text-zinc-600 transition-colors cursor-pointer"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
 
-          {/* Weekday Structural Headers Row */}
-          <div className="grid grid-cols-7 gap-1 text-center mb-2">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <span key={day} className="text-[11px] font-medium text-zinc-400 py-2 uppercase tracking-wider">
-                {day}
+        {/* ── Calendar Panel ── */}
+        <div className="xl:col-span-8 bg-white border border-zinc-100 rounded-2xl shadow-sm overflow-hidden">
+
+          {/* Calendar Toolbar */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
+            <button
+              onClick={() => navigateMonths("prev")}
+              className="p-2 rounded-xl border border-zinc-200 hover:bg-zinc-50 text-zinc-600 transition-colors cursor-pointer"
+            >
+              <ChevronLeft size={15} />
+            </button>
+
+            <div className="flex items-center gap-6 text-sm font-medium text-zinc-600">
+              <span>
+                {leftMonth.toLocaleString("en-US", { month: "long", year: "numeric" })}
               </span>
-            ))}
+              <span className="text-zinc-300">—</span>
+              <span>
+                {rightMonth.toLocaleString("en-US", { month: "long", year: "numeric" })}
+              </span>
+            </div>
+
+            <button
+              onClick={() => navigateMonths("next")}
+              className="p-2 rounded-xl border border-zinc-200 hover:bg-zinc-50 text-zinc-600 transition-colors cursor-pointer"
+            >
+              <ChevronRight size={15} />
+            </button>
           </div>
 
-          {/* Dynamic Days Array Custom Loop Mesh Grid */}
-          <div className="grid grid-cols-7 gap-1.5">
-            {calendarGridCells.map((cell, index) => {
-              if (!cell.dateStr || !cell.dayNumber) {
-                return <div key={`empty-${index}`} className="aspect-square bg-zinc-50/40 rounded-xl" />;
-              }
+          {/* Dual Month Grid */}
+          <div className="p-6">
+            <div className="flex flex-col sm:flex-row gap-8">
+              <MonthPane
+                year={leftMonth.getFullYear()}
+                month={leftMonth.getMonth()}
+                inventoryLookup={inventoryLookup}
+                activeCategory={activeCategory}
+                checkInDate={checkInDate}
+                checkOutDate={checkOutDate}
+                hoverDate={hoverDate}
+                onCellClick={handleCellClick}
+                onCellHover={setHoverDate}
+              />
 
-              const { isFullySoldOut, lowInventoryAlert, availableRoomsCount } = getDateStatus(cell.dateStr);
-              const isHighlighted = verifyDayIsHighlighted(cell.dateStr);
-              const isStartNode = cell.dateStr === checkInDate;
-              const isEndNode = cell.dateStr === checkOutDate;
+              {/* Divider */}
+              <div className="hidden sm:block w-px bg-zinc-100 self-stretch" />
 
-              return (
-                <button
-                  key={cell.dateStr}
-                  disabled={isFullySoldOut}
-                  onClick={() => handleCellSelection(cell.dateStr!, isFullySoldOut)}
-                  className={`aspect-square rounded-xl p-2 flex flex-col justify-between items-start border relative transition-all group ${
-                    isFullySoldOut 
-                      ? "bg-zinc-50 border-zinc-100 text-zinc-300 cursor-not-allowed line-through" 
-                      : isStartNode || isEndNode
-                      ? "bg-zinc-950 border-zinc-950 text-white shadow-sm cursor-pointer z-10"
-                      : isHighlighted
-                      ? "bg-zinc-100/80 border-zinc-200/60 text-zinc-900 cursor-pointer"
-                      : "bg-white border-zinc-100 hover:border-zinc-300 text-zinc-800 cursor-pointer"
-                  }`}
-                >
-                  {/* Day Numeric Code Tag */}
-                  <span className={`text-xs font-medium ${isStartNode || isEndNode ? "text-white" : "text-zinc-900"}`}>
-                    {cell.dayNumber}
-                  </span>
-
-                  {/* Room Inventory Fractional Availability Sub-labels */}
-                  {!isFullySoldOut && (
-                    <div className="w-full flex items-center justify-between text-[9px] mt-auto font-light tracking-tight">
-                      <span className={
-                        isStartNode || isEndNode 
-                          ? "text-zinc-300" 
-                          : lowInventoryAlert 
-                          ? "text-amber-600 font-normal" 
-                          : "text-zinc-400"
-                      }>
-                        {lowInventoryAlert ? "Low" : `${availableRoomsCount} Left`}
-                      </span>
-                      
-                      {/* Operational Color Dot Status Signifiers */}
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                        isStartNode || isEndNode
-                          ? "bg-white"
-                          : lowInventoryAlert
-                          ? "bg-amber-500"
-                          : "bg-emerald-500"
-                      }`} />
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Calendar Color Map Legend Footer Guide */}
-          <div className="mt-6 pt-6 border-t border-zinc-100 flex flex-wrap gap-4 items-center text-[11px] text-zinc-400 font-light">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>Standard Operational Availability</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
-              <span>Low Capacity Overnights</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 bg-zinc-200 rounded-sm line-through block size-2.5" />
-              <span>Fully Allocated / Sold Out Night</span>
+              <MonthPane
+                year={rightMonth.getFullYear()}
+                month={rightMonth.getMonth()}
+                inventoryLookup={inventoryLookup}
+                activeCategory={activeCategory}
+                checkInDate={checkInDate}
+                checkOutDate={checkOutDate}
+                hoverDate={hoverDate}
+                onCellClick={handleCellClick}
+                onCellHover={setHoverDate}
+              />
             </div>
           </div>
 
+          {/* Legend */}
+          <div className="px-6 py-4 border-t border-zinc-100 flex flex-wrap gap-5 text-[11px] text-zinc-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+              Available
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+              Low availability
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-4 h-px bg-zinc-300 rotate-45 rounded-full shrink-0" />
+              Sold out
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-zinc-900 shrink-0" />
+              Selected
+            </span>
+          </div>
         </div>
 
-        {/* Right Side Column Frame - Selection Parameter Summarizer Container */}
-        <div className="lg:col-span-4 bg-white border border-zinc-200/60 shadow-sm rounded-2xl p-6 space-y-6 lg:sticky lg:top-28">
-          <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 bg-zinc-100 text-zinc-600 rounded-md inline-block mb-2">
-              Timeline Summary
-            </span>
-            <h3 className="text-lg font-medium text-zinc-900 tracking-tight">Your Selected Window</h3>
-          </div>
+        {/* ── Sidebar Panel ── */}
+        <div className="xl:col-span-4 xl:sticky xl:top-28 space-y-4">
 
-          {/* Date Selector Display Interfaces */}
-          <div className="border border-zinc-200 rounded-xl divide-y divide-zinc-200 overflow-hidden">
-            <div className="grid grid-cols-2 divide-x divide-zinc-200">
-              <div className="p-3.5 bg-zinc-50/50">
-                <label className="block text-[9px] uppercase font-bold text-zinc-400 mb-1 flex items-center gap-1">
-                  <CalendarIcon size={10} /> Check-In
-                </label>
-                <div className="text-zinc-800 text-xs font-medium min-h-[16px]">
-                  {checkInDate ? new Date(checkInDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : <span className="text-zinc-300 font-light">Choose Date</span>}
-                </div>
+          {/* Date Summary Card */}
+          <div className="bg-white border border-zinc-200/60 rounded-2xl shadow-sm overflow-hidden">
+
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-zinc-100 flex items-center gap-2">
+              <CalendarIcon size={14} className="text-zinc-400" />
+              <span className="text-xs font-semibold text-zinc-700 uppercase tracking-wider">
+                Your Stay
+              </span>
+            </div>
+
+            {/* Date Inputs */}
+            <div className="grid grid-cols-2 divide-x divide-zinc-100">
+              <div
+                className={`p-4 cursor-pointer transition-colors
+                  ${!checkInDate ? "hover:bg-zinc-50" : "bg-zinc-50"}`}
+                onClick={() => {
+                  setCheckInDate(null);
+                  setCheckOutDate(null);
+                }}
+              >
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400 mb-1">
+                  Check-in
+                </p>
+                {checkInDate ? (
+                  <p className="text-sm font-semibold text-zinc-900 leading-tight">
+                    {formatDisplayDate(checkInDate)}
+                  </p>
+                ) : (
+                  <p className="text-xs text-zinc-400 font-light">Select date</p>
+                )}
               </div>
-              <div className="p-3.5 bg-zinc-50/50">
-                <label className="block text-[9px] uppercase font-bold text-zinc-400 mb-1 flex items-center gap-1">
-                  <CalendarIcon size={10} /> Check-Out
-                </label>
-                <div className="text-zinc-800 text-xs font-medium min-h-[16px]">
-                  {checkOutDate ? new Date(checkOutDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : <span className="text-zinc-300 font-light">Choose Date</span>}
-                </div>
+
+              <div className={`p-4 transition-colors ${checkOutDate ? "bg-zinc-50" : ""}`}>
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400 mb-1">
+                  Check-out
+                </p>
+                {checkOutDate ? (
+                  <p className="text-sm font-semibold text-zinc-900 leading-tight">
+                    {formatDisplayDate(checkOutDate)}
+                  </p>
+                ) : (
+                  <p className="text-xs text-zinc-400 font-light">Select date</p>
+                )}
               </div>
             </div>
 
-            <div className="p-3.5 bg-zinc-50/50 flex flex-col gap-1.5">
-              <label className="block text-[9px] uppercase font-bold text-zinc-400 flex items-center gap-1">
-                <Users size={10} /> Occupant Multipliers
-              </label>
-              <select 
+            {/* Guests */}
+            <div className="px-4 py-3.5 border-t border-zinc-100 flex items-center gap-3">
+              <Users size={13} className="text-zinc-400 shrink-0" />
+              <select
                 value={guestCount}
                 onChange={(e) => setGuestCount(Number(e.target.value))}
-                className="bg-transparent text-zinc-700 text-xs font-normal focus:outline-none w-full cursor-pointer"
+                className="flex-1 text-xs text-zinc-700 font-medium bg-transparent focus:outline-none cursor-pointer"
               >
-                <option value={1}>1 Adult Guest</option>
-                <option value={2}>2 Adults registered</option>
-                <option value={3}>3 Adults registered</option>
-                <option value={4}>4 Adults registered</option>
+                <option value={1}>1 Guest</option>
+                <option value={2}>2 Guests</option>
+                <option value={3}>3 Guests</option>
+                <option value={4}>4 Guests</option>
               </select>
             </div>
           </div>
 
-          {/* Core Selection Context Prompt Block */}
-          {checkInDate && checkOutDate ? (
-            <div className="p-4 bg-zinc-50 border border-zinc-100 rounded-xl flex items-center justify-between animate-in fade-in duration-200">
-              <div className="text-left">
-                <span className="text-xs text-zinc-400 font-light block">Stay Length</span>
-                <span className="text-base font-semibold text-zinc-950">{calculatedNights} Nights Duration</span>
+          {/* Stay Summary */}
+          {selectionComplete ? (
+            <div className="bg-white border border-zinc-200/60 rounded-2xl shadow-sm p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Moon size={14} className="text-zinc-500" />
+                  <span className="text-xs font-medium text-zinc-600">Duration</span>
+                </div>
+                <span className="text-sm font-bold text-zinc-900">
+                  {calculatedNights} {calculatedNights === 1 ? "Night" : "Nights"}
+                </span>
               </div>
-              <span className="p-1.5 bg-zinc-900 text-white rounded-lg">
-                <Check size={14} />
-              </span>
+
+              <div className="w-full bg-zinc-100 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className="bg-zinc-800 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, (calculatedNights / 14) * 100)}%` }}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+                <Check size={13} className="text-emerald-600 shrink-0" />
+                <span className="text-xs text-emerald-700 font-medium">
+                  Dates confirmed — ready to search
+                </span>
+              </div>
             </div>
           ) : (
-            <div className="p-3.5 bg-zinc-50 border border-zinc-100 text-zinc-400 rounded-xl flex items-start gap-2.5 text-xs font-light">
-              <Info size={15} className="text-zinc-400 shrink-0 mt-0.5" />
-              <span>Please click an open start date and end date node map directly on the layout grid to calculate space matching inventory.</span>
+            <div className="bg-white border border-zinc-100 rounded-2xl shadow-sm p-5 flex items-start gap-3">
+              <Info size={14} className="text-zinc-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-zinc-400 font-light leading-relaxed">
+                Click a check-in date then a check-out date on the calendar to begin.
+              </p>
             </div>
           )}
 
-          {/* Action Submission Buttons Funnel Redirect */}
+          {/* CTA */}
           <button
-            disabled={!checkInDate || !checkOutDate}
-            onClick={forwardToBookingSearch}
-            className={`w-full py-3.5 rounded-xl text-xs font-medium transition-all shadow-sm flex items-center justify-center gap-2 uppercase tracking-wide ${
-              checkInDate && checkOutDate
-                ? "bg-zinc-950 hover:bg-black text-white cursor-pointer"
+            disabled={!selectionComplete}
+            onClick={handleSearch}
+            className={`w-full py-3.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200
+              ${selectionComplete
+                ? "bg-zinc-900 hover:bg-black text-white cursor-pointer shadow-sm hover:shadow-md"
                 : "bg-zinc-100 text-zinc-400 cursor-not-allowed"
-            }`}
+              }`}
           >
             <span>Search Available Rooms</span>
-            <ArrowRight size={14} />
+            <ArrowRight size={15} />
           </button>
 
-          <div className="pt-4 border-t border-zinc-100 flex items-center justify-center gap-2 text-[10px] text-zinc-400 font-light">
-            <ShieldCheck size={14} className="text-zinc-500" />
-            <span>Live Syncing Directus Database Cache Nodes</span>
+          {/* Trust badge */}
+          <div className="flex items-center justify-center gap-2 text-[11px] text-zinc-400 font-light py-1">
+            <ShieldCheck size={13} className="text-zinc-400" />
+            <span>Synced with live inventory · No payment now</span>
           </div>
         </div>
-
       </div>
     </div>
   );

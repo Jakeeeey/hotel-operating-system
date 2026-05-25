@@ -147,7 +147,7 @@ export function BookingView() {
                 <Smartphone size={18} className="text-zinc-800" />
                 <h2 className="text-base font-medium text-zinc-900">Mobile Wallet Gateway Verification</h2>
               </div>
-              <div className="bg-[#0055E6] text-white font-black px-3 py-1 rounded text-xs italic select-none">gCASH</div>
+              <div className="bg-[#0055E6] text-white font-black px-3 py-1 rounded text-xs  select-none">GCASH</div>
             </div>
             <div className="space-y-1.5 max-w-md">
               <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">GCash Mobile Number</label>
