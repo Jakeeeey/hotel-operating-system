@@ -47,7 +47,7 @@ export function NavBar() {
               : "bg-white"
           } ${
             isScrolled
-              ? "lg:max-w-[1200px] lg:bg-white/95 lg:backdrop-blur-md lg:rounded-full lg:shadow-md lg:border lg:border-neutral-200/80"
+              ? "lg:max-w-[1200px] lg:bg-white/95 lg:backdrop-blur-md lg:rounded-full lg:shadow-none lg:border lg:border-neutral-200/80"
               : "max-w-full border-b border-transparent"
           }`}
         >

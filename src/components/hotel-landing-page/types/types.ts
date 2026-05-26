@@ -52,3 +52,59 @@ export interface PartnerLogoData {
   brandName: string;
   logoUrl: string;
 }
+
+export type DiscountType = "percentage" | "fixed_amount";
+
+export interface OfferCampaignData {
+  id: string;
+  code: string;
+  title: string;
+  subtitle: string;
+  badge: string;
+  
+  discountValue: number; 
+  discountType: DiscountType;
+  discountSubtext: string;
+  
+  description: string;
+  
+  validFrom: string;
+  validUntil: string;
+  expirationDate: string;
+  
+  inclusions: string[];
+  terms: string[];
+  bannerImage: string;
+}
+
+export type AmenityCategory = "wellness" | "culinary" | "leisure" | "services";
+
+export interface AmenityData {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: AmenityCategory;
+  tagline: string;
+  description: string;
+  hoursOfOperation: string;
+  locationDetails: string;
+  thumbnailImage: string;
+  heroImage: string;
+  highlights: string[];
+  guidelines: string[];
+}
+
+export interface LocationGuideItem {
+  id: string;
+  title: string;
+  distance: string;
+  type: "landmark" | "nature" | "transit" | "culinary";
+  description: string;
+  image: string;
+}
+
+export interface TransitRoute {
+  method: string;
+  duration: string;
+  instructions: string;
+}

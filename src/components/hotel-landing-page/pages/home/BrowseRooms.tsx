@@ -81,16 +81,16 @@ export function BrowseRooms() {
         </button>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2.5 mb-8 overflow-x-auto pb-3 scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
+ {/* Filter Tabs — Clean Editorial Style */}
+      <div className="flex gap-2 mb-10 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
         {filterTabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveFilter(tab)}
-            className={`rounded-full px-4.5 py-2 text-[12px] font-medium cursor-pointer transition-all duration-300 shrink-0 select-none ${
+            className={`rounded-sm px-4 py-2 text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-all shrink-0 select-none border ${
               activeFilter === tab
-                ? "bg-zinc-950 text-white shadow-sm"
-                : "bg-zinc-50 text-zinc-500 border border-zinc-100 hover:bg-zinc-100/70 hover:text-zinc-900"
+                ? "bg-zinc-950 text-white border-zinc-950 shadow-xs"
+                : "bg-white text-zinc-500 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900"
             }`}
           >
             {tab}
@@ -100,25 +100,26 @@ export function BrowseRooms() {
 
       {/* Room Carousel Container */}
       <div className="relative group/carousel">
-        {/* Left Arrow Button */}
+        
+        {/* Left Arrow Button — Minimal Box Interface */}
         {canScrollLeft && (
           <button
             onClick={() => handleScroll("left")}
-            className="hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 bg-white/90 backdrop-blur-md rounded-full shadow-lg border border-zinc-100 items-center justify-center hover:bg-white hover:scale-105 transition-all duration-200 cursor-pointer"
+            className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/90 backdrop-blur-md rounded-sm shadow-md border border-zinc-200 items-center justify-center hover:bg-white hover:border-zinc-400 active:scale-[0.98] transition-all cursor-pointer"
             aria-label="Scroll left"
           >
-            <ChevronLeft size={20} className="text-zinc-800" />
+            <ChevronLeft size={16} className="text-zinc-800" strokeWidth={2.5} />
           </button>
         )}
 
-        {/* Right Arrow Button */}
+        {/* Right Arrow Button — Minimal Box Interface */}
         {canScrollRight && (
           <button
             onClick={() => handleScroll("right")}
-            className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 bg-white/90 backdrop-blur-md rounded-full shadow-lg border border-zinc-100 items-center justify-center hover:bg-white hover:scale-105 transition-all duration-200 cursor-pointer"
+            className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/90 backdrop-blur-md rounded-sm shadow-md border border-zinc-200 items-center justify-center hover:bg-white hover:border-zinc-400 active:scale-[0.98] transition-all cursor-pointer"
             aria-label="Scroll right"
           >
-            <ChevronRight size={20} className="text-zinc-800" />
+            <ChevronRight size={16} className="text-zinc-800" strokeWidth={2.5} />
           </button>
         )}
 
@@ -126,12 +127,12 @@ export function BrowseRooms() {
         <div
           ref={scrollRef}
           onScroll={checkScroll}
-          className="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-none pb-6 pt-2 w-full px-4 md:mx-0 md:px-0"
+          className="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-none pb-4 pt-1 w-full px-4 md:mx-0 md:px-0"
         >
           {filteredRooms.map((room) => (
             <div
               key={room.id}
-              className="w-[290px] sm:w-[340px] md:w-[380px] shrink-0 snap-start"
+              className="w-[290px] sm:w-[340px] md:w-[360px] shrink-0 snap-start"
             >
               <RoomCard room={room} />
             </div>

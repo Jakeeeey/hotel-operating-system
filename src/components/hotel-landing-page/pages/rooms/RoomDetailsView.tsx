@@ -27,13 +27,11 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Extract ongoing selection variables from the session parameters
   const existingRoomIdsRaw = searchParams.get("roomIds") || searchParams.get("roomId") || "";
   const checkinStr = searchParams.get("checkin") || "2026-06-01";
   const checkoutStr = searchParams.get("checkout") || "2026-06-04";
   const guestCount = searchParams.get("guests") || "2";
 
-  // Parse arrays to identify existing selections
   const activeSelectedIds = useMemo(() => {
     if (!existingRoomIdsRaw) return [];
     return existingRoomIdsRaw.split(",").map((id) => Number(id.trim())).filter(Boolean);
@@ -41,14 +39,11 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
 
   const isAlreadySelected = activeSelectedIds.includes(room.id);
 
-  // Append logic execution loop
   const handleSelectionAction = () => {
     const updatedIds = [...activeSelectedIds];
-    
     if (!updatedIds.includes(room.id)) {
       updatedIds.push(room.id);
     }
-
     const finalQueryString = updatedIds.join(",");
     router.push(
       `/hotel-landing-page/booking?roomIds=${finalQueryString}&checkin=${checkinStr}&checkout=${checkoutStr}&guests=${guestCount}`
@@ -56,18 +51,18 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
   };
 
   return (
-    <div className="max-w-[1300px] mx-auto px-6">
-      {/* Funnel Navigation - Restores selection params safely to grid directory */}
+    <div className="max-w-[1300px] mx-auto px-6 font-sans">
+      {/* Funnel Navigation */}
       <Link 
         href={`/hotel-landing-page/rooms?roomIds=${existingRoomIdsRaw}&checkin=${checkinStr}&checkout=${checkoutStr}&guests=${guestCount}`} 
-        className="inline-flex items-center gap-2 text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors mb-8 group"
+        className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 transition-colors mb-8 group"
       >
-        <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+        <ArrowLeft size={12} strokeWidth={2.5} className="group-hover:-translate-x-0.5 transition-transform" />
         Back to All Spaces
       </Link>
 
       {/* Multi-Photo Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12 rounded-2xl overflow-hidden shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12 rounded-sm overflow-hidden">
         <div className="md:col-span-2 aspect-[16/10] bg-zinc-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
@@ -102,142 +97,143 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
         {/* Left Info Column */}
         <div className="lg:col-span-2 space-y-8">
           <div>
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 bg-zinc-900 text-white rounded-md">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-[9px] uppercase tracking-widest font-bold px-2.5 py-1 bg-zinc-950 text-white rounded-none">
                 {room.badge}
               </span>
-              <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">
+              <span className="text-[9px] uppercase tracking-widest font-bold px-2 py-1 bg-zinc-50 text-zinc-500 border border-zinc-200">
                 {room.availabilityText}
               </span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-medium tracking-tight text-zinc-900">
+            <h1 className="text-3xl md:text-5xl font-serif font-normal tracking-tight text-zinc-900">
               {room.name}
             </h1>
           </div>
 
           {/* Stats Bar */}
-          <div className="grid grid-cols-3 gap-4 bg-white p-5 border border-zinc-100 rounded-xl">
+          <div className="grid grid-cols-3 gap-4 bg-white p-5 border border-zinc-200 rounded-none">
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-zinc-400 font-light">Configuration</span>
-              <div className="flex items-center gap-1.5 text-sm font-medium text-zinc-800">
-                <BedDouble size={16} className="text-zinc-500" />
+              <span className="text-[9px] uppercase tracking-widest font-bold text-zinc-400">Configuration</span>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-800 uppercase tracking-wide">
+                <BedDouble size={14} className="text-zinc-400" />
                 <span>{room.bed}</span>
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-zinc-400 font-light">Total Size</span>
-              <div className="flex items-center gap-1.5 text-sm font-medium text-zinc-800">
-                <Maximize size={16} className="text-zinc-500" />
+              <span className="text-[9px] uppercase tracking-widest font-bold text-zinc-400">Total Size</span>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-800 uppercase tracking-wide">
+                <Maximize size={14} className="text-zinc-400" />
                 <span>{room.sqm}</span>
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-zinc-400 font-light">Rating</span>
-              <div className="flex items-center gap-1.5 text-sm font-medium text-zinc-800">
-                <Star size={15} className="text-amber-500 fill-amber-500" />
+              <span className="text-[9px] uppercase tracking-widest font-bold text-zinc-400">Rating Index</span>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-800 uppercase tracking-wide">
+                <Star size={13} className="text-amber-500 fill-amber-500" />
                 <span>{room.rating} ({room.reviews})</span>
               </div>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-zinc-900 tracking-tight">About the Stay</h3>
-            <p className="text-zinc-500 font-light leading-relaxed text-[15px]">
+          {/* Text Summary Block */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-zinc-900">About the Stay</h3>
+            <p className="text-zinc-400 font-light leading-relaxed text-[13px] tracking-wide">
               Indulge in unmatched refinement inside this masterfully architected sanctuary space. Programmed with bespoke lifestyle finishings and wide-angle scenery portals, this layout is crafted precisely for travelers prioritizing absolute serenity during their stay.
             </p>
           </div>
 
           {/* Amenities Grid */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-zinc-900 tracking-tight">Included Premium Amenities</h3>
+            <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-zinc-900">Included Premium Amenities</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {room.amenities.map((item) => (
-                <div key={item} className="flex items-center gap-2.5 bg-white p-3 border border-zinc-100 rounded-lg text-sm text-zinc-700">
-                  <CheckCircle2 size={15} className="text-zinc-900 shrink-0" />
-                  <span className="font-light">{item}</span>
+                <div key={item} className="flex items-center gap-2.5 bg-white p-3 border border-zinc-200 rounded-none text-xs text-zinc-700">
+                  <CheckCircle2 size={13} strokeWidth={2.5} className="text-zinc-900 shrink-0" />
+                  <span className="font-medium tracking-wide">{item}</span>
                 </div>
               ))}
-              <div className="flex items-center gap-2.5 bg-white p-3 border border-zinc-100 rounded-lg text-sm text-zinc-700">
-                <Wifi size={15} className="text-zinc-900 shrink-0" />
-                <span className="font-light">Complimentary Fiber</span>
+              <div className="flex items-center gap-2.5 bg-white p-3 border border-zinc-200 rounded-none text-xs text-zinc-700">
+                <Wifi size={13} strokeWidth={2.5} className="text-zinc-900 shrink-0" />
+                <span className="font-medium tracking-wide">Complimentary Fiber</span>
               </div>
-              <div className="flex items-center gap-2.5 bg-white p-3 border border-zinc-100 rounded-lg text-sm text-zinc-700">
-                <Wind size={15} className="text-zinc-900 shrink-0" />
-                <span className="font-light">Climate Control</span>
+              <div className="flex items-center gap-2.5 bg-white p-3 border border-zinc-200 rounded-none text-xs text-zinc-700">
+                <Wind size={13} strokeWidth={2.5} className="text-zinc-900 shrink-0" />
+                <span className="font-medium tracking-wide">Climate Control</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Right Sticky Reservation Column */}
-        <div className="lg:sticky lg:top-28 bg-white border border-zinc-100 shadow-sm rounded-2xl p-6 space-y-6">
+        <div className="lg:sticky lg:top-28 bg-white border border-zinc-200 rounded-none p-6 space-y-6">
           <div className="flex justify-between items-baseline">
-            <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Rate per Night</span>
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Rate per Night</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-semibold text-zinc-950">₱{room.price.toLocaleString()}</span>
-              <span className="text-xs text-zinc-400 font-light">/ night</span>
+              <span className="text-3xl font-normal text-zinc-950">₱{room.price.toLocaleString()}</span>
+              <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">/ night</span>
             </div>
           </div>
 
           <div className="space-y-3.5">
-            <div className="relative group/date overflow-hidden rounded-xl border border-zinc-200 transition-all duration-300 hover:border-zinc-450 shadow-sm">
+            <div className="relative group/date overflow-hidden rounded-none border border-zinc-200 transition-colors">
               <div className="divide-y divide-zinc-200">
                 <div className="grid grid-cols-2 divide-x divide-zinc-200">
                   <div className="p-3 bg-zinc-50/50">
-                    <label className="block text-[10px] uppercase font-bold text-zinc-400 mb-1 flex items-center gap-1">
-                      <Calendar size={10} /> Check-In
+                    <label className="block text-[9px] uppercase font-bold text-zinc-400 mb-1 flex items-center gap-1 tracking-widest">
+                      <Calendar size={10} /> Arrival
                     </label>
                     <input 
                       type="text" 
                       readOnly 
                       value={checkinStr} 
-                      className="bg-transparent text-zinc-800 text-xs font-normal focus:outline-none w-full select-none" 
+                      className="bg-transparent text-zinc-800 text-xs font-bold tracking-wide focus:outline-none w-full select-none" 
                     />
                   </div>
                   <div className="p-3 bg-zinc-50/50">
-                    <label className="block text-[10px] uppercase font-bold text-zinc-400 mb-1 flex items-center gap-1">
-                      <Calendar size={10} /> Check-Out
+                    <label className="block text-[9px] uppercase font-bold text-zinc-400 mb-1 flex items-center gap-1 tracking-widest">
+                      <Calendar size={10} /> Departure
                     </label>
                     <input 
                       type="text" 
                       readOnly 
                       value={checkoutStr} 
-                      className="bg-transparent text-zinc-800 text-xs font-normal focus:outline-none w-full select-none" 
+                      className="bg-transparent text-zinc-800 text-xs font-bold tracking-wide focus:outline-none w-full select-none" 
                     />
                   </div>
                 </div>
                 <div className="p-3 bg-zinc-50/50">
-                  <label className="block text-[10px] uppercase font-bold text-zinc-400 mb-1 flex items-center gap-1">
-                    <Users size={10} /> Total Occupants
+                  <label className="block text-[9px] uppercase font-bold text-zinc-400 mb-1 flex items-center gap-1 tracking-widest">
+                    <Users size={10} /> Occupants
                   </label>
-                  <select disabled className="bg-transparent text-zinc-700 text-xs font-light focus:outline-none w-full cursor-not-allowed">
+                  <select disabled className="bg-transparent text-zinc-700 text-xs font-medium tracking-wide focus:outline-none w-full cursor-not-allowed">
                     <option>{guestCount} Guests Registered</option>
                   </select>
                 </div>
               </div>
 
-              {/* Dynamic Edit Dates Link Overlay */}
+              {/* Edit Dates Overlay */}
               <Link 
                 href={`/hotel-landing-page/availability?${searchParams.toString()}`}
-                className="absolute inset-0 flex items-center justify-center bg-zinc-950/5 opacity-0 group-hover/date:opacity-100 transition-all duration-200 backdrop-blur-[1px] cursor-pointer w-full text-center"
+                className="absolute inset-0 flex items-center justify-center bg-zinc-950/5 opacity-0 group-hover/date:opacity-100 transition-opacity duration-200 backdrop-blur-[1px] cursor-pointer w-full text-center"
               >
-                <span className="bg-white text-zinc-900 font-semibold px-3.5 py-2 rounded-xl shadow-lg text-[11px] flex items-center gap-1.5 border border-zinc-150 transform scale-95 group-hover/date:scale-100 transition-all duration-200">
-                  <Calendar size={13} className="text-zinc-500" />
-                  Change Stay Dates
+                <span className="bg-white text-zinc-900 font-bold uppercase tracking-wider px-4 py-2 rounded-none shadow-sm text-[9px] flex items-center gap-1.5 border border-zinc-200">
+                  <Calendar size={12} className="text-zinc-500" />
+                  Change Dates
                 </span>
               </Link>
             </div>
 
-            {/* Smart Contextual Submission Dispatcher Action Buttons */}
+            {/* Smart Submission Dispatcher Actions */}
             {isAlreadySelected ? (
               <div className="space-y-3">
-                <div className="p-3 bg-amber-50/80 border border-amber-200 text-amber-900 rounded-xl flex items-start gap-2 text-xs font-light leading-tight">
-                  <AlertTriangle size={15} className="text-amber-600 shrink-0 mt-0.5" />
-                  <span>This suite is already part of your active reservation bundle. Duplicate room entries are disabled.</span>
+                <div className="p-3 bg-zinc-50 border border-zinc-200 text-zinc-600 rounded-none flex items-start gap-2 text-xs font-light leading-tight tracking-wide">
+                  <AlertTriangle size={14} className="text-zinc-500 shrink-0 mt-0.5" />
+                  <span>This suite is an active selection in your bundle. Duplicate entries are disabled.</span>
                 </div>
                 <Link 
                   href={`/hotel-landing-page/booking?roomIds=${existingRoomIdsRaw}&checkin=${checkinStr}&checkout=${checkoutStr}&guests=${guestCount}`}
-                  className="w-full py-3.5 bg-zinc-900 hover:bg-black text-white rounded-xl text-xs font-medium transition-colors cursor-pointer shadow-sm text-center block uppercase tracking-wide"
+                  className="w-full py-3.5 bg-zinc-950 hover:bg-black text-white rounded-none text-[10px] font-bold text-center block uppercase tracking-[0.15em] border border-zinc-950 transition-colors"
                 >
                   Return to Booking Form
                 </Link>
@@ -245,11 +241,11 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
             ) : (
               <button 
                 onClick={handleSelectionAction}
-                className="w-full py-3.5 bg-zinc-950 hover:bg-black text-white rounded-full text-lg font-semibold transition-colors cursor-pointer text-center flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-zinc-950 hover:bg-black text-white rounded-none text-[10px] font-bold uppercase tracking-[0.15em] border border-zinc-950 transition-colors cursor-pointer text-center flex items-center justify-center gap-2"
               >
                 {activeSelectedIds.length > 0 ? (
                   <>
-                    <Plus size={14} /> Add to Booking
+                    <Plus size={12} strokeWidth={2.5} /> Add to Booking
                   </>
                 ) : (
                   <>
@@ -260,9 +256,9 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
             )}
           </div>
 
-          <div className="pt-4 border-t border-zinc-100 flex items-center justify-center gap-2 text-[11px] text-zinc-400 font-light">
-            <ShieldCheck size={14} className="text-zinc-500" />
-            <span>Best Rate Guaranteed & Encrypted Verification</span>
+          <div className="pt-4 border-t border-zinc-100 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+            <ShieldCheck size={13} className="text-zinc-400" />
+            <span>Best Rate Guaranteed</span>
           </div>
         </div>
 
