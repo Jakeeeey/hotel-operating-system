@@ -158,9 +158,8 @@ export function CalendarLayout() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6">
-
       {/* Page Header */}
-      <div className="mb-10">
+      <div className="mb-4">
         <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900">
           Availability Calendar
         </h1>
@@ -172,29 +171,29 @@ export function CalendarLayout() {
 
       {/* Stay Edit Session Alert */}
       {selectedRoomsCount > 0 && (
-        <div className="mb-8 p-4 bg-zinc-50 border border-zinc-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="flex items-start gap-2.5">
-            <Info size={16} className="text-zinc-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-zinc-900 uppercase tracking-wider text-[10px] leading-none">
-                Stay Edit Session Active
-              </p>
-              <p className="text-zinc-500 font-light mt-1.5">
-                You are adjusting stay dates for your selection of{" "}
-                <span className="font-semibold text-zinc-800">
-                  {selectedRoomsCount} room(s)
-                </span>
-                . Modifying dates will re-verify room capacity for the newly
-                specified range.
-              </p>
-            </div>
+        <div className="mb-8 p-4 md:py-3 md:px-6 bg-zinc-900 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm">
+          {/* Left Side: Typography */}
+          <div className="flex items-center gap-2.5">
+            {/* Editorial active session dot */}
+            <p className="text-neutral-200 font-light leading-relaxed">
+              Adjusting stay dates for your selection of{" "}
+              <span className="font-semibold text-white">
+                {selectedRoomsCount}{" "}
+                {selectedRoomsCount === 1 ? "room" : "rooms"}
+              </span>
+              .
+            </p>
           </div>
-          <button
-            onClick={() => updateParams({ roomIds: null })}
-            className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline transition-colors shrink-0 cursor-pointer self-end sm:self-center"
-          >
-            Clear Selected Rooms
-          </button>
+
+          {/* Right Side: Clean Button Action */}
+          <div className="shrink-0 w-full md:w-auto flex justify-end">
+            <button
+              onClick={() => updateParams({ roomIds: null })}
+              className="w-full md:w-auto text-center px-4 py-2 bg-white text-zinc-900 text-[11px] font-semibold tracking-wide rounded-lg transition-all duration-200 shadow-sm cursor-pointer hover:bg-neutral-100"
+            >
+              Clear Selection
+            </button>
+          </div>
         </div>
       )}
 
@@ -218,10 +217,8 @@ export function CalendarLayout() {
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-
         {/* ── Calendar Panel ── */}
         <div className="xl:col-span-8 bg-white border border-zinc-200 rounded-2xl  overflow-hidden">
-
           {/* Toolbar */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
             <button
@@ -310,7 +307,6 @@ export function CalendarLayout() {
 
         {/* ── Sidebar Panel ── */}
         <div className="xl:col-span-4 xl:sticky xl:top-28 space-y-4">
-
           {/* Date Summary Card */}
           <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-zinc-200 flex items-center gap-2">
@@ -336,7 +332,9 @@ export function CalendarLayout() {
                     {formatDisplayDate(checkInDate)}
                   </p>
                 ) : (
-                  <p className="text-xs text-zinc-400 font-light">Select date</p>
+                  <p className="text-xs text-zinc-400 font-light">
+                    Select date
+                  </p>
                 )}
               </div>
 
@@ -351,7 +349,9 @@ export function CalendarLayout() {
                     {formatDisplayDate(checkOutDate)}
                   </p>
                 ) : (
-                  <p className="text-xs text-zinc-400 font-light">Select date</p>
+                  <p className="text-xs text-zinc-400 font-light">
+                    Select date
+                  </p>
                 )}
               </div>
             </div>
@@ -360,7 +360,9 @@ export function CalendarLayout() {
             <div className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Users size={16} className="text-zinc-400" />
-                <span className="text-sm font-medium text-zinc-700">Guests</span>
+                <span className="text-sm font-medium text-zinc-700">
+                  Guests
+                </span>
               </div>
               <div className="flex items-center border border-zinc-200 rounded-lg overflow-hidden">
                 <button
@@ -388,10 +390,13 @@ export function CalendarLayout() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Moon size={14} className="text-zinc-500" />
-                  <span className="text-xs font-medium text-zinc-600">Duration</span>
+                  <span className="text-xs font-medium text-zinc-600">
+                    Duration
+                  </span>
                 </div>
                 <span className="text-sm font-bold text-zinc-900">
-                  {calculatedNights} {calculatedNights === 1 ? "Night" : "Nights"}
+                  {calculatedNights}{" "}
+                  {calculatedNights === 1 ? "Night" : "Nights"}
                 </span>
               </div>
 
@@ -415,7 +420,8 @@ export function CalendarLayout() {
             <div className="bg-white border border-zinc-100 rounded-xl p-5 flex items-start gap-3">
               <Info size={14} className="text-zinc-400 shrink-0 mt-0.5" />
               <p className="text-xs text-zinc-400 font-light leading-relaxed">
-                Click a check-in date then a check-out date on the calendar to begin.
+                Click a check-in date then a check-out date on the calendar to
+                begin.
               </p>
             </div>
           )}

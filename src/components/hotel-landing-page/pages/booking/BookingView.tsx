@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { rooms } from "../../data/data";
-import { CompactCalendarPopover } from "../calendar/CompactCalendarPopover";
 
 const bookingSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
@@ -31,23 +30,12 @@ type BookingFormValues = z.infer<typeof bookingSchema>;
 
 export function BookingView() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Read current configuration parameters from URL state machine strings
   const roomIdsRaw = searchParams.get("roomIds") || searchParams.get("roomId") || "1";
   const checkinStr = searchParams.get("checkin") || "2026-06-01";
   const checkoutStr = searchParams.get("checkout") || "2026-06-04";
   const guestCount = searchParams.get("guests") || "2";
-
-  const handleApplyStay = (newCheckin: string, newCheckout: string, newGuests: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("checkin", newCheckin);
-    params.set("checkout", newCheckout);
-    params.set("guests", String(newGuests));
-    router.replace(`/hotel-landing-page/booking?${params.toString()}`, { scroll: false });
-    setIsDatePickerOpen(false);
-  };
 
   const matchedRooms = useMemo(() => {
     const idsArray = roomIdsRaw.split(",").map((id) => Number(id.trim())).filter(Boolean);
@@ -214,29 +202,16 @@ export function BookingView() {
               </div>
 
               {/* Dynamic Edit Dates Overlay Button */}
-              <button 
-                type="button"
-                onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+              <Link 
+                href={`/hotel-landing-page/availability?${searchParams.toString()}`}
                 className="absolute inset-0 flex items-center justify-center bg-zinc-950/5 opacity-0 group-hover/date:opacity-100 transition-all duration-200 backdrop-blur-[1px] cursor-pointer w-full text-center"
               >
                 <span className="bg-white text-zinc-900 font-semibold px-3.5 py-2 rounded-xl shadow-lg text-[11px] flex items-center gap-1.5 border border-zinc-150 transform scale-95 group-hover/date:scale-100 transition-all duration-200">
                   <Calendar size={13} className="text-zinc-500" />
                   Change Stay Dates
                 </span>
-              </button>
+              </Link>
             </div>
-
-            {isDatePickerOpen && (
-              <div className="relative">
-                <CompactCalendarPopover
-                  initialCheckin={checkinStr}
-                  initialCheckout={checkoutStr}
-                  initialGuests={Number(guestCount)}
-                  onApply={handleApplyStay}
-                  onClose={() => setIsDatePickerOpen(false)}
-                />
-              </div>
-            )}
 
             <div className="pt-4 border-t border-zinc-100 space-y-3 text-xs">
               <div className="flex justify-between items-center text-zinc-500">

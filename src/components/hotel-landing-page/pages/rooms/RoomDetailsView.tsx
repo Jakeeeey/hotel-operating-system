@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   Star, 
@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { RoomData } from "../../types/types";
-import { CompactCalendarPopover } from "../calendar/CompactCalendarPopover";
 
 interface RoomDetailsViewProps {
   room: RoomData;
@@ -27,7 +26,6 @@ interface RoomDetailsViewProps {
 export function RoomDetailsView({ room }: RoomDetailsViewProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Extract ongoing selection variables from the session parameters
   const existingRoomIdsRaw = searchParams.get("roomIds") || searchParams.get("roomId") || "";
@@ -42,15 +40,6 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
   }, [existingRoomIdsRaw]);
 
   const isAlreadySelected = activeSelectedIds.includes(room.id);
-
-  const handleApplyStay = (newCheckin: string, newCheckout: string, newGuests: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("checkin", newCheckin);
-    params.set("checkout", newCheckout);
-    params.set("guests", String(newGuests));
-    router.replace(`/hotel-landing-page/rooms/${room.id}?${params.toString()}`, { scroll: false });
-    setIsDatePickerOpen(false);
-  };
 
   // Append logic execution loop
   const handleSelectionAction = () => {
@@ -228,29 +217,16 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
               </div>
 
               {/* Dynamic Edit Dates Link Overlay */}
-              <button 
-                type="button"
-                onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+              <Link 
+                href={`/hotel-landing-page/availability?${searchParams.toString()}`}
                 className="absolute inset-0 flex items-center justify-center bg-zinc-950/5 opacity-0 group-hover/date:opacity-100 transition-all duration-200 backdrop-blur-[1px] cursor-pointer w-full text-center"
               >
                 <span className="bg-white text-zinc-900 font-semibold px-3.5 py-2 rounded-xl shadow-lg text-[11px] flex items-center gap-1.5 border border-zinc-150 transform scale-95 group-hover/date:scale-100 transition-all duration-200">
                   <Calendar size={13} className="text-zinc-500" />
                   Change Stay Dates
                 </span>
-              </button>
+              </Link>
             </div>
-
-            {isDatePickerOpen && (
-              <div className="relative">
-                <CompactCalendarPopover
-                  initialCheckin={checkinStr}
-                  initialCheckout={checkoutStr}
-                  initialGuests={Number(guestCount)}
-                  onApply={handleApplyStay}
-                  onClose={() => setIsDatePickerOpen(false)}
-                />
-              </div>
-            )}
 
             {/* Smart Contextual Submission Dispatcher Action Buttons */}
             {isAlreadySelected ? (
@@ -269,15 +245,15 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
             ) : (
               <button 
                 onClick={handleSelectionAction}
-                className="w-full py-3.5 bg-zinc-950 hover:bg-black text-white rounded-xl text-xs font-medium transition-colors cursor-pointer shadow-sm text-center flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-zinc-950 hover:bg-black text-white rounded-full text-lg font-semibold transition-colors cursor-pointer text-center flex items-center justify-center gap-2"
               >
                 {activeSelectedIds.length > 0 ? (
                   <>
-                    <Plus size={14} /> Add Suite to Active Group Booking
+                    <Plus size={14} /> Add to Booking
                   </>
                 ) : (
                   <>
-                    Proceed to Secure Reservation
+                    Reserve
                   </>
                 )}
               </button>
