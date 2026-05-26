@@ -6,12 +6,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { 
-  Calendar, 
   CreditCard, 
   ArrowLeft, 
-  User, 
-  Smartphone,
-  Building,
   Plus
 } from "lucide-react";
 import Link from "next/link";
@@ -181,7 +177,7 @@ export function BookingView() {
             <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1 divide-y divide-zinc-50">
               {matchedRooms.map((room, idx) => (
                 <div key={room.id} className={`flex gap-4 items-center ${idx > 0 ? 'pt-3' : ''}`}>
-                  {/* Image placeholder framed tightly */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={room.image} alt={room.name} className="w-16 aspect-[4/3] rounded-sm object-cover shrink-0 grayscale-[20%] border border-zinc-100" />
                   <div className="min-w-0 flex-grow">
                     <h4 className="font-serif text-sm text-zinc-900 truncate font-medium">{room.name}</h4>

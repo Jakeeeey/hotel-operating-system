@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, Quote, ArrowRight } from "lucide-react";
+import { Quote, ArrowRight } from "lucide-react";
 import { reviews } from "../../data/data";
 
 export function GuestReviews() {

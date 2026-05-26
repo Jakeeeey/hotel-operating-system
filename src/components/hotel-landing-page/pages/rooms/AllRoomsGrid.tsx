@@ -4,16 +4,11 @@ import { useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Star,
   BedDouble,
   Maximize,
   SlidersHorizontal,
   Check,
-  Plus,
-  Calendar,
-  Users,
   ArrowRight,
-  Building,
 } from "lucide-react";
 import {
   Drawer,
