@@ -46,7 +46,7 @@ export const MonthPane = ({
       };
     }
 
-    let total = Object.values(dayRecords).reduce((acc, r) => acc + r.remainingAvailable, 0);
+    const total = Object.values(dayRecords).reduce((acc, r) => acc + r.remainingAvailable, 0);
     return { 
       isFullySoldOut: total === 0, 
       lowInventoryAlert: total > 0 && total <= 4, 

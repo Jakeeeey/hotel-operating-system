@@ -12,7 +12,7 @@ export default function AvailabilityPage() {
     <main className="min-h-screen bg-white pt-6 pb-16">
       <Suspense 
         fallback={
-          <div className="max-w-[1200px] mx-auto px-6 py-6 text-sm text-zinc-400">
+          <div className="max-w-[1400px] mx-auto px-6 py-6 text-sm text-zinc-400">
             Loading interactive calendar…
           </div>
         }

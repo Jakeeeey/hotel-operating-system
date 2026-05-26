@@ -14,7 +14,6 @@ import {
   Wind, 
   ShieldCheck,
   Plus,
-  ShoppingBag,
   AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
@@ -55,7 +54,7 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
 
   // Append logic execution loop
   const handleSelectionAction = () => {
-    let updatedIds = [...activeSelectedIds];
+    const updatedIds = [...activeSelectedIds];
     
     if (!updatedIds.includes(room.id)) {
       updatedIds.push(room.id);
@@ -81,6 +80,7 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
       {/* Multi-Photo Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12 rounded-2xl overflow-hidden shadow-sm">
         <div className="md:col-span-2 aspect-[16/10] bg-zinc-100">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src={room.image} 
             alt={room.name} 
@@ -89,6 +89,7 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
         </div>
         <div className="hidden md:flex flex-col gap-4">
           <div className="h-1/2 bg-zinc-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600" 
               alt="Interior framing" 
@@ -96,6 +97,7 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
             />
           </div>
           <div className="h-1/2 bg-zinc-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600" 
               alt="Luxury lounge area" 

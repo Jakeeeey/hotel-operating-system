@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Star, BedDouble, Maximize, SlidersHorizontal, Eye, Check, Plus, Calendar, Users, ArrowRight, Building } from "lucide-react";
+import { Star, BedDouble, Maximize, SlidersHorizontal, Check, Plus, Calendar, Users, ArrowRight, Building } from "lucide-react";
 import { rooms } from "../../data/data";
 import { CompactCalendarPopover } from "../calendar/CompactCalendarPopover";
 
@@ -179,6 +179,7 @@ export function AllRoomsGrid() {
               }`}
             >
               <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={room.image}
                   alt={room.name}
@@ -214,14 +215,14 @@ export function AllRoomsGrid() {
                   </div>
                 </div>
 
-                <div className="pt-5 mt-4 border-t border-zinc-50 flex items-center justify-between gap-4">
+                <div className="pt-5 border-t border-zinc-50 flex items-center justify-between gap-4">
                   <div>
                     <span className="text-xs text-zinc-400 font-light block">Rate / Night</span>
                     <span className="text-base font-semibold text-zinc-950">₱{room.price.toLocaleString()}</span>
                   </div>
 
-                  <span className="text-xs font-medium text-zinc-800 group-hover:text-zinc-950 transition-colors flex items-center gap-1">
-                    <Plus size={14} /> View & Add
+                  <span className="bg-zinc-900 text-white px-3 py-1.5 rounded-full cursor-pointer text-sm font-bold transition-all duration-200 hover:bg-black flex items-center gap-1">
+                    <Plus size={16} /> Reserve
                   </span>
                 </div>
               </div>

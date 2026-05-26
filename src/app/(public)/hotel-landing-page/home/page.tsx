@@ -4,7 +4,6 @@ import { DM_Sans } from "next/font/google";
 import {
   NavBar,
   HeroBanner,
-  BookingWidget,
   HotelOverview,
   BrowseRooms,
   GuestReviews,

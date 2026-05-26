@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users, Plus, Minus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Minus, X } from "lucide-react";
 import { RoomType, InventoryNight, InventoryLookupMap, DayStatusCache } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -194,7 +194,7 @@ function MonthPane({
             return <div key={`empty-${i}`} className="min-h-[32px]" />;
           }
 
-          const { isFullySoldOut, lowInventoryAlert, availableRoomsCount } = getStatus(cell.dateStr);
+          const { isFullySoldOut } = getStatus(cell.dateStr);
           const start = isStart(cell.dateStr);
           const end = isEnd(cell.dateStr);
           const inRange = isInRange(cell.dateStr);

@@ -6,16 +6,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { 
-  ShieldCheck, 
   Calendar, 
-  Users, 
   CreditCard, 
   ArrowLeft, 
   User, 
-  Mail, 
-  Phone, 
   Smartphone,
-  Info,
   Building,
   Plus
 } from "lucide-react";
@@ -184,6 +179,7 @@ export function BookingView() {
             <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
               {matchedRooms.map((room) => (
                 <div key={room.id} className="flex gap-3 items-center bg-zinc-50/50 border border-zinc-100 p-2.5 rounded-xl">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={room.image} alt={room.name} className="w-14 aspect-[4/3] rounded-lg object-cover shrink-0" />
                   <div className="min-w-0 flex-grow">
                     <h4 className="font-medium text-zinc-900 text-xs truncate">{room.name}</h4>
