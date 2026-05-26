@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { DM_Sans } from "next/font/google";
 import { NavBar, Footer, rooms } from "@/components/hotel-landing-page";
 import { RoomDetailsView } from "@/components/hotel-landing-page/pages/rooms/RoomDetailsView";
+import { Suspense } from "react";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -36,7 +37,9 @@ export default async function HotelLandingPageRooms({ params }: PageProps) {
     <main className={`${dmSans.className} min-h-screen bg-white`}>
       <NavBar />
       <div className="pt-24 pb-16">
-        <RoomDetailsView room={room} />
+        <Suspense fallback={<div className="text-center py-20 text-sm text-zinc-500">Loading room details...</div>}>
+          <RoomDetailsView room={room} />
+        </Suspense>
       </div>
       <Footer />
     </main>

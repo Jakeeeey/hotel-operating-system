@@ -1,6 +1,7 @@
 import { DM_Sans } from "next/font/google";
 import { NavBar, Footer } from "@/components/hotel-landing-page";
 import { OfferDetailsView } from "@/components/hotel-landing-page/pages/offers/OfferDetailsView";
+import { Suspense } from "react";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -17,7 +18,9 @@ export default function OfferDetailsPage() {
     <main className={`${dmSans.className} min-h-screen bg-white flex flex-col`}>
       <NavBar />
       <div className="pt-28 pb-20 flex-grow">
-        <OfferDetailsView />
+        <Suspense fallback={<div className="text-center py-20 text-sm text-zinc-500">Loading promotional campaigns...</div>}>
+          <OfferDetailsView />
+        </Suspense>
       </div>
       <Footer />
     </main>

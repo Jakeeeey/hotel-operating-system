@@ -1,6 +1,7 @@
 import { DM_Sans } from "next/font/google";
 import { NavBar, Footer } from "@/components/hotel-landing-page";
 import { AllRoomsGrid } from "@/components/hotel-landing-page/pages/rooms/AllRoomsGrid";
+import { Suspense } from "react";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -17,7 +18,9 @@ export default function AllRoomsDirectoryPage() {
     <main className={`${dmSans.className} min-h-screen bg-white flex flex-col`}>
       <NavBar />
       <div className="pt-28 pb-20 flex-grow">
-        <AllRoomsGrid />
+        <Suspense fallback={<div className="text-center py-20 text-sm text-zinc-500">Loading accommodations catalog...</div>}>
+          <AllRoomsGrid />
+        </Suspense>
       </div>
       <Footer />
     </main>
