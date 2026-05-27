@@ -38,7 +38,10 @@ export async function GET(request: Request) {
             fetch(`${API_BASE_URL}/items/operational_statuses?limit=-1`, { headers }),
             // 4. Reservation Items (within date range) with Joins
             fetch(`${API_BASE_URL}/items/reservation_items?limit=-1&fields=id,night_date,locked_price,room_id,room_type_id,reservation_id.id,reservation_id.status,reservation_id.check_in_date,reservation_id.check_out_date,reservation_id.guest_id.first_name,reservation_id.guest_id.last_name&filter=${encodeURIComponent(JSON.stringify({
-                night_date: { _between: [start, end] }
+                _and: [
+                    { reservation_id: { check_in_date: { _lte: end } } },
+                    { reservation_id: { check_out_date: { _gte: start } } }
+                ]
             }))}`, { headers }),
             // 5. Blocking Maintenance Tasks
             fetch(`${API_BASE_URL}/items/housekeeping_tasks?limit=-1&fields=*`, { headers })
@@ -62,6 +65,30 @@ export async function GET(request: Request) {
         const itemsData = await itemsRes.json();
         const rawTasksData = await tasksRes.json();
 
+        // Process reservation items into unique reservations per room
+        const rawItems = itemsData.data || [];
+        const reservationsMap = new Map();
+        
+        rawItems.forEach((item: any) => {
+            const resInfo = item.reservation_id;
+            if (resInfo) {
+                const key = `${resInfo.id}_${item.room_id || 'unassigned'}`;
+                if (!reservationsMap.has(key)) {
+                    reservationsMap.set(key, {
+                        id: resInfo.id,
+                        check_in_date: resInfo.check_in_date,
+                        check_out_date: resInfo.check_out_date,
+                        status: resInfo.status,
+                        guest_id: resInfo.guest_id,
+                        room_id: item.room_id,
+                        room_type_id: item.room_type_id,
+                        locked_price: item.locked_price
+                    });
+                }
+            }
+        });
+        const uniqueReservations = Array.from(reservationsMap.values());
+
         // Filter blocking tasks locally to avoid Directus schema sync issues with newly added MySQL fields
         // Fallback: If blocks_availability is entirely missing from payload, assume Maintenance tasks block availability.
         const blockingTasks = (rawTasksData.data || []).filter((t: { status?: string; blocks_availability?: number | boolean | string; task_type?: string; }) => {
@@ -80,7 +107,7 @@ export async function GET(request: Request) {
                 types: typesData.data || [],
                 rooms: roomsData.data || [],
                 statuses: statusesData.data || [],
-                reservationItems: itemsData.data || [],
+                reservations: uniqueReservations,
                 blockingTasks: blockingTasks,
             }
         });
