@@ -11,6 +11,7 @@ import { StatCards } from "./components/stat-cards";
 import { ArrivalsTable } from "./components/arrivals-table";
 import { DeparturesTable } from "./components/departures-table";
 import { CheckInDialog } from "./components/check-in-dialog";
+import { ExtendStayDialog } from "./components/extend-stay-dialog";
 
 interface StatsData {
     totalRooms: number;
@@ -63,6 +64,10 @@ export default function FrontDeskDashboardModule() {
     const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
     const [selectedArrival, setSelectedArrival] = useState<ArrivalItem | null>(null);
 
+    // Extend stay dialog state
+    const [extendStayDialogOpen, setExtendStayDialogOpen] = useState(false);
+    const [selectedDeparture, setSelectedDeparture] = useState<DepartureItem | null>(null);
+
     // Check-out loading state
     const [checkingOutId, setCheckingOutId] = useState<number | null>(null);
 
@@ -114,6 +119,11 @@ export default function FrontDeskDashboardModule() {
     const handleCheckIn = (arrival: ArrivalItem) => {
         setSelectedArrival(arrival);
         setCheckInDialogOpen(true);
+    };
+
+    const handleExtendStay = (departure: DepartureItem) => {
+        setSelectedDeparture(departure);
+        setExtendStayDialogOpen(true);
     };
 
     const handleCheckOut = async (departure: DepartureItem) => {
@@ -196,6 +206,7 @@ export default function FrontDeskDashboardModule() {
                     departures={filteredDepartures}
                     isLoading={loading}
                     onCheckOut={handleCheckOut}
+                    onExtendStay={handleExtendStay}
                     checkingOutId={checkingOutId}
                 />
             </div>
@@ -205,6 +216,14 @@ export default function FrontDeskDashboardModule() {
                 open={checkInDialogOpen}
                 onOpenChange={setCheckInDialogOpen}
                 arrival={selectedArrival}
+                onSuccess={fetchDashboard}
+            />
+
+            {/* Extend Stay Dialog */}
+            <ExtendStayDialog
+                open={extendStayDialogOpen}
+                onOpenChange={setExtendStayDialogOpen}
+                departure={selectedDeparture}
                 onSuccess={fetchDashboard}
             />
         </div>

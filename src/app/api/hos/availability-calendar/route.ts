@@ -45,9 +45,15 @@ export async function GET(request: Request) {
         ]);
 
         if (!typesRes.ok || !roomsRes.ok || !statusesRes.ok || !itemsRes.ok || !tasksRes.ok) {
-            const taskErr = !tasksRes.ok ? await tasksRes.text() : null;
-            console.error('Calendar Fetch Error:', taskErr);
-            throw new Error(`Failed to fetch data from Directus. ${taskErr || ''}`);
+            const errors = {
+                types: !typesRes.ok ? { status: typesRes.status, text: await typesRes.text() } : null,
+                rooms: !roomsRes.ok ? { status: roomsRes.status, text: await roomsRes.text() } : null,
+                statuses: !statusesRes.ok ? { status: statusesRes.status, text: await statusesRes.text() } : null,
+                items: !itemsRes.ok ? { status: itemsRes.status, text: await itemsRes.text() } : null,
+                tasks: !tasksRes.ok ? { status: tasksRes.status, text: await tasksRes.text() } : null,
+            };
+            console.error('Calendar Fetch Error Breakdown:', JSON.stringify(errors, null, 2));
+            throw new Error(`Failed to fetch data from Directus. Errors: ${JSON.stringify(errors)}`);
         }
 
         const typesData = await typesRes.json();

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowUpFromLine } from "lucide-react";
+import { ArrowUpFromLine, CalendarPlus } from "lucide-react";
 
 interface DepartureItem {
     reservationId: number;
@@ -17,10 +17,11 @@ interface DeparturesTableProps {
     departures: DepartureItem[];
     isLoading?: boolean;
     onCheckOut: (departure: DepartureItem) => void;
+    onExtendStay: (departure: DepartureItem) => void;
     checkingOutId: number | null;
 }
 
-export function DeparturesTable({ departures, isLoading, onCheckOut, checkingOutId }: DeparturesTableProps) {
+export function DeparturesTable({ departures, isLoading, onCheckOut, onExtendStay, checkingOutId }: DeparturesTableProps) {
     return (
         <Card className="py-0 overflow-hidden">
             <CardHeader className="pb-3 pt-5 px-5">
@@ -41,7 +42,7 @@ export function DeparturesTable({ departures, isLoading, onCheckOut, checkingOut
                         Room
                     </span>
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">
-                        Action
+                        Actions
                     </span>
                 </div>
 
@@ -78,11 +79,21 @@ export function DeparturesTable({ departures, isLoading, onCheckOut, checkingOut
                                         </span>
                                     )}
                                 </div>
-                                <div className="flex justify-end">
+                                <div className="flex justify-end items-center gap-2">
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        className="h-8 text-xs font-semibold"
+                                        className="h-8 text-xs font-semibold hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400"
+                                        onClick={() => onExtendStay(departure)}
+                                        disabled={checkingOutId === departure.reservationId}
+                                    >
+                                        <CalendarPlus className="h-3.5 w-3.5 mr-1" />
+                                        Extend
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 text-xs font-semibold bg-foreground text-background hover:bg-foreground/90 border-0"
                                         onClick={() => onCheckOut(departure)}
                                         disabled={checkingOutId === departure.reservationId}
                                     >
