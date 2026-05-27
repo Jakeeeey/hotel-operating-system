@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Heart, Star, Crown } from "lucide-react";
-import { RoomData } from "../../types/types";
 import Image from "next/image";
+import { RoomData } from "./types/room.types";
 
 function formatPrice(price: number): string {
   return price >= 1000 ? `₱${price.toLocaleString()}` : `₱${price}`;
