@@ -1,25 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { Loader2, Users, History, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Users, History } from "lucide-react";
 import { GuestHistoryModal, Guest } from "./components/guest-history-modal";
 import { toast } from "sonner";
+import { DataTable } from "./components/new-data-table";
+import { ColumnDef } from "@tanstack/react-table";
 
 export default function MasterGuestListModule() {
     const [guests, setGuests] = useState<Guest[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState("");
     
     // Modal state
     const [modalOpen, setModalOpen] = useState(false);
@@ -44,20 +36,41 @@ export default function MasterGuestListModule() {
         fetchGuests();
     }, []);
 
-    const filteredGuests = guests.filter((guest) => {
-        if (!searchQuery) return true;
-        const q = searchQuery.toLowerCase();
-        const fullName = `${guest.first_name} ${guest.last_name}`.toLowerCase();
-        return (
-            fullName.includes(q) ||
-            (guest.email && guest.email.toLowerCase().includes(q))
-        );
-    });
-
     const handleViewHistory = (guest: Guest) => {
         setSelectedGuest(guest);
         setModalOpen(true);
     };
+
+    const columns = useMemo<ColumnDef<Guest>[]>(() => [
+        {
+            id: "name",
+            header: "Name",
+            accessorFn: (row) => `${row.first_name} ${row.last_name}`,
+            cell: ({ row }) => <span className="font-medium">{row.original.first_name} {row.original.last_name}</span>
+        },
+        {
+            accessorKey: "email",
+            header: "Email",
+            cell: ({ row }) => <span className="text-muted-foreground">{row.getValue("email") || "N/A"}</span>
+        },
+        {
+            id: "actions",
+            header: () => <div className="text-right">Action</div>,
+            cell: ({ row }) => (
+                <div className="text-right">
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleViewHistory(row.original)}
+                        className="font-semibold shadow-sm rounded-lg opacity-90 hover:opacity-100 transition-opacity"
+                    >
+                        <History className="h-4 w-4 mr-2" />
+                        View History
+                    </Button>
+                </div>
+            )
+        }
+    ], []);
 
     return (
         <div className="p-4 md:p-6 space-y-8 w-full mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -76,66 +89,14 @@ export default function MasterGuestListModule() {
 
             <Card className="shadow-sm rounded-2xl border-t-4 border-t-primary">
                 <CardContent className="p-6">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="relative flex-1 max-w-sm">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search guests by name or email..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 rounded-xl"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="rounded-md border overflow-hidden">
-                        <Table>
-                            <TableHeader className="bg-muted/50">
-                                <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead className="text-right">Action</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {loading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={3} className="h-32 text-center">
-                                            <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                                        </TableCell>
-                                    </TableRow>
-                                ) : filteredGuests.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={3} className="h-32 text-center text-muted-foreground">
-                                            No guests found.
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    filteredGuests.map((guest) => (
-                                        <TableRow key={guest.id} className="group">
-                                            <TableCell className="font-medium">
-                                                {guest.first_name} {guest.last_name}
-                                            </TableCell>
-                                            <TableCell className="text-muted-foreground">
-                                                {guest.email || "N/A"}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button
-                                                    variant="secondary"
-                                                    size="sm"
-                                                    onClick={() => handleViewHistory(guest)}
-                                                    className="font-semibold shadow-sm rounded-lg opacity-90 group-hover:opacity-100 transition-opacity"
-                                                >
-                                                    <History className="h-4 w-4 mr-2" />
-                                                    View History
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
+                    <DataTable
+                        columns={columns}
+                        data={guests}
+                        isLoading={loading}
+                        searchKey="name"
+                        emptyTitle="No guests found"
+                        emptyDescription="There are no guests available to display."
+                    />
                 </CardContent>
             </Card>
 

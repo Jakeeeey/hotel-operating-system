@@ -1,3 +1,4 @@
+import React, { useMemo } from "react";
 import {
     Dialog,
     DialogContent,
@@ -5,21 +6,18 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { User, Phone, Mail, CalendarDays } from "lucide-react";
 import { differenceInDays, parseISO } from "date-fns";
+import { DataTable } from "./new-data-table";
+import { ColumnDef } from "@tanstack/react-table";
 
 export interface ReservationItem {
     room_id?: {
         room_number?: string;
+    };
+    room_type_id?: {
+        type_name?: string;
     };
 }
 
@@ -48,85 +46,103 @@ interface GuestHistoryModalProps {
 }
 
 export function GuestHistoryModal({ open, onOpenChange, guest }: GuestHistoryModalProps) {
-    if (!guest) return null;
-
-    const renderReservations = () => {
-        if (!guest.reservations || guest.reservations.length === 0) {
-            return (
-                <div className="py-8 text-center text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-                    No stay history found for this guest.
-                </div>
-            );
-        }
-
-        // Sort reservations by check in date descending (most recent first)
-        const sorted = [...guest.reservations].sort((a, b) => {
+    const sortedReservations = useMemo(() => {
+        if (!guest?.reservations) return [];
+        return [...guest.reservations].sort((a, b) => {
             return new Date(b.check_in_date).getTime() - new Date(a.check_in_date).getTime();
         });
+    }, [guest]);
 
-        return (
-            <div className="border rounded-md overflow-hidden">
-                <Table>
-                    <TableHeader className="bg-muted/50">
-                        <TableRow>
-                            <TableHead>Dates</TableHead>
-                            <TableHead>Rooms</TableHead>
-                            <TableHead>Length of Stay</TableHead>
-                            <TableHead>Status</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {sorted.map((res) => {
-                            const checkIn = res.check_in_date;
-                            const checkOut = res.check_out_date;
-                            
-                            let nights = 0;
-                            try {
-                                if (checkIn && checkOut) {
-                                    nights = differenceInDays(parseISO(checkOut), parseISO(checkIn));
-                                }
-                            } catch (e) {
-                                console.error("Error parsing dates", e);
-                            }
+    const columns = useMemo<ColumnDef<Reservation>[]>(() => [
+        {
+            id: "room_number",
+            header: "Room Number",
+            cell: ({ row }) => {
+                const rooms = (row.original.reservation_items || [])
+                    .map(item => item.room_id?.room_number)
+                    .filter(Boolean)
+                    .join(", ");
+                return <span className="font-medium">{rooms || "N/A"}</span>;
+            }
+        },
+        {
+            id: "room_type",
+            header: "Room Type",
+            cell: ({ row }) => {
+                const types = (row.original.reservation_items || [])
+                    .map(item => item.room_type_id?.type_name)
+                    .filter(Boolean)
+                    // unique types
+                    .filter((v, i, a) => a.indexOf(v) === i)
+                    .join(", ");
+                return <span className="text-muted-foreground">{types || "N/A"}</span>;
+            }
+        },
+        {
+            accessorKey: "check_in_date",
+            header: "Check In",
+            cell: ({ row }) => <span>{row.original.check_in_date}</span>
+        },
+        {
+            accessorKey: "check_out_date",
+            header: "Check Out",
+            cell: ({ row }) => <span>{row.original.check_out_date}</span>
+        },
+        {
+            id: "length_of_stay",
+            header: "Length of Stay",
+            cell: ({ row }) => {
+                const checkIn = row.original.check_in_date;
+                const checkOut = row.original.check_out_date;
+                let nights = 0;
+                try {
+                    if (checkIn && checkOut) {
+                        nights = differenceInDays(parseISO(checkOut), parseISO(checkIn));
+                    }
+                } catch (e) {
+                    // Ignore parsing error
+                }
+                return (
+                    <div className="flex items-center gap-1.5">
+                        <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                        <span>{nights} {nights === 1 ? 'night' : 'nights'}</span>
+                    </div>
+                );
+            }
+        },
+        {
+            accessorKey: "status",
+            header: "Status",
+            cell: ({ row }) => {
+                const status = row.original.status || 'Unknown';
+                // Define adaptive badge colors based on status
+                let variantClass = "bg-secondary text-secondary-foreground hover:bg-secondary/80";
+                
+                if (status.toLowerCase() === 'completed') {
+                    variantClass = "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20";
+                } else if (status.toLowerCase() === 'pending') {
+                    variantClass = "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20";
+                } else if (status.toLowerCase() === 'cancelled') {
+                    variantClass = "bg-destructive/15 text-destructive dark:text-destructive-foreground border border-destructive/20";
+                } else if (status.toLowerCase() === 'in-house' || status.toLowerCase() === 'checked in') {
+                    variantClass = "bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/20";
+                }
 
-                            const rooms = (res.reservation_items || [])
-                                .map(item => item.room_id?.room_number)
-                                .filter(Boolean)
-                                .join(", ");
+                return (
+                    <Badge variant="outline" className={`font-semibold ${variantClass}`}>
+                        {status}
+                    </Badge>
+                );
+            }
+        }
+    ], []);
 
-                            return (
-                                <TableRow key={res.id}>
-                                    <TableCell className="font-medium">
-                                        <div className="flex flex-col gap-1">
-                                            <span>In: {checkIn}</span>
-                                            <span>Out: {checkOut}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>{rooms || "N/A"}</TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-1">
-                                            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                                            {nights} {nights === 1 ? 'night' : 'nights'}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={res.status === 'Completed' ? 'default' : 'secondary'}>
-                                            {res.status || 'Unknown'}
-                                        </Badge>
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })}
-                    </TableBody>
-                </Table>
-            </div>
-        );
-    };
+    if (!guest) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-                <DialogHeader>
+            <DialogContent className="sm:max-w-6xl w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
+                <DialogHeader className="shrink-0">
                     <DialogTitle className="text-2xl font-bold flex items-center gap-2">
                         <User className="h-6 w-6 text-primary" />
                         {guest.first_name} {guest.last_name}
@@ -136,7 +152,7 @@ export function GuestHistoryModal({ open, onOpenChange, guest }: GuestHistoryMod
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-6 mt-4">
+                <div className="space-y-6 mt-4 overflow-y-auto flex-1 pb-4 px-1">
                     {/* Contact Info Card */}
                     <div className="bg-muted/30 p-4 rounded-xl border flex flex-col md:flex-row gap-6">
                         <div className="space-y-3 flex-1">
@@ -168,7 +184,12 @@ export function GuestHistoryModal({ open, onOpenChange, guest }: GuestHistoryMod
                         <h4 className="font-semibold text-lg flex items-center gap-2">
                             Stay History
                         </h4>
-                        {renderReservations()}
+                        <DataTable
+                            columns={columns}
+                            data={sortedReservations}
+                            emptyTitle="No stay history"
+                            emptyDescription="No stay history found for this guest."
+                        />
                     </div>
                 </div>
             </DialogContent>
