@@ -14,62 +14,68 @@ export async function GET() {
             ...(staticToken ? { 'Authorization': `Bearer ${staticToken}` } : {}),
         };
 
-        // Fetch guests, reservations, rooms, and room types independently to bypass missing relation aliases
-        const [guestsRes, reservationsRes, roomsRes, roomTypesRes] = await Promise.all([
+        // Fetch all 5 tables independently to completely bypass Directus nested relation bugs
+        const [guestsRes, reservationsRes, reservationItemsRes, roomsRes, roomTypesRes] = await Promise.all([
             fetch(`${API_BASE_URL}/items/guests_hos?limit=-1`, { headers }),
-            fetch(`${API_BASE_URL}/items/reservations?limit=-1&fields=*,reservation_items.*`, { headers }),
+            fetch(`${API_BASE_URL}/items/reservations?limit=-1`, { headers }),
+            fetch(`${API_BASE_URL}/items/reservation_items?limit=-1`, { headers }),
             fetch(`${API_BASE_URL}/items/rooms?limit=-1`, { headers }),
             fetch(`${API_BASE_URL}/items/room_types?limit=-1`, { headers })
         ]);
 
-        if (!guestsRes.ok || !reservationsRes.ok || !roomsRes.ok || !roomTypesRes.ok) {
+        if (!guestsRes.ok || !reservationsRes.ok || !reservationItemsRes.ok || !roomsRes.ok || !roomTypesRes.ok) {
             const err1 = !guestsRes.ok ? await guestsRes.text() : null;
             const err2 = !reservationsRes.ok ? await reservationsRes.text() : null;
-            const err3 = !roomsRes.ok ? await roomsRes.text() : null;
-            const err4 = !roomTypesRes.ok ? await roomTypesRes.text() : null;
-            console.error('API error:', err1, err2, err3, err4);
+            const err3 = !reservationItemsRes.ok ? await reservationItemsRes.text() : null;
+            const err4 = !roomsRes.ok ? await roomsRes.text() : null;
+            const err5 = !roomTypesRes.ok ? await roomTypesRes.text() : null;
+            console.error('API error:', err1, err2, err3, err4, err5);
             throw new Error(`Failed to fetch data.`);
         }
 
         const guestsData = await guestsRes.json();
         const reservationsData = await reservationsRes.json();
+        const reservationItemsData = await reservationItemsRes.json();
         const roomsData = await roomsRes.json();
         const roomTypesData = await roomTypesRes.json();
 
         const guests = guestsData.data || [];
         const reservations = reservationsData.data || [];
+        const reservationItems = reservationItemsData.data || [];
         const rooms = roomsData.data || [];
         const roomTypes = roomTypesData.data || [];
 
-        // Stitch rooms and room_types into reservation_items
-        const enrichedReservations = reservations.map((r: any) => {
-            const items = r.reservation_items || [];
-            const enrichedItems = items.map((item: any) => {
-                // Find room
-                const roomId = typeof item.room_id === 'object' && item.room_id !== null ? item.room_id.id : item.room_id;
-                const foundRoom = rooms.find((room: any) => room.id === roomId);
-                
-                // Find room type (fallback to room's type_id if reservation_items doesn't explicitly have it, though it usually should)
-                const roomTypeId = typeof item.room_type_id === 'object' && item.room_type_id !== null 
-                    ? item.room_type_id.id 
-                    : (item.room_type_id || (foundRoom ? foundRoom.type_id : null));
-                
-                const foundType = roomTypes.find((t: any) => t.id === roomTypeId);
-
-                return {
-                    ...item,
-                    room_id: foundRoom ? { id: foundRoom.id, room_number: foundRoom.room_number } : item.room_id,
-                    room_type_id: foundType ? { id: foundType.id, type_name: foundType.type_name } : item.room_type_id
-                };
-            });
+        // 1. Stitch rooms and room_types into reservation_items
+        const enrichedReservationItems = reservationItems.map((item: any) => {
+            const roomId = typeof item.room_id === 'object' && item.room_id !== null ? item.room_id.id : item.room_id;
+            const foundRoom = rooms.find((room: any) => room.id === roomId);
+            
+            const roomTypeId = typeof item.room_type_id === 'object' && item.room_type_id !== null 
+                ? item.room_type_id.id 
+                : (item.room_type_id || (foundRoom ? foundRoom.type_id : null));
+            const foundType = roomTypes.find((t: any) => t.id === roomTypeId);
 
             return {
-                ...r,
-                reservation_items: enrichedItems
+                ...item,
+                room_id: foundRoom ? { id: foundRoom.id, room_number: foundRoom.room_number } : item.room_id,
+                room_type_id: foundType ? { id: foundType.id, type_name: foundType.type_name } : item.room_type_id
             };
         });
 
-        // Manually stitch reservations into their corresponding guests
+        // 2. Stitch enriched reservation_items into reservations
+        const enrichedReservations = reservations.map((r: any) => {
+            const rId = typeof r.id === 'object' && r.id !== null ? r.id.id : r.id;
+            const itemsForRes = enrichedReservationItems.filter((item: any) => {
+                const itemResId = typeof item.reservation_id === 'object' && item.reservation_id !== null ? item.reservation_id.id : item.reservation_id;
+                return itemResId === rId;
+            });
+            return {
+                ...r,
+                reservation_items: itemsForRes
+            };
+        });
+
+        // 3. Manually stitch enriched reservations into their corresponding guests
         const guestsWithReservations = guests.map((guest: any) => {
             const guestReservations = enrichedReservations.filter((r: any) => {
                 const rGuestId = typeof r.guest_id === 'object' && r.guest_id !== null ? r.guest_id.id : r.guest_id;

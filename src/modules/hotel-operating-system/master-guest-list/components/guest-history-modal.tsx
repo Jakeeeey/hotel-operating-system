@@ -61,6 +61,8 @@ export function GuestHistoryModal({ open, onOpenChange, guest }: GuestHistoryMod
                 const rooms = (row.original.reservation_items || [])
                     .map(item => item.room_id?.room_number)
                     .filter(Boolean)
+                    // unique room numbers
+                    .filter((v, i, a) => a.indexOf(v) === i)
                     .join(", ");
                 return <span className="font-medium">{rooms || "N/A"}</span>;
             }
