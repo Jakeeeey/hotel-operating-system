@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,37 @@ interface ArrivalsTableProps {
 }
 
 export function ArrivalsTable({ arrivals, isLoading, onCheckIn }: ArrivalsTableProps) {
+    const [currentTime, setCurrentTime] = useState<Date | null>(null);
+
+    useEffect(() => {
+        setCurrentTime(new Date());
+        const interval = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 15000); // Check every 15 seconds
+        return () => clearInterval(interval);
+    }, []);
+
+    const getCheckInStatus = (arrival: ArrivalItem) => {
+        if (!currentTime || arrival.status === "Checked-In") return null;
+
+        const checkInStart = new Date(currentTime);
+        checkInStart.setHours(14, 0, 0, 0);
+
+        if (currentTime >= checkInStart) {
+            return (
+                <Badge className="bg-sky-500 hover:bg-sky-600 text-white animate-pulse">
+                    Ready for Check-In
+                </Badge>
+            );
+        } else {
+            return (
+                <Badge variant="outline" className="text-muted-foreground border-muted-foreground/30">
+                    Check-in 2:00 PM
+                </Badge>
+            );
+        }
+    };
+
     return (
         <Card className="py-0 overflow-hidden">
             <CardHeader className="pb-3 pt-5 px-5">
@@ -34,7 +66,7 @@ export function ArrivalsTable({ arrivals, isLoading, onCheckIn }: ArrivalsTableP
             </CardHeader>
             <CardContent className="px-0 pb-0">
                 {/* Table Header */}
-                <div className="grid grid-cols-[1fr_1fr_auto] gap-3 px-5 py-2.5 border-t bg-muted/30">
+                <div className="grid grid-cols-[1.5fr_1fr_auto] gap-3 px-5 py-2.5 border-t bg-muted/30">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Guest
                     </span>
@@ -50,7 +82,7 @@ export function ArrivalsTable({ arrivals, isLoading, onCheckIn }: ArrivalsTableP
                 {isLoading ? (
                     <div className="divide-y">
                         {[1, 2, 3].map((i) => (
-                            <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-3 px-5 py-3.5 animate-pulse">
+                            <div key={i} className="grid grid-cols-[1.5fr_1fr_auto] gap-3 px-5 py-3.5 animate-pulse">
                                 <div className="h-4 w-24 bg-muted rounded" />
                                 <div className="h-4 w-20 bg-muted rounded" />
                                 <div className="h-8 w-20 bg-muted rounded" />
@@ -66,11 +98,12 @@ export function ArrivalsTable({ arrivals, isLoading, onCheckIn }: ArrivalsTableP
                         {arrivals.map((arrival) => (
                             <div
                                 key={arrival.reservationId}
-                                className="grid grid-cols-[1fr_1fr_auto] gap-3 items-center px-5 py-3.5 hover:bg-muted/20 transition-colors"
+                                className="grid grid-cols-[1.5fr_1fr_auto] gap-3 items-center px-5 py-3.5 hover:bg-muted/20 transition-colors"
                             >
-                                <span className="text-sm font-medium truncate">
-                                    {arrival.guestName}
-                                </span>
+                                <div className="flex items-center gap-2 text-sm font-medium overflow-hidden">
+                                    <span className="truncate">{arrival.guestName}</span>
+                                    {getCheckInStatus(arrival)}
+                                </div>
                                 <span className="text-sm text-muted-foreground truncate">
                                     {arrival.roomTypeName}
                                 </span>
