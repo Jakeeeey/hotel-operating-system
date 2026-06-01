@@ -17,7 +17,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import { rooms } from "../../data/data";
+import { RoomData } from "../home/types/room.types";
 
 function formatDisplayDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
@@ -29,9 +29,15 @@ function formatDisplayDate(iso: string): string {
   });
 }
 
-export function AllRoomsGrid() {
+interface AllRoomsGridProps {
+  initialRooms: RoomData[];
+}
+
+export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  const [rooms] = useState<RoomData[]>(initialRooms);
   const [activeCategory, setActiveCategory] = useState("All");
 
   const existingRoomIdsRaw =

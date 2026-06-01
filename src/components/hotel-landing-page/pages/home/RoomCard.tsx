@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Heart, Star, Crown } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { RoomData } from "./types/room.types";
 
 function formatPrice(price: number): string {
@@ -10,6 +11,7 @@ function formatPrice(price: number): string {
 }
 
 export function RoomCard({ room }: { room: RoomData }) {
+  const router = useRouter();
   const [liked, setLiked] = useState<boolean>(false);
 
   return (
@@ -108,7 +110,13 @@ export function RoomCard({ room }: { room: RoomData }) {
             </p>
           </div>
           
-          <button className="bg-zinc-950 text-white rounded-sm px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-150 shadow-xs flex items-center gap-1.5 shrink-0">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/hotel-landing-page/rooms/${room.id}`);
+            }}
+            className="bg-zinc-950 text-white rounded-sm px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-150 shadow-xs flex items-center gap-1.5 shrink-0"
+          >
             <span>Reserve</span>
             <span className="text-[11px] font-normal font-sans opacity-70 transform group-hover:translate-x-0.5 transition-transform duration-150">→</span>
           </button>

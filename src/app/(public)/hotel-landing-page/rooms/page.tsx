@@ -2,6 +2,7 @@ import { DM_Sans } from "next/font/google";
 import { NavBar, Footer } from "@/components/hotel-landing-page";
 import { AllRoomsGrid } from "@/components/hotel-landing-page/pages/rooms/AllRoomsGrid";
 import { Suspense } from "react";
+import { getRoomsService } from "@/components/hotel-landing-page/pages/home/services/room.service";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -13,13 +14,14 @@ export const metadata = {
   description: "Browse our hand-selected catalog of contemporary suites and villas designed for uncompromised comfort.",
 };
 
-export default function AllRoomsDirectoryPage() {
+export default async function AllRoomsDirectoryPage() {
+  const roomData = await getRoomsService();
   return (
     <main className={`${dmSans.className} min-h-screen bg-white flex flex-col`}>
       <NavBar />
       <div className="pt-28 pb-20 flex-grow">
         <Suspense fallback={<div className="text-center py-20 text-sm text-zinc-500">Loading accommodations catalog...</div>}>
-          <AllRoomsGrid />
+          <AllRoomsGrid initialRooms={roomData} />
         </Suspense>
       </div>
       <Footer />

@@ -12,12 +12,11 @@ export function BrowseRooms() {
   const [canScrollLeft, setCanScrollLeft] = useState<boolean>(false);
   const [canScrollRight, setCanScrollRight] = useState<boolean>(true);
 
-  // Keep your existing filters
   const filterTabs = ["All", "Deluxe Room", "Suite", "Pool Villa", "Ocean View", "Overwater Bungalow"];
 
   const filteredRooms = activeFilter === "All"
     ? rooms
-    : rooms.filter((r) => r.type === activeFilter.toLowerCase()); // Ensure your DB/Service returns lowercase types
+    : rooms.filter((r) => r.type === activeFilter.toLowerCase());
 
   const checkScroll = () => {
     if (scrollRef.current) {

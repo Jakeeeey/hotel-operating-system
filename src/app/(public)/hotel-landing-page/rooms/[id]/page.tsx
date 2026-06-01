@@ -3,6 +3,7 @@ import { DM_Sans } from "next/font/google";
 import { NavBar, Footer, rooms } from "@/components/hotel-landing-page";
 import { RoomDetailsView } from "@/components/hotel-landing-page/pages/rooms/RoomDetailsView";
 import { Suspense } from "react";
+import { getRoomByIdService } from "@/components/hotel-landing-page/pages/home/services/room.service";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -16,7 +17,7 @@ interface PageProps {
 // Generate Dynamic SEO Header parameters
 export async function generateMetadata({ params }: PageProps) {
   const { id } = await params;
-  const room = rooms.find((r) => r.id === Number(id));
+  const room = await getRoomByIdService(Number(id));
   
   return {
     title: room ? `Book ${room.name} | Luxury Stays` : "Accommodation Profile View",
@@ -26,9 +27,8 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function HotelLandingPageRooms({ params }: PageProps) {
   const { id } = await params;
-  const room = rooms.find((r) => r.id === Number(id));
+  const room = await getRoomByIdService(Number(id));
 
-  // Catch non-existent room profiles immediately
   if (!room) {
     notFound();
   }

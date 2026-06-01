@@ -16,21 +16,20 @@ interface DirectusRoom {
   badge?: string;
   availability?: string;
 }
+export async function getRoomByIdService(id: number): Promise<RoomData | null> {
+  const rooms = await getRoomsService();
+  return rooms.find((r) => r.id === id) || null;
+}
 
 export const getRoomsService = async (): Promise<RoomData[]> => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  if (!baseUrl) {
-    console.error("NEXT_PUBLIC_API_BASE_URL is not defined in .env.local");
-    return [];
-  }
-
-  const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
+  const STATIC_TOKEN = process.env.DIRECTUS_STATIC_TOKEN;
+  const DIRECTUS_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   try {
-    const res = await fetch(`${baseUrl}/items/room_types_hos`, {
+    const res = await fetch(`${DIRECTUS_URL}/items/room_types_hos`, {
       headers: {
-        ...(staticToken ? { Authorization: `Bearer ${staticToken}` } : {}),
+        ...(STATIC_TOKEN ? { Authorization: `Bearer ${STATIC_TOKEN}` } : {}),
       },
     });
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -43,7 +42,7 @@ export const getRoomsService = async (): Promise<RoomData[]> => {
       description: r.description || "",
       type: (r.type?.toLowerCase() ?? "deluxe") as RoomType,
       image: r.main_image_url
-        ? `/api/hotel-landing-page/rooms/${r.main_image_url}/image`
+        ? `${DIRECTUS_URL}/assets/${r.main_image_url}`
         : "",
       bed: r.bed || "N/A",
       sqm: r.sqm || "N/A",
