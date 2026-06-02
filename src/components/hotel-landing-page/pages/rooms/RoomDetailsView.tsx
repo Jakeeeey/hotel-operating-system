@@ -29,9 +29,11 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
 
   const existingRoomIdsRaw =
     searchParams.get("roomIds") || searchParams.get("roomId") || "";
-  const checkinStr = searchParams.get("checkin") || "2026-06-01";
-  const checkoutStr = searchParams.get("checkout") || "2026-06-04";
-  const guestCount = searchParams.get("guests") || "2";
+  const checkinStr = searchParams.get("checkin") || "";
+  const checkoutStr = searchParams.get("checkout") || "";
+  const adultsCount = Number(searchParams.get("adults") || 0);
+  const childrenCount = Number(searchParams.get("children") || 0);
+  const guestCount = adultsCount + childrenCount;
 
   const activeSelectedIds = useMemo(() => {
     if (!existingRoomIdsRaw) return [];

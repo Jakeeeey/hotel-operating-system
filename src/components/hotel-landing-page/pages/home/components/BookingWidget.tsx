@@ -6,7 +6,7 @@ export function BookingWidget() {
   return (
     <div className="w-full mx-auto p-0">
       {/* Main architectural ledger frame with minimal lines */}
-      <div className="bg-white rounded-xl p-5 md:p-6 border border-zinc-200 shadow-xl shadow-zinc-950/5">
+      <div className="bg-white rounded-xl p-5 md:p-6  shadow-xl shadow-zinc-950/5">
         
         {/* ── Main Inputs Grid ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">

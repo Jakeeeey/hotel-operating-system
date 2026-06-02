@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Heart, Star, Crown } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { RoomData } from "../types/room.types";
 
 function formatPrice(price: number): string {
@@ -12,6 +12,7 @@ function formatPrice(price: number): string {
 
 export function RoomCard({ room }: { room: RoomData }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [liked, setLiked] = useState<boolean>(false);
 
   return (
@@ -113,7 +114,8 @@ export function RoomCard({ room }: { room: RoomData }) {
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/hotel-landing-page/rooms/${room.id}`);
+              const paramsString = searchParams ? `?${searchParams.toString()}` : "";
+              router.push(`/hotel-landing-page/rooms/${room.id}${paramsString}`);
             }}
             className="bg-zinc-950 text-white rounded-sm px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-150 shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
           >

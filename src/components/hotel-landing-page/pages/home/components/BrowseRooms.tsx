@@ -12,11 +12,14 @@ export function BrowseRooms() {
   const [canScrollLeft, setCanScrollLeft] = useState<boolean>(false);
   const [canScrollRight, setCanScrollRight] = useState<boolean>(true);
 
-  const filterTabs = ["All", "Deluxe Room", "Suite", "Pool Villa", "Ocean View", "Overwater Bungalow"];
+  const filterTabs = [
+    "All",
+    ...Array.from(new Set(rooms.map((r) => r.badge || "Standard"))),
+  ];
 
   const filteredRooms = activeFilter === "All"
     ? rooms
-    : rooms.filter((r) => r.type === activeFilter.toLowerCase());
+    : rooms.filter((r) => r.badge === activeFilter);
 
   const checkScroll = () => {
     if (scrollRef.current) {
@@ -47,7 +50,7 @@ export function BrowseRooms() {
       <div className="flex gap-2 mb-10 overflow-x-auto pb-2 scrollbar-none">
         {filterTabs.map((tab) => (
           <button key={tab} onClick={() => setActiveFilter(tab)} 
-            className={`rounded-sm px-4 py-2 text-[11px] font-bold uppercase ${activeFilter === tab ? "bg-zinc-950 text-white" : "bg-white text-zinc-500 border"}`}>
+            className={`rounded-sm px-4 py-2 text-[11px] font-bold uppercase ${activeFilter === tab ? "bg-zinc-950 text-white" : "bg-white text-zinc-500 border border-zinc-200"}`}>
             {tab}
           </button>
         ))}

@@ -44,7 +44,9 @@ export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
     searchParams.get("roomIds") || searchParams.get("roomId") || "";
   const checkinStr = searchParams.get("checkin") || "2026-06-01";
   const checkoutStr = searchParams.get("checkout") || "2026-06-04";
-  const guestCount = searchParams.get("guests") || "2";
+  const adultsCount = Number(searchParams.get("adults") || 2);
+  const childrenCount = Number(searchParams.get("children") || 0);
+  const guestCount = adultsCount + childrenCount;
 
   const calculatedNights = useMemo(() => {
     if (!checkinStr || !checkoutStr) return 0;
