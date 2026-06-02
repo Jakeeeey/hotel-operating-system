@@ -12,6 +12,7 @@ import { ArrivalsTable } from "./components/arrivals-table";
 import { DeparturesTable } from "./components/departures-table";
 import { CheckInDialog } from "./components/check-in-dialog";
 import { ExtendStayDialog } from "./components/extend-stay-dialog";
+import { GuestFolioSheet } from "./components/guest-folio-sheet";
 
 interface StatsData {
     totalRooms: number;
@@ -67,6 +68,10 @@ export default function FrontDeskDashboardModule() {
     // Extend stay dialog state
     const [extendStayDialogOpen, setExtendStayDialogOpen] = useState(false);
     const [selectedDeparture, setSelectedDeparture] = useState<DepartureItem | null>(null);
+
+    // Folio Sheet state
+    const [folioOpen, setFolioOpen] = useState(false);
+    const [selectedFolioDeparture, setSelectedFolioDeparture] = useState<DepartureItem | null>(null);
 
     // Check-out loading state
     const [checkingOutId, setCheckingOutId] = useState<number | null>(null);
@@ -124,6 +129,11 @@ export default function FrontDeskDashboardModule() {
     const handleExtendStay = (departure: DepartureItem) => {
         setSelectedDeparture(departure);
         setExtendStayDialogOpen(true);
+    };
+
+    const handleOpenFolio = (departure: DepartureItem) => {
+        setSelectedFolioDeparture(departure);
+        setFolioOpen(true);
     };
 
     const handleCheckOut = async (departure: DepartureItem) => {
@@ -207,6 +217,7 @@ export default function FrontDeskDashboardModule() {
                     isLoading={loading}
                     onCheckOut={handleCheckOut}
                     onExtendStay={handleExtendStay}
+                    onOpenFolio={handleOpenFolio}
                     checkingOutId={checkingOutId}
                 />
             </div>
@@ -225,6 +236,17 @@ export default function FrontDeskDashboardModule() {
                 onOpenChange={setExtendStayDialogOpen}
                 departure={selectedDeparture}
                 onSuccess={fetchDashboard}
+            />
+
+            {/* Guest Folio Sheet */}
+            <GuestFolioSheet
+                open={folioOpen}
+                onOpenChange={setFolioOpen}
+                reservationId={selectedFolioDeparture?.reservationId || null}
+                guestName={selectedFolioDeparture?.guestName || ""}
+                roomNumber={selectedFolioDeparture?.roomNumber || ""}
+                roomTypeName={selectedFolioDeparture?.roomTypeName || ""}
+                onCheckOutSuccess={fetchDashboard}
             />
         </div>
     );

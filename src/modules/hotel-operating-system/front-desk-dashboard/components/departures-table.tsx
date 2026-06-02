@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowUpFromLine, CalendarPlus } from "lucide-react";
+import { ArrowUpFromLine, CalendarPlus, Receipt } from "lucide-react";
 
 interface DepartureItem {
     reservationId: number;
@@ -20,10 +20,11 @@ interface DeparturesTableProps {
     isLoading?: boolean;
     onCheckOut: (departure: DepartureItem) => void;
     onExtendStay: (departure: DepartureItem) => void;
+    onOpenFolio: (departure: DepartureItem) => void;
     checkingOutId: number | null;
 }
 
-export function DeparturesTable({ departures, isLoading, onCheckOut, onExtendStay, checkingOutId }: DeparturesTableProps) {
+export function DeparturesTable({ departures, isLoading, onCheckOut, onExtendStay, onOpenFolio, checkingOutId }: DeparturesTableProps) {
     const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
     useEffect(() => {
@@ -136,6 +137,16 @@ export function DeparturesTable({ departures, isLoading, onCheckOut, onExtendSta
                                         >
                                             <CalendarPlus className="h-3.5 w-3.5 mr-1" />
                                             Extend
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 text-xs font-semibold hover:bg-primary/10 hover:text-primary"
+                                            onClick={() => onOpenFolio(departure)}
+                                            disabled={checkingOutId === departure.reservationId}
+                                        >
+                                            <Receipt className="h-3.5 w-3.5 mr-1" />
+                                            Folio
                                         </Button>
                                         <Button
                                             variant="outline"
