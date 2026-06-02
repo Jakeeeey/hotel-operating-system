@@ -27,7 +27,7 @@ interface FlatDayInventory {
 
 type FlatInventoryLookup = Record<string, FlatDayInventory>;
 
-export function CalendarLayout() {
+export function CalendarLayout({ rooms = [] }: { rooms?: any[] }) {
   const [inventory, setInventory] = useState<{ capacity: number; bookings: Array<{ night_date: string }> }>({
     capacity: 20,
     bookings: []
@@ -46,21 +46,72 @@ export function CalendarLayout() {
   const childrenCount = Number(searchParams.get("children") ?? 0);
   const roomIdsRaw = searchParams.get("roomIds") || "";
 
+  // Dynamic Maximum Input Caps Engine
+  const capacityCeilings = useMemo(() => {
+    let maxAdults = 10;
+    let maxChildren = 10;
+
+    if (roomIdsRaw && rooms.length > 0) {
+      const selectedIds = roomIdsRaw.split(",").map(Number);
+      const selectedRooms = rooms.filter((r) => selectedIds.includes(r.id));
+      
+      if (selectedRooms.length > 0) {
+        maxAdults = selectedRooms.reduce((sum, r) => sum + (r.type_id?.max_adults ?? r.max_adults ?? 2), 0);
+        maxChildren = selectedRooms.reduce((sum, r) => sum + (r.type_id?.max_children ?? r.max_children ?? 0), 0);
+      }
+    } else if (rooms.length > 0) {
+      maxAdults = Math.max(...rooms.map((r) => r.type_id?.max_adults ?? r.max_adults ?? 2));
+      maxChildren = Math.max(...rooms.map((r) => r.type_id?.max_children ?? r.max_children ?? 0));
+    }
+
+    return { maxAdults, maxChildren };
+  }, [roomIdsRaw, rooms]);
+
+  // Self-Correction Policy Hook
+  useEffect(() => {
+    if (rooms.length === 0) return;
+    
+    const elementsToUpdate: Record<string, number> = {};
+    let nestedChangeRequired = false;
+
+    if (adultsCount > capacityCeilings.maxAdults) {
+      elementsToUpdate["adults"] = capacityCeilings.maxAdults;
+      nestedChangeRequired = true;
+    }
+    if (childrenCount > capacityCeilings.maxChildren) {
+      elementsToUpdate["children"] = capacityCeilings.maxChildren;
+      nestedChangeRequired = true;
+    }
+
+    if (nestedChangeRequired) {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(elementsToUpdate).forEach(([k, v]) => params.set(k, String(v)));
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  }, [capacityCeilings, adultsCount, childrenCount, searchParams, pathname, router, rooms]);
+
+  // Refactored useEffect: Fetches structural capacities reactively when counters change
   useEffect(() => {
     async function updateInventory() {
       try {
-        const data = await getMonthlyInventory(leftMonth.getFullYear(), leftMonth.getMonth());
+        const data = await getMonthlyInventory(
+          leftMonth.getFullYear(), 
+          leftMonth.getMonth(),
+          adultsCount,
+          childrenCount
+        );
+        
         setInventory({
-          capacity: data?.capacity || 20,
+          capacity: data?.capacity ?? 0,
           bookings: Array.isArray(data?.bookings) ? (data.bookings as Array<{ night_date: string }>) : []
         });
       } catch (error) {
         console.error("🚨 Failed to sync calendar inventory data pools:", error);
-        setInventory({ capacity: 20, bookings: [] });
+        setInventory({ capacity: 0, bookings: [] });
       }
     }
     updateInventory();
-  }, [leftMonth]);
+  }, [leftMonth, adultsCount, childrenCount]); // Real-time triggers
 
   const rightMonth = useMemo(
     () => new Date(leftMonth.getFullYear(), leftMonth.getMonth() + 1, 1),
@@ -131,12 +182,12 @@ export function CalendarLayout() {
   );
 
   const handleAdultsChange = (delta: number) => {
-    const newCount = Math.max(1, Math.min(10, adultsCount + delta));
+    const newCount = Math.max(1, Math.min(capacityCeilings.maxAdults, adultsCount + delta));
     updateParams({ adults: newCount });
   };
 
   const handleChildrenChange = (delta: number) => {
-    const newCount = Math.max(0, Math.min(10, childrenCount + delta));
+    const newCount = Math.max(0, Math.min(capacityCeilings.maxChildren, childrenCount + delta));
     updateParams({ children: newCount });
   };
 
@@ -148,14 +199,10 @@ export function CalendarLayout() {
     });
   };
 
-  // Dynamic Router Fix Engine
   const handleSearch = () => {
     if (!checkInDate || !checkOutDate) return;
-    
     const params = new URLSearchParams(searchParams.toString());
     
-    // If roomIds exists, the user is modifying an active reservation!
-    // Return them directly back to the final booking form with all parameters intact.
     if (params.get("roomIds")) {
       router.push(`/hotel-landing-page/booking?${params.toString()}`);
     } else {
@@ -327,10 +374,13 @@ export function CalendarLayout() {
                       Adults
                     </span>
                   </div>
-                  <span className="text-[10px] text-zinc-400 font-light mt-0.5">Ages 13 or above</span>
+                  <span className="text-[10px] text-zinc-400 font-light mt-0.5">
+                    Max Allowed: {capacityCeilings.maxAdults}
+                  </span>
                 </div>
                 <div className="flex items-center border border-zinc-200 rounded-sm overflow-hidden bg-white">
                   <button
+                    type="button"
                     onClick={() => handleAdultsChange(-1)}
                     disabled={adultsCount <= 1}
                     className="px-2.5 py-1.5 hover:bg-zinc-50 text-zinc-500 disabled:opacity-30 transition-colors cursor-pointer"
@@ -341,8 +391,10 @@ export function CalendarLayout() {
                     {adultsCount}
                   </span>
                   <button
+                    type="button"
                     onClick={() => handleAdultsChange(1)}
-                    className="px-2.5 py-1.5 hover:bg-zinc-50 text-zinc-500 transition-colors cursor-pointer"
+                    disabled={adultsCount >= capacityCeilings.maxAdults}
+                    className="px-2.5 py-1.5 hover:bg-zinc-50 text-zinc-500 disabled:opacity-30 transition-colors cursor-pointer"
                   >
                     <Plus size={11} strokeWidth={3} />
                   </button>
@@ -357,10 +409,13 @@ export function CalendarLayout() {
                       Children
                     </span>
                   </div>
-                  <span className="text-[10px] text-zinc-400 font-light mt-0.5">Ages 0 to 12</span>
+                  <span className="text-[10px] text-zinc-400 font-light mt-0.5">
+                    Max Allowed: {capacityCeilings.maxChildren}
+                  </span>
                 </div>
                 <div className="flex items-center border border-zinc-200 rounded-sm overflow-hidden bg-white">
                   <button
+                    type="button"
                     onClick={() => handleChildrenChange(-1)}
                     disabled={childrenCount <= 0}
                     className="px-2.5 py-1.5 hover:bg-zinc-50 text-zinc-500 disabled:opacity-30 transition-colors cursor-pointer"
@@ -371,8 +426,10 @@ export function CalendarLayout() {
                     {childrenCount}
                   </span>
                   <button
+                    type="button"
                     onClick={() => handleChildrenChange(1)}
-                    className="px-2.5 py-1.5 hover:bg-zinc-50 text-zinc-500 transition-colors cursor-pointer"
+                    disabled={childrenCount >= capacityCeilings.maxChildren}
+                    className="px-2.5 py-1.5 hover:bg-zinc-50 text-zinc-500 disabled:opacity-30 transition-colors cursor-pointer"
                   >
                     <Plus size={11} strokeWidth={3} />
                   </button>

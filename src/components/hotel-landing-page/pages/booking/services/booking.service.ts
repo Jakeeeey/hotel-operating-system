@@ -3,6 +3,66 @@
 import { directus } from "../lib/directus";
 import { createItem, createItems, readItems } from "@directus/sdk";
 
+/**
+ * Dynamically fetches valid inventory capacity and bookings matching the month and guest configuration
+ */
+export async function getMonthlyInventory(year: number, month: number, adults: number = 2, children: number = 0) {
+  try {
+    // 1. Calculate the start and end string metrics for the requested month window
+    const startDate = new Date(year, month, 1).toISOString().split("T")[0];
+    const endDate = new Date(year, month + 1, 1).toISOString().split("T")[0];
+
+    // 2. Fetch all physical rooms whose parent room type can accommodate the guest count
+    const eligibleRooms = await directus.request(
+      readItems("rooms_hos", {
+        filter: {
+          type_id: {
+            max_adults: { _gte: adults },
+            max_children: { _gte: children }
+          }
+        },
+        fields: ["id"]
+      })
+    );
+
+    const eligibleRoomIds = eligibleRooms.map((room: any) => room.id);
+
+    // If no room layouts can handle this party size configuration, return zero available inventory
+    if (eligibleRoomIds.length === 0) {
+      return {
+        capacity: 0,
+        bookings: []
+      };
+    }
+
+    // 3. Fetch existing reservation items for these eligible rooms within the month range
+    const activeBookings = await directus.request(
+      readItems("reservation_items_hos", {
+        filter: {
+          _and: [
+            { night_date: { _gte: startDate } },
+            { night_date: { _lt: endDate } },
+            { room_id: { _in: eligibleRoomIds } }
+          ]
+        },
+        fields: ["night_date", "room_id"]
+      })
+    );
+
+    return {
+      // Dynamic capacity is the precise count of physical rooms that can fit the guests
+      capacity: eligibleRoomIds.length,
+      bookings: activeBookings || []
+    };
+  } catch (error) {
+    console.error("Database inventory lookup execution failure:", error);
+    return {
+      capacity: 0,
+      bookings: []
+    };
+  }
+}
+
 async function getOrCreateGuest(data: any) {
   const existingGuests = await directus.request(
     readItems("guests_hos", { filter: { email: { _eq: data.email } } })
@@ -87,6 +147,8 @@ export async function createBookingTransaction(data: any, details: any) {
           reservation_id: reservation.id,
           room_id: roomId,
           night_date: date,
+          adults_count: Number(details.adults ?? 2),
+          children_count: Number(details.children ?? 0),
         });
       }
     }

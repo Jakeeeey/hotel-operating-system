@@ -4,48 +4,61 @@ import { readItems } from "@directus/sdk";
 import { directus } from "../../booking/lib/directus";
 
 /**
- * Fetches dynamic room capacity and all booked reservation item rows for a given month.
- * Returns { capacity: number, bookings: Array<{ night_date: string }> }
+ * Dynamically fetches valid inventory capacity and bookings matching the month and guest configuration
  */
-export async function getMonthlyInventory(year: number, month: number) {
-  const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-  const lastDay = new Date(year, month + 1, 0).getDate();
-  const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-
-  console.log(`[inventory] Querying ${startDate} to ${endDate}`);
-
+export async function getMonthlyInventory(year: number, month: number, adults: number = 2, children: number = 0) {
   try {
-    // Run both queries in parallel for performance
-    const [rooms, bookedItems] = await Promise.all([
-      directus.request(
-        readItems("rooms_hos", {
-          fields: ['id'],
-          limit: -1
-        })
-      ),
-      directus.request(
-        readItems("reservation_items_hos", {
-          filter: { night_date: { _between: [startDate, endDate] } },
-          fields: ['night_date'],
-          limit: -1
-        })
-      )
-    ]);
+    // 1. Calculate the start and end string metrics for the requested month window
+    const startDate = new Date(year, month, 1).toISOString().split("T")[0];
+    const endDate = new Date(year, month + 1, 1).toISOString().split("T")[0];
 
-    const dynamicCapacity = rooms.length > 0 ? rooms.length : 20; // Fallback to 20 if table is empty
+    // 2. Fetch all physical rooms whose parent room type can accommodate the guest count
+    const eligibleRooms = await directus.request(
+      readItems("rooms_hos", {
+        filter: {
+          type_id: {
+            max_adults: { _gte: adults },
+            max_children: { _gte: children }
+          }
+        },
+        fields: ["id"]
+      })
+    );
 
-    console.log(`[inventory] Got capacity: ${dynamicCapacity}, booked items: ${bookedItems.length}`);
+    const eligibleRoomIds = eligibleRooms.map((room: any) => room.id);
+
+    // If no room layouts can handle this party size configuration, return zero available inventory
+    if (eligibleRoomIds.length === 0) {
+      return {
+        capacity: 0,
+        bookings: []
+      };
+    }
+
+    // 3. Fetch existing reservation items for these eligible rooms within the month range
+    const activeBookings = await directus.request(
+      readItems("reservation_items_hos", {
+        filter: {
+          _and: [
+            { night_date: { _gte: startDate } },
+            { night_date: { _lt: endDate } },
+            { room_id: { _in: eligibleRoomIds } }
+          ]
+        },
+        fields: ["night_date", "room_id"]
+      })
+    );
 
     return {
-      capacity: dynamicCapacity,
-      bookings: bookedItems
+      // Dynamic capacity is the precise count of physical rooms that can fit the guests
+      capacity: eligibleRoomIds.length,
+      bookings: activeBookings || []
     };
-
   } catch (error) {
-    console.error("[inventory] Directus query failed:", error);
+    console.error("Database inventory lookup execution failure:", error);
     return {
-      capacity: 20,
+      capacity: 0,
       bookings: []
     };
   }
-}
+}

@@ -125,9 +125,9 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
       roomIds: matchedRooms.map(r => r.id),
       checkin: checkinStr,
       checkout: checkoutStr,
+      total: totalInvoiceGross,
       adults: adultsCount,
       children: childrenCount,
-      total: totalInvoiceGross,
     };
     
     console.log("Sending to service:", { data, payload });

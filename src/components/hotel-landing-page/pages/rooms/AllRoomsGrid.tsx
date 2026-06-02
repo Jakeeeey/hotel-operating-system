@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   BedDouble,
-  Maximize,
+  Users,
   SlidersHorizontal,
   Check,
   ArrowRight,
@@ -344,8 +344,8 @@ export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
                     </div>
                     <span className="text-zinc-200">|</span>
                     <div className="flex items-center gap-1">
-                      <Maximize size={11} className="text-zinc-300" />
-                      <span>{room.sqm}</span>
+                      <Users size={11} className="text-zinc-300" />
+                      <span>{room.maxAdults} Adults, {room.maxChildren} Children</span>
                     </div>
                   </div>
                 </div>

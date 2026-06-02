@@ -126,11 +126,11 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[9px] uppercase tracking-widest font-bold text-zinc-400">
-                Total Size
+                Max Capacity
               </span>
               <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-800 uppercase tracking-wide">
-                <Maximize size={14} className="text-zinc-400" />
-                <span>{room.sqm}</span>
+                <Users size={14} className="text-zinc-400" />
+                <span>{room.maxAdults} Adults, {room.maxChildren} Children</span>
               </div>
             </div>
             <div className="flex flex-col gap-1">

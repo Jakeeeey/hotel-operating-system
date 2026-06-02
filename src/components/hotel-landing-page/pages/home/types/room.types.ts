@@ -8,6 +8,8 @@ export interface RoomData {
   image: string;
   bed: string;
   sqm: string;
+  maxAdults: number;
+  maxChildren: number;
   rating: number;
   reviews: number;
   amenities: string[];

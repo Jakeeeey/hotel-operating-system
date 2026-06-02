@@ -16,6 +16,8 @@ export const getRoomsService = async (): Promise<RoomData[]> => {
         : "",
       bed: r.bed || "N/A",
       sqm: r.sqm || "N/A",
+      maxAdults: r.max_adults || 2,
+      maxChildren: r.max_children || 0,
       rating: parseFloat(r.rating ?? "0") || 5.0,
       reviews: r.review_count || 0,
       amenities: r.amenities || [],

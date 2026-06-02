@@ -72,7 +72,7 @@ export function RoomCard({ room }: { room: RoomData }) {
           <div className="flex items-center gap-2 mt-2 text-[11px] text-zinc-400 font-sans tracking-wide">
             <Crown size={12} className="text-zinc-300 stroke-[2]" />
             <span>
-              {room.bed} <span className="text-zinc-200 px-0.5">|</span> {room.sqm}
+              {room.bed} <span className="text-zinc-200 px-0.5">|</span> {room.maxAdults} Adults, {room.maxChildren} Children
             </span>
           </div>
 
