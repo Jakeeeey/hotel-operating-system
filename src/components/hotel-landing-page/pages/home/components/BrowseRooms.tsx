@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { RoomCard } from "./RoomCard";
-import { useRooms } from "./hooks/useRooms";
+import { useRooms } from "../hooks/useRooms";
 
 export function BrowseRooms() {
   const { rooms, loading } = useRooms();

@@ -1,7 +1,7 @@
 "use client";
 
 import { Quote, ArrowRight } from "lucide-react";
-import { reviews } from "../../data/data";
+import { reviews } from "../../../data/data";
 
 export function GuestReviews() {
   const displayReviews = reviews.slice(0, 3);

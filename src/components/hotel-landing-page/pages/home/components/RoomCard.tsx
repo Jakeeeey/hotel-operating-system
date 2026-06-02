@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Heart, Star, Crown } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { RoomData } from "./types/room.types";
+import { RoomData } from "../types/room.types";
 
 function formatPrice(price: number): string {
   return price >= 1000 ? `₱${price.toLocaleString()}` : `₱${price}`;
@@ -15,7 +15,7 @@ export function RoomCard({ room }: { room: RoomData }) {
   const [liked, setLiked] = useState<boolean>(false);
 
   return (
-    <div className="bg-white border border-zinc-200/80 rounded-sm overflow-hidden hover:border-zinc-400 transition-all duration-300 cursor-pointer flex flex-col h-full group select-none">
+    <div className="bg-white border border-zinc-200/80 rounded-sm overflow-hidden hover:border-zinc-400 transition-all duration-300 flex flex-col h-full group select-none">
       
       {/* Media Frame Layer */}
       <div className="relative aspect-[3/2] w-full overflow-hidden bg-zinc-100 border-b border-zinc-100">
@@ -115,7 +115,7 @@ export function RoomCard({ room }: { room: RoomData }) {
               e.stopPropagation();
               router.push(`/hotel-landing-page/rooms/${room.id}`);
             }}
-            className="bg-zinc-950 text-white rounded-sm px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-150 shadow-xs flex items-center gap-1.5 shrink-0"
+            className="bg-zinc-950 text-white rounded-sm px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-150 shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
           >
             <span>Reserve</span>
             <span className="text-[11px] font-normal font-sans opacity-70 transform group-hover:translate-x-0.5 transition-transform duration-150">→</span>

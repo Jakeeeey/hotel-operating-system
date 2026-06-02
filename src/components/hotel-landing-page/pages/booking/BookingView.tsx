@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,7 +11,9 @@ import {
   Plus
 } from "lucide-react";
 import Link from "next/link";
-import { rooms } from "../../data/data";
+import { createBookingTransaction } from "./services/booking.service";
+
+import { RoomData } from "../home/types/room.types";
 
 const bookingSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
@@ -24,8 +26,9 @@ const bookingSchema = z.object({
 
 type BookingFormValues = z.infer<typeof bookingSchema>;
 
-export function BookingView() {
+export function BookingView({ rooms }: { rooms: RoomData[] }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const roomIdsRaw = searchParams.get("roomIds") || searchParams.get("roomId") || "1";
   const checkinStr = searchParams.get("checkin") || "2026-06-01";
@@ -33,9 +36,8 @@ export function BookingView() {
   const guestCount = searchParams.get("guests") || "2";
 
   const matchedRooms = useMemo(() => {
-    const idsArray = roomIdsRaw.split(",").map((id) => Number(id.trim())).filter(Boolean);
-    const items = rooms.filter((r) => idsArray.includes(r.id));
-    return items.length > 0 ? items : [rooms[0]];
+    const ids = roomIdsRaw.split(",").map(Number);
+    return rooms.filter((r) => ids.includes(r.id));
   }, [roomIdsRaw]);
 
   const totalNights = useMemo(() => {
@@ -55,6 +57,15 @@ export function BookingView() {
     }
   };
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<BookingFormValues>({
+    resolver: zodResolver(bookingSchema),
+    defaultValues: { firstName: "", lastName: "", email: "", phone: "", gcashNumber: "", specialRequests: "" },
+  });
+  
   const baseSubtotal = useMemo(() => {
     const rateSum = matchedRooms.reduce((sum, room) => sum + room.price, 0);
     return rateSum * totalNights;
@@ -64,32 +75,35 @@ export function BookingView() {
   const serviceFeeFixed = 500; 
   const totalInvoiceGross = baseSubtotal + localTaxVat + serviceFeeFixed;
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<BookingFormValues>({
-    resolver: zodResolver(bookingSchema),
-    defaultValues: { firstName: "", lastName: "", email: "", phone: "", gcashNumber: "", specialRequests: "" },
-  });
-
   const onBookingExecute = async (data: BookingFormValues) => {
-    console.log("Multi-room submission confirmed:", {
-      guestDetails: data,
-      reservationContext: {
-        selectedRoomIds: matchedRooms.map(r => r.id),
-        checkin: checkinStr,
-        checkout: checkoutStr,
-        grossTotalPHP: totalInvoiceGross,
-      },
-    });
-    alert("GCash processing sandbox prompt simulated successfully!");
+    const payload = {
+      roomIds: matchedRooms.map(r => r.id),
+      checkin: checkinStr,
+      checkout: checkoutStr,
+      total: totalInvoiceGross,
+    };
+    
+    // Check your browser console for this payload. If Directus is failing, 
+    // it's likely because this structure doesn't match your Directus collection perfectly.
+    console.log("Sending to service:", { data, payload });
+
+    try {
+      const result = await createBookingTransaction(data, payload);
+
+      if (result?.success) {
+        alert("Booking successful! Reservation ID: " + result.id);
+        // router.push("/confirmation");
+      } else {
+        alert(`Booking failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Booking submission error:", error);
+    }
   };
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
       
-      {/* Top Header Navigation Line */}
       <div className="mb-12 border-b border-zinc-200 pb-8">
         <Link href={`/hotel-landing-page/rooms?${searchParams.toString()}`} className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 hover:text-zinc-900 transition-colors mb-5 group">
           <ArrowLeft size={12} className="group-hover:-translate-x-0.5 transition-transform text-zinc-400 group-hover:text-zinc-900" />
@@ -102,10 +116,8 @@ export function BookingView() {
 
       <form onSubmit={handleSubmit(onBookingExecute)} className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
         
-        {/* LEFT COLUMN: CRISP ARCHITECTURAL INPUT FORMS */}
         <div className="lg:col-span-7 space-y-10">
           
-          {/* Section: Guest Documentation */}
           <div className="border border-zinc-200 bg-white p-6 rounded-sm space-y-6">
             <div className="flex items-center gap-3 border-b border-zinc-100 pb-4">
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">01</span>
@@ -144,7 +156,6 @@ export function BookingView() {
             </div>
           </div>
 
-          {/* Section: Payment Gateway */}
           <div className="border border-zinc-200 bg-white p-6 rounded-sm space-y-6">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
               <div className="flex items-center gap-3">
@@ -162,7 +173,6 @@ export function BookingView() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: REFINED LEDGER AND ACCUMULATOR CONTROL */}
         <div className="lg:col-span-5 space-y-6">
           <div className="border border-zinc-200 bg-white rounded-sm p-6 space-y-6">
             
@@ -173,7 +183,6 @@ export function BookingView() {
               </span>
             </div>
             
-            {/* Fine Room Line-Items Loop */}
             <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1 divide-y divide-zinc-50">
               {matchedRooms.map((room, idx) => (
                 <div key={room.id} className={`flex gap-4 items-center ${idx > 0 ? 'pt-3' : ''}`}>
@@ -190,7 +199,6 @@ export function BookingView() {
               ))}
             </div>
 
-            {/* Dynamic Link: Add Another Room */}
             <Link 
               href={`/hotel-landing-page/rooms?roomIds=${roomIdsRaw}&checkin=${checkinStr}&checkout=${checkoutStr}&guests=${guestCount}`}
               className="w-full py-2.5 border border-dashed border-zinc-300 hover:border-zinc-900 text-zinc-800 rounded-sm text-[10px] font-bold uppercase tracking-[0.15em] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
@@ -199,7 +207,6 @@ export function BookingView() {
               Add Rooms to Booking
             </Link>
 
-            {/* Structured Compact Stay Frame */}
             <div className="relative group/date overflow-hidden rounded-sm border border-zinc-200 p-4 bg-zinc-50/50 flex items-center justify-between text-xs">
               <div className="grid grid-cols-2 gap-4 w-full">
                 <div>
@@ -212,7 +219,6 @@ export function BookingView() {
                 </div>
               </div>
 
-              {/* Sophisticated Hover Link Overlay */}
               <Link 
                 href={`/hotel-landing-page/availability?${searchParams.toString()}`}
                 className="absolute inset-0 flex items-center justify-center bg-zinc-950/0 group-hover/date:bg-zinc-950/60 transition-all duration-300 backdrop-blur-[0px] group-hover/date:backdrop-blur-[2px] opacity-0 group-hover/date:opacity-100 cursor-pointer text-center"
@@ -223,7 +229,6 @@ export function BookingView() {
               </Link>
             </div>
 
-            {/* Financial Ledger Block */}
             <div className="pt-2 border-t border-zinc-100 space-y-3 text-xs font-sans">
               <div className="flex justify-between items-center text-zinc-500">
                 <span>Subtotal ({totalNights} {totalNights === 1 ? "Night" : "Nights"})</span>
@@ -244,7 +249,6 @@ export function BookingView() {
               </div>
             </div>
 
-            {/* Submit Block */}
             <button 
               type="submit" 
               disabled={isSubmitting} 
