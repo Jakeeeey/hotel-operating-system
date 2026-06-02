@@ -2,14 +2,14 @@ export type RoomType = "all" | "deluxe" | "suite" | "villa" | "overwater";
 
 export interface InventoryNight {
   date: string;
-  roomType: Exclude<RoomType, "all">;
+  roomType: RoomType; 
   totalInventory: number;
   allocatedCount: number;
   remainingAvailable: number;
 }
 
 export interface InventoryLookupMap {
-  [dateStr: string]: { [key in Exclude<RoomType, "all">]?: InventoryNight };
+  [dateStr: string]: { [key in RoomType]?: InventoryNight };
 }
 
 export interface InventoryMap {

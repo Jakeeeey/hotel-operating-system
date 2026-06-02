@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -60,11 +60,34 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<BookingFormValues>({
     resolver: zodResolver(bookingSchema),
     defaultValues: { firstName: "", lastName: "", email: "", phone: "", gcashNumber: "", specialRequests: "" },
   });
+
+  // Restore draft from sessionStorage on mount
+  useEffect(() => {
+    const draft = sessionStorage.getItem("bookingFormDraft");
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft);
+        Object.keys(parsed).forEach((key) => {
+          setValue(key as keyof BookingFormValues, parsed[key]);
+        });
+      } catch (e) {
+        console.error("Failed to parse form draft", e);
+      }
+    }
+  }, [setValue]);
+
+  // Save changes to sessionStorage automatically
+  const currentFormValues = watch();
+  useEffect(() => {
+    sessionStorage.setItem("bookingFormDraft", JSON.stringify(currentFormValues));
+  }, [currentFormValues]);
   
   const baseSubtotal = useMemo(() => {
     const rateSum = matchedRooms.reduce((sum, room) => sum + room.price, 0);
@@ -89,6 +112,7 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
       const result = await createBookingTransaction(data, payload);
 
       if (result?.success) {
+        sessionStorage.removeItem("bookingFormDraft");
         alert("Booking successful! Reservation ID: " + result.id);
         // router.push("/confirmation");
       } else {
