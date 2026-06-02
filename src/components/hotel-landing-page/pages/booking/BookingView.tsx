@@ -71,9 +71,7 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
     return rateSum * totalNights;
   }, [matchedRooms, totalNights]);
 
-  const localTaxVat = parseFloat((baseSubtotal * 0.12).toFixed(2));
-  const serviceFeeFixed = 500; 
-  const totalInvoiceGross = baseSubtotal + localTaxVat + serviceFeeFixed;
+  const totalInvoiceGross = baseSubtotal;
 
   const onBookingExecute = async (data: BookingFormValues) => {
     const payload = {
@@ -127,12 +125,12 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-1.5">
                 <label className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400">First Name</label>
-                <input type="text" {...register("firstName")} placeholder="Juan" className={`w-full h-10 px-3 text-sm bg-zinc-50/50 border rounded-sm outline-none font-sans transition-all placeholder:text-zinc-300 ${errors.firstName ? 'border-red-400 focus:border-red-500' : 'border-zinc-200 focus:border-zinc-900 focus:bg-white'}`} />
+                <input type="text" {...register("firstName")} placeholder="Juan" className={`w-full h-10 px-3 text-sm text-zinc-900 bg-zinc-50/50 border rounded-sm outline-none font-sans transition-all placeholder:text-zinc-300 ${errors.firstName ? 'border-red-400 focus:border-red-500' : 'border-zinc-200 focus:border-zinc-900 focus:bg-white'}`} />
                 {errors.firstName && <p className="text-red-500 text-[11px] tracking-normal font-sans mt-1">*{errors.firstName.message}</p>}
               </div>
               <div className="space-y-1.5">
                 <label className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400">Last Name</label>
-                <input type="text" {...register("lastName")} placeholder="Dela Cruz" className={`w-full h-10 px-3 text-sm bg-zinc-50/50 border rounded-sm outline-none font-sans transition-all placeholder:text-zinc-300 ${errors.lastName ? 'border-red-400 focus:border-red-500' : 'border-zinc-200 focus:border-zinc-900 focus:bg-white'}`} />
+                <input type="text" {...register("lastName")} placeholder="Dela Cruz" className={`w-full h-10 px-3 text-sm text-zinc-900 bg-zinc-50/50 border rounded-sm outline-none font-sans transition-all placeholder:text-zinc-300 ${errors.lastName ? 'border-red-400 focus:border-red-500' : 'border-zinc-200 focus:border-zinc-900 focus:bg-white'}`} />
                 {errors.lastName && <p className="text-red-500 text-[11px] tracking-normal font-sans mt-1">*{errors.lastName.message}</p>}
               </div>
             </div>
@@ -140,19 +138,19 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-1.5">
                 <label className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400">Email Address</label>
-                <input type="email" {...register("email")} placeholder="juan@gmail.com" className={`w-full h-10 px-3 text-sm bg-zinc-50/50 border rounded-sm outline-none font-sans transition-all placeholder:text-zinc-300 ${errors.email ? 'border-red-400 focus:border-red-500' : 'border-zinc-200 focus:border-zinc-900 focus:bg-white'}`} />
+                <input type="email" {...register("email")} placeholder="juan@gmail.com" className={`w-full h-10 px-3 text-sm text-zinc-900 bg-zinc-50/50 border rounded-sm outline-none font-sans transition-all placeholder:text-zinc-300 ${errors.email ? 'border-red-400 focus:border-red-500' : 'border-zinc-200 focus:border-zinc-900 focus:bg-white'}`} />
                 {errors.email && <p className="text-red-500 text-[11px] tracking-normal font-sans mt-1">*{errors.email.message}</p>}
               </div>
               <div className="space-y-1.5">
                 <label className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400">Contact Number</label>
-                <input type="tel" {...register("phone")} placeholder="09171234567" className={`w-full h-10 px-3 text-sm bg-zinc-50/50 border rounded-sm outline-none font-sans transition-all placeholder:text-zinc-300 ${errors.phone ? 'border-red-400 focus:border-red-500' : 'border-zinc-200 focus:border-zinc-900 focus:bg-white'}`} />
+                <input type="tel" {...register("phone")} placeholder="09171234567" className={`w-full h-10 px-3 text-sm text-zinc-900 bg-zinc-50/50 border rounded-sm outline-none font-sans transition-all placeholder:text-zinc-300 ${errors.phone ? 'border-red-400 focus:border-red-500' : 'border-zinc-200 focus:border-zinc-900 focus:bg-white'}`} />
                 {errors.phone && <p className="text-red-500 text-[11px] tracking-normal font-sans mt-1">*{errors.phone.message}</p>}
               </div>
             </div>
 
             <div className="space-y-1.5">
               <label className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400">Special Requests</label>
-              <textarea {...register("specialRequests")} rows={3} placeholder="Interconnected room constraints, accessibility adjustments, or structural preferences..." className="w-full p-3 text-sm bg-zinc-50/50 border border-zinc-200 rounded-sm focus:border-zinc-900 focus:bg-white outline-none resize-none font-sans transition-all placeholder:text-zinc-300" />
+              <textarea {...register("specialRequests")} rows={3} placeholder="Interconnected room constraints, accessibility adjustments, or structural preferences..." className="w-full p-3 text-sm text-zinc-900 bg-zinc-50/50 border border-zinc-200 rounded-sm focus:border-zinc-900 focus:bg-white outline-none resize-none font-sans transition-all placeholder:text-zinc-300" />
             </div>
           </div>
 
@@ -167,7 +165,7 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
             
             <div className="space-y-1.5 max-w-sm">
               <label className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400">GCash Mobile Number</label>
-              <input type="text" {...register("gcashNumber")} placeholder="09171234567" className={`w-full h-10 px-3 text-sm bg-zinc-50/50 border rounded-sm outline-none font-sans transition-all placeholder:text-zinc-300 ${errors.gcashNumber ? 'border-red-400 focus:border-red-500' : 'border-zinc-200 focus:border-zinc-900 focus:bg-white'}`} />
+              <input type="text" {...register("gcashNumber")} placeholder="09171234567" className={`w-full h-10 px-3 text-sm text-zinc-900 bg-zinc-50/50 border rounded-sm outline-none font-sans transition-all placeholder:text-zinc-300 ${errors.gcashNumber ? 'border-red-400 focus:border-red-500' : 'border-zinc-200 focus:border-zinc-900 focus:bg-white'}`} />
               {errors.gcashNumber && <p className="text-red-500 text-[11px] tracking-normal font-sans mt-1">*{errors.gcashNumber.message}</p>}
             </div>
           </div>
@@ -231,16 +229,11 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
 
             <div className="pt-2 border-t border-zinc-100 space-y-3 text-xs font-sans">
               <div className="flex justify-between items-center text-zinc-500">
-                <span>Subtotal ({totalNights} {totalNights === 1 ? "Night" : "Nights"})</span>
+                <span>Room Rate ({totalNights} {totalNights === 1 ? "Night" : "Nights"})</span>
                 <span className="font-medium text-zinc-800">₱{baseSubtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center text-zinc-500">
-                <span>Value Added Tax (12%)</span>
-                <span className="font-medium text-zinc-800">₱{localTaxVat.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center text-zinc-500">
-                <span>Service Infrastructure Fee</span>
-                <span className="font-medium text-zinc-800">₱{serviceFeeFixed.toLocaleString()}</span>
+                <span>Taxes & Fees Included</span>
               </div>
               
               <div className="pt-5 border-t border-zinc-200 flex justify-between items-baseline">
