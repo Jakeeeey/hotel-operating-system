@@ -32,7 +32,11 @@ export const CalendarCell = ({
       onMouseEnter={() => onHover(dateStr)}
       onMouseLeave={() => onHover(null)}
       className={`relative w-full min-h-[56px] rounded-none flex flex-col items-start justify-between p-2 text-[11px] font-bold transition-all border border-transparent ${
-        isPast || isFullySoldOut ? "text-zinc-300 cursor-not-allowed bg-zinc-50/40" : "text-zinc-800"
+        isPast
+          ? "text-zinc-300 cursor-not-allowed bg-zinc-50/40"
+          : isFullySoldOut
+            ? "text-red-400 cursor-not-allowed bg-red-50 border-red-100"
+            : "text-zinc-800"
       } ${
         isEndpoint
           ? "bg-zinc-950 text-white! border-zinc-950 z-10 shadow-xs"
@@ -45,15 +49,10 @@ export const CalendarCell = ({
       
       {!isFullySoldOut && !isPast && !isEndpoint && (
         <span className={`text-[9px] font-medium tracking-tight mt-auto ${lowInventoryAlert ? "text-amber-600" : "text-zinc-400"}`}>
-          {lowInventoryAlert ? "Low" : `${availableRoomsCount} Left`}
+          {availableRoomsCount} Left
         </span>
       )}
 
-      {isFullySoldOut && !isPast && (
-        <span className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
-          <span className="w-full h-[1px] bg-zinc-300 rotate-45 absolute" />
-        </span>
-      )}
     </button>
   </div>
 );

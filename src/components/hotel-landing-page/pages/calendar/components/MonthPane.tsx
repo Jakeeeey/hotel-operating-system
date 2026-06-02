@@ -9,6 +9,7 @@ interface Props {
   year: number;
   month: number;
   inventoryLookup: FlatInventoryLookup;
+  dynamicCapacity: number;
   checkInDate: string | null;
   checkOutDate: string | null;
   hoverDate: string | null;
@@ -20,6 +21,7 @@ export const MonthPane = ({
   year,
   month,
   inventoryLookup,
+  dynamicCapacity,
   checkInDate,
   checkOutDate,
   hoverDate,
@@ -47,7 +49,7 @@ export const MonthPane = ({
         return {
           isFullySoldOut: false,
           lowInventoryAlert: false,
-          availableRoomsCount: 20,
+          availableRoomsCount: dynamicCapacity,
         };
       }
 

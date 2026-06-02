@@ -30,7 +30,10 @@ type FlatInventoryLookup = Record<string, FlatDayInventory>;
 
 export function CalendarLayout() {
   // Array of raw booked night_date rows from the database
-  const [inventory, setInventory] = useState<Array<{ night_date: string }>>([]);
+  const [inventory, setInventory] = useState<{ capacity: number, bookings: Array<{ night_date: string }> }>({
+    capacity: 20,
+    bookings: []
+  });
   const [leftMonth, setLeftMonth] = useState<Date>(new Date(2026, 5, 1));
   const [hoverDate, setHoverDate] = useState<string | null>(null);
 
@@ -48,11 +51,14 @@ export function CalendarLayout() {
     async function updateInventory() {
       try {
         const data = await getMonthlyInventory(leftMonth.getFullYear(), leftMonth.getMonth());
-        // Server action returns an array of { night_date } rows
-        setInventory(Array.isArray(data) ? (data as Array<{ night_date: string }>) : []);
+        // Server action now returns { capacity, bookings }
+        setInventory({
+          capacity: data?.capacity || 20,
+          bookings: Array.isArray(data?.bookings) ? (data.bookings as Array<{ night_date: string }>) : []
+        });
       } catch (error) {
         console.error("🚨 Failed to sync calendar inventory data pools:", error);
-        setInventory([]);
+        setInventory({ capacity: 20, bookings: [] });
       }
     }
     updateInventory();
@@ -65,9 +71,9 @@ export function CalendarLayout() {
 
   const inventoryLookup = useMemo<FlatInventoryLookup>(() => {
     const table: FlatInventoryLookup = {};
-    const TOTAL_ROOM_CAPACITY = 20;
+    const dynamicCapacity = inventory.capacity;
 
-    inventory.forEach((row) => {
+    inventory.bookings.forEach((row) => {
       const rawDate = row.night_date;
       if (!rawDate) return;
 
@@ -77,16 +83,16 @@ export function CalendarLayout() {
       if (!table[dateKey]) {
         table[dateKey] = {
           date: dateKey,
-          totalInventory: TOTAL_ROOM_CAPACITY,
+          totalInventory: dynamicCapacity,
           allocatedCount: 0,
-          remainingAvailable: TOTAL_ROOM_CAPACITY,
+          remainingAvailable: dynamicCapacity,
         };
       }
 
       table[dateKey].allocatedCount += 1;
       table[dateKey].remainingAvailable = Math.max(
         0,
-        TOTAL_ROOM_CAPACITY - table[dateKey].allocatedCount
+        dynamicCapacity - table[dateKey].allocatedCount
       );
     });
 
@@ -223,6 +229,7 @@ export function CalendarLayout() {
                 year={leftMonth.getFullYear()}
                 month={leftMonth.getMonth()}
                 inventoryLookup={inventoryLookup}
+                dynamicCapacity={inventory.capacity}
                 checkInDate={checkInDate}
                 checkOutDate={checkOutDate}
                 hoverDate={hoverDate}
@@ -236,6 +243,7 @@ export function CalendarLayout() {
                 year={rightMonth.getFullYear()}
                 month={rightMonth.getMonth()}
                 inventoryLookup={inventoryLookup}
+                dynamicCapacity={inventory.capacity}
                 checkInDate={checkInDate}
                 checkOutDate={checkOutDate}
                 hoverDate={hoverDate}
@@ -256,7 +264,7 @@ export function CalendarLayout() {
               Low Stock
             </span>
             <span className="flex items-center gap-2">
-              <span className="w-3 h-[1.5px] bg-zinc-300 rotate-45 shrink-0" />
+              <span className="w-1.5 h-1.5 bg-red-400 shrink-0" />
               Sold Out
             </span>
             <span className="flex items-center gap-2">
