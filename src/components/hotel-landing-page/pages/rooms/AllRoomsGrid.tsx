@@ -38,7 +38,7 @@ export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
   const router = useRouter();
 
   const [rooms] = useState<RoomData[]>(initialRooms);
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeCategory, setActiveCategory] = useState(searchParams.get("badge") || "All");
 
   const existingRoomIdsRaw =
     searchParams.get("roomIds") || searchParams.get("roomId") || "";
@@ -69,10 +69,18 @@ export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
     ...Array.from(new Set(rooms.map((r) => r.badge || "Standard"))),
   ];
 
-  const filteredRooms =
-    activeCategory === "All"
-      ? rooms
-      : rooms.filter((room) => room.badge === activeCategory);
+  const filteredRooms = rooms.filter((room) => {
+    const matchCategory = activeCategory === "All" || room.badge === activeCategory;
+    
+    // Fallbacks if data doesn't explicitly have maxAdults, default to true
+    const roomAdults = room.maxAdults || 2;
+    const roomChildren = room.maxChildren || 0;
+    
+    // Capacity logic: strict check or total sum check
+    const matchCapacity = (roomAdults + roomChildren) >= guestCount;
+
+    return matchCategory && matchCapacity;
+  });
 
   // Navigate straight to the detail page while keeping selection parameters intact
   const viewRoomDetails = (id: number) => {

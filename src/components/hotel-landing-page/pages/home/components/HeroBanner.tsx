@@ -1,9 +1,20 @@
 "use client";
 
+import { useMemo } from "react";
 import { BookingWidget } from "./BookingWidget";
 import Image from "next/image";
+import { useRooms } from "../hooks/useRooms";
 
 export function HeroBanner() {
+  const { rooms } = useRooms();
+
+  // Extract unique badge strings from the actual database rows
+  const dynamicBadges = useMemo(() => {
+    return rooms
+      .map((r) => r.badge)
+      .filter((b): b is string => !!b && b !== "N/A");
+  }, [rooms]);
+
   return (
     <section className="w-full px-2 sm:px-4 pt-[68px] pb-6 select-none bg-white">
       {/* ── Inner Banner Container ── */}
@@ -28,9 +39,10 @@ export function HeroBanner() {
 
         {/* Booking Widget (Inner Bottom) */}
         <div className="relative z-10 w-full">
-          <BookingWidget />
+          <BookingWidget dynamicBadges={dynamicBadges} />
         </div>
       </div>
     </section>
   );
 }
+
