@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useCallback } from "react";
-import { buildGridCells } from "./utils";
+import { buildGridCells } from "../utils/utils";
 import { CalendarCell } from "./CalendarCell";
-import { DayStatusCache, InventoryLookupMap, RoomType } from "./types";
+import { DayStatusCache, InventoryLookupMap, RoomType } from "../types/types";
 
 interface Props {
   year: number;

@@ -14,9 +14,9 @@ import {
   Minus,
   Plus,
 } from "lucide-react";
-import { RoomType, InventoryLookupMap, InventoryNight } from "./types";
-import { MonthPane } from "./MonthPane";
-import { formatDisplayDate } from "./utils";
+import { RoomType, InventoryLookupMap, InventoryNight } from "./types/types";
+import { MonthPane } from "./components/MonthPane";
+import { formatDisplayDate } from "./utils/utils";
 import { generateMockInventoryData } from "../../data/generateMockInventoryData";
 
 const mockInventoryDb: InventoryNight[] = generateMockInventoryData();

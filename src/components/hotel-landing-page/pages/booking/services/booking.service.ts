@@ -3,28 +3,61 @@
 import { directus } from "../lib/directus";
 import { createItem, createItems, readItems } from "@directus/sdk";
 
+async function getOrCreateGuest(data: any) {
+  const existingGuests = await directus.request(
+    readItems("guests_hos", { filter: { email: { _eq: data.email } } })
+  );
+  if (existingGuests?.length > 0) return existingGuests[0].id;
+  const newGuest = await directus.request(
+    createItem("guests_hos", {
+      first_name: data.firstName,
+      last_name: data.lastName,
+      email: data.email,
+      contact_number: data.phone,
+    })
+  );
+  return newGuest.id;
+}
+
+/**
+ * NEW: Finds IDs of rooms that are NOT booked during the selected range.
+ */
+async function getAvailableRoomIds(typeId: number, checkin: string, checkout: string) {
+  // 1. Get all rooms of this type
+  const allRooms = await directus.request(
+    readItems("rooms_hos", { filter: { type_id: { _eq: typeId } } })
+  );
+
+  // 2. Find rooms that are booked during this range
+  const bookedItems = await directus.request(
+    readItems("reservation_items_hos", {
+      filter: {
+        _and: [
+          { night_date: { _gte: checkin } },
+          { night_date: { _lt: checkout } }
+        ]
+      },
+      fields: ['room_id']
+    })
+  );
+
+  const bookedRoomIds = new Set(bookedItems.map((item: any) => item.room_id));
+
+  // 3. Return only rooms NOT in the booked list
+  return allRooms
+    .filter((room: any) => !bookedRoomIds.has(room.id))
+    .map((room: any) => room.id);
+}
+
 export async function createBookingTransaction(data: any, details: any) {
   try {
-    // 1. Get or Create Guest
-    const existingGuests = await directus.request(
-      readItems("guests_hos", {
-        filter: { email: { _eq: data.email } },
-      }),
-    );
+    const guestId = await getOrCreateGuest(data);
 
-    let guestId;
-    if (existingGuests && existingGuests.length > 0) {
-      guestId = existingGuests[0].id;
-    } else {
-      const guest = await directus.request(
-        createItem("guests_hos", {
-          first_name: data.firstName,
-          last_name: data.lastName,
-          email: data.email,
-          contact_number: data.phone,
-        }),
-      );
-      guestId = guest.id;
+    // 1. Availability Check
+    const availableIds = await getAvailableRoomIds(details.roomTypeId, details.checkin, details.checkout);
+    
+    if (availableIds.length < details.roomIds.length) {
+      throw new Error("Some selected rooms are no longer available for these dates.");
     }
 
     // 2. Create Reservation Header
@@ -35,10 +68,10 @@ export async function createBookingTransaction(data: any, details: any) {
         check_out: details.checkout,
         total_amount: details.total,
         status: "pending",
-      }),
+      })
     );
 
-    // 3. Helper to generate array of dates
+    // 3. Prepare dates
     const start = new Date(details.checkin);
     const end = new Date(details.checkout);
     const dates = [];
@@ -46,48 +79,26 @@ export async function createBookingTransaction(data: any, details: any) {
       dates.push(d.toISOString().split("T")[0]);
     }
 
-    // 4. Create Reservation Items using createItems (Bulk)
-    const availableRooms = await directus.request(
-      readItems("rooms_hos", {
-        filter: { type_id: { _eq: details.roomTypeId } },
-        limit: 1, // Get the first available room of this type
-      }),
-    );
-
-    if (!availableRooms || availableRooms.length === 0) {
-      throw new Error("No rooms available for this type.");
+    // 4. Create Reservation Items
+    const itemsToCreate = [];
+    for (const roomId of details.roomIds) {
+      for (const date of dates) {
+        itemsToCreate.push({
+          reservation_id: reservation.id,
+          room_id: roomId,
+          night_date: date,
+        });
+      }
     }
 
-    const roomIdToBook = availableRooms[0].id; // Use the actual ID found in your DB
-
-    const itemsToCreate = dates.map((date) => ({
-      reservation_id: reservation.id,
-      room_id: roomIdToBook,
-      night_date: date,
-    }));
-
-    // Use createItems for bulk insert
-    if (itemsToCreate.length > 0) {
-      await directus.request(
-        createItems("reservation_items_hos", itemsToCreate),
-      );
-      console.log("Successfully created items:", itemsToCreate.length);
-    }
+    await directus.request(createItems("reservation_items_hos", itemsToCreate));
 
     return { success: true, id: reservation.id };
   } catch (error: any) {
-    // This logs the full error object to your terminal for debugging
-    console.error(
-      "Booking Transaction Failed:",
-      JSON.stringify(error, null, 2),
-    );
-
-    const directusMessage =
-      error?.errors?.[0]?.message || error?.message || "Unknown Database Error";
-
+    console.error("Booking Transaction Failed:", error);
     return {
       success: false,
-      error: directusMessage,
+      error: error?.errors?.[0]?.message || error?.message || "Booking failed",
     };
   }
 }
