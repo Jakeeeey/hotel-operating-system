@@ -8,7 +8,8 @@ import * as z from "zod";
 import { 
   CreditCard, 
   ArrowLeft, 
-  Plus
+  Plus,
+  X
 } from "lucide-react";
 import Link from "next/link";
 import { createBookingTransaction } from "./services/booking.service";
@@ -33,12 +34,37 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
   const roomIdsRaw = searchParams.get("roomIds") || searchParams.get("roomId") || "1";
   const checkinStr = searchParams.get("checkin") || "2026-06-01";
   const checkoutStr = searchParams.get("checkout") || "2026-06-04";
-  const guestCount = searchParams.get("guests") || "2";
+  
+  // Directly watching URL updates across navigation renders
+  const adultsCount = useMemo(() => {
+    return Number(searchParams.get("adults") ?? 2);
+  }, [searchParams]);
+
+  const childrenCount = useMemo(() => {
+    return Number(searchParams.get("children") ?? 0);
+  }, [searchParams]);
 
   const matchedRooms = useMemo(() => {
     const ids = roomIdsRaw.split(",").map(Number);
     return rooms.filter((r) => ids.includes(r.id));
-  }, [roomIdsRaw]);
+  }, [roomIdsRaw, rooms]);
+
+  const handleRemoveRoom = (idToRemove: number) => {
+    const currentIds = roomIdsRaw.split(",").map(Number);
+    const updatedIds = currentIds.filter((id) => id !== idToRemove);
+
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (updatedIds.length === 0) {
+      router.push(`/hotel-landing-page/rooms?${params.toString()}`);
+      return;
+    }
+
+    params.set("roomIds", updatedIds.join(","));
+    if (params.has("roomId")) params.delete("roomId");
+
+    router.push(`/hotel-landing-page/booking?${params.toString()}`);
+  };
 
   const totalNights = useMemo(() => {
     const start = new Date(checkinStr);
@@ -68,7 +94,6 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
     defaultValues: { firstName: "", lastName: "", email: "", phone: "", gcashNumber: "", specialRequests: "" },
   });
 
-  // Restore draft from sessionStorage on mount
   useEffect(() => {
     const draft = sessionStorage.getItem("bookingFormDraft");
     if (draft) {
@@ -83,7 +108,6 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
     }
   }, [setValue]);
 
-  // Save changes to sessionStorage automatically
   const currentFormValues = watch();
   useEffect(() => {
     sessionStorage.setItem("bookingFormDraft", JSON.stringify(currentFormValues));
@@ -101,11 +125,11 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
       roomIds: matchedRooms.map(r => r.id),
       checkin: checkinStr,
       checkout: checkoutStr,
+      adults: adultsCount,
+      children: childrenCount,
       total: totalInvoiceGross,
     };
     
-    // Check your browser console for this payload. If Directus is failing, 
-    // it's likely because this structure doesn't match your Directus collection perfectly.
     console.log("Sending to service:", { data, payload });
 
     try {
@@ -114,7 +138,6 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
       if (result?.success) {
         sessionStorage.removeItem("bookingFormDraft");
         alert("Booking successful! Reservation ID: " + result.id);
-        // router.push("/confirmation");
       } else {
         alert(`Booking failed: ${result.error}`);
       }
@@ -207,22 +230,30 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
             
             <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1 divide-y divide-zinc-50">
               {matchedRooms.map((room, idx) => (
-                <div key={room.id} className={`flex gap-4 items-center ${idx > 0 ? 'pt-3' : ''}`}>
+                <div key={room.id} className={`flex gap-4 items-center group/room ${idx > 0 ? 'pt-3' : ''}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={room.image} alt={room.name} className="w-16 aspect-[4/3] rounded-sm object-cover shrink-0 grayscale-[20%] border border-zinc-100" />
                   <div className="min-w-0 flex-grow">
                     <h4 className="font-serif text-sm text-zinc-900 truncate font-medium">{room.name}</h4>
                     <span className="text-[10px] text-zinc-400 tracking-wide block mt-0.5">{room.bed}</span>
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="text-right shrink-0 flex items-center gap-2.5">
                     <span className="text-xs font-bold text-zinc-900">₱{room.price.toLocaleString()}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveRoom(room.id)}
+                      className="p-1 text-zinc-300 hover:text-red-600 hover:bg-zinc-50 rounded-sm transition-colors cursor-pointer"
+                      title="Remove from booking"
+                    >
+                      <X size={13} />
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
 
             <Link 
-              href={`/hotel-landing-page/rooms?roomIds=${roomIdsRaw}&checkin=${checkinStr}&checkout=${checkoutStr}&guests=${guestCount}`}
+              href={`/hotel-landing-page/rooms?roomIds=${roomIdsRaw}&checkin=${checkinStr}&checkout=${checkoutStr}&adults=${adultsCount}&children=${childrenCount}`}
               className="w-full py-2.5 border border-dashed border-zinc-300 hover:border-zinc-900 text-zinc-800 rounded-sm text-[10px] font-bold uppercase tracking-[0.15em] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Plus size={12} className="text-zinc-500" />
@@ -230,14 +261,24 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
             </Link>
 
             <div className="relative group/date overflow-hidden rounded-sm border border-zinc-200 p-4 bg-zinc-50/50 flex items-center justify-between text-xs">
-              <div className="grid grid-cols-2 gap-4 w-full">
+              <div className="grid grid-cols-3 gap-2 w-full">
                 <div>
                   <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400 block mb-1">Arrival</span>
-                  <p className="font-medium font-sans text-zinc-800">{formatDisplayDate(checkinStr)}</p>
+                  <p className="font-medium font-sans text-zinc-800 truncate">{formatDisplayDate(checkinStr)}</p>
                 </div>
-                <div className="border-l border-zinc-200 pl-4">
+                <div className="border-l border-zinc-200 pl-3">
                   <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400 block mb-1">Departure</span>
-                  <p className="font-medium font-sans text-zinc-800">{formatDisplayDate(checkoutStr)}</p>
+                  <p className="font-medium font-sans text-zinc-800 truncate">{formatDisplayDate(checkoutStr)}</p>
+                </div>
+                
+                <div className="border-l border-zinc-200 pl-3">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400 block mb-1">Occupancy</span>
+                  <p className="font-medium font-sans text-zinc-800 text-[11px] leading-tight">
+                    {adultsCount} {adultsCount === 1 ? "Adult" : "Adults"}
+                  </p>
+                  <p className="text-[10px] text-zinc-400 font-sans font-light mt-0.5">
+                    {childrenCount} {childrenCount === 1 ? "Child" : "Children"}
+                  </p>
                 </div>
               </div>
 

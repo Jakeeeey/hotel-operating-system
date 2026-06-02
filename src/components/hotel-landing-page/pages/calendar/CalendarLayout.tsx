@@ -18,7 +18,6 @@ import { MonthPane } from "./components/MonthPane";
 import { formatDisplayDate } from "./utils/utils";
 import { getMonthlyInventory } from "./services/inventory.service";
 
-// Define a clean, flat data contract for date-based availability
 interface FlatDayInventory {
   date: string;
   totalInventory: number;
@@ -29,8 +28,7 @@ interface FlatDayInventory {
 type FlatInventoryLookup = Record<string, FlatDayInventory>;
 
 export function CalendarLayout() {
-  // Array of raw booked night_date rows from the database
-  const [inventory, setInventory] = useState<{ capacity: number, bookings: Array<{ night_date: string }> }>({
+  const [inventory, setInventory] = useState<{ capacity: number; bookings: Array<{ night_date: string }> }>({
     capacity: 20,
     bookings: []
   });
@@ -43,15 +41,15 @@ export function CalendarLayout() {
 
   const checkInDate = searchParams.get("checkin");
   const checkOutDate = searchParams.get("checkout");
-  const guestCount = Number(searchParams.get("guests") ?? 2);
+  
+  const adultsCount = Number(searchParams.get("adults") ?? 2);
+  const childrenCount = Number(searchParams.get("children") ?? 0);
   const roomIdsRaw = searchParams.get("roomIds") || "";
 
-  // Fetch data matching our left window anchor
   useEffect(() => {
     async function updateInventory() {
       try {
         const data = await getMonthlyInventory(leftMonth.getFullYear(), leftMonth.getMonth());
-        // Server action now returns { capacity, bookings }
         setInventory({
           capacity: data?.capacity || 20,
           bookings: Array.isArray(data?.bookings) ? (data.bookings as Array<{ night_date: string }>) : []
@@ -77,7 +75,6 @@ export function CalendarLayout() {
       const rawDate = row.night_date;
       if (!rawDate) return;
 
-      // Strip any appended ISO timestamps (e.g. "2026-06-01T00:00:00" -> "2026-06-01")
       const dateKey = rawDate.split("T")[0];
 
       if (!table[dateKey]) {
@@ -133,9 +130,14 @@ export function CalendarLayout() {
     [checkInDate, checkOutDate, updateParams]
   );
 
-  const handleGuestChange = (delta: number) => {
-    const newCount = Math.max(1, Math.min(6, guestCount + delta));
-    updateParams({ guests: newCount });
+  const handleAdultsChange = (delta: number) => {
+    const newCount = Math.max(1, Math.min(10, adultsCount + delta));
+    updateParams({ adults: newCount });
+  };
+
+  const handleChildrenChange = (delta: number) => {
+    const newCount = Math.max(0, Math.min(10, childrenCount + delta));
+    updateParams({ children: newCount });
   };
 
   const navigateMonths = (dir: "prev" | "next") => {
@@ -146,10 +148,19 @@ export function CalendarLayout() {
     });
   };
 
+  // Dynamic Router Fix Engine
   const handleSearch = () => {
     if (!checkInDate || !checkOutDate) return;
+    
     const params = new URLSearchParams(searchParams.toString());
-    router.push(`/hotel-landing-page/rooms?${params.toString()}`);
+    
+    // If roomIds exists, the user is modifying an active reservation!
+    // Return them directly back to the final booking form with all parameters intact.
+    if (params.get("roomIds")) {
+      router.push(`/hotel-landing-page/booking?${params.toString()}`);
+    } else {
+      router.push(`/hotel-landing-page/rooms?${params.toString()}`);
+    }
   };
 
   const calculatedNights = useMemo<number>(() => {
@@ -163,7 +174,6 @@ export function CalendarLayout() {
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 font-sans">
-      {/* Header View */}
       <div className="mb-8">
         <h1 className="text-3xl sm:text-4xl font-serif font-normal tracking-tight text-zinc-900">
           Availability Calendar
@@ -173,7 +183,6 @@ export function CalendarLayout() {
         </p>
       </div>
 
-      {/* Selected Rooms Alert Notification */}
       {selectedRoomsCount > 0 && (
         <div className="mb-8 p-4 bg-zinc-950 rounded-sm flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs tracking-wide border border-zinc-950">
           <div className="flex items-center gap-2.5">
@@ -195,11 +204,8 @@ export function CalendarLayout() {
         </div>
       )}
 
-      {/* Main Grid Interface */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        {/* Calendar Viewport track */}
         <div className="xl:col-span-8 bg-white border border-zinc-200 rounded-sm overflow-hidden">
-          {/* Toolbar */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
             <button
               onClick={() => navigateMonths("prev")}
@@ -222,7 +228,6 @@ export function CalendarLayout() {
             </button>
           </div>
 
-          {/* Dual Month Layout Engine */}
           <div className="p-6">
             <div className="flex flex-col sm:flex-row gap-8">
               <MonthPane
@@ -253,7 +258,6 @@ export function CalendarLayout() {
             </div>
           </div>
 
-          {/* Status Indicator Legend Labels */}
           <div className="px-6 py-4 border-t border-zinc-100 flex flex-wrap gap-5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 bg-zinc-50/50">
             <span className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-emerald-500 shrink-0" />
@@ -274,7 +278,6 @@ export function CalendarLayout() {
           </div>
         </div>
 
-        {/* Sidebar details summary card widget */}
         <div className="xl:col-span-4 xl:sticky xl:top-28 space-y-4">
           <div className="bg-white border border-zinc-200 rounded-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-zinc-200 flex items-center gap-2 bg-zinc-50/50">
@@ -284,7 +287,6 @@ export function CalendarLayout() {
               </span>
             </div>
 
-            {/* Check-in / Check-out visual values */}
             <div className="grid grid-cols-2 divide-x divide-zinc-200 border-b border-zinc-200">
               <div
                 className={`p-4 cursor-pointer transition-colors ${!checkInDate ? "hover:bg-zinc-50/80" : "bg-zinc-50/30"}`}
@@ -316,35 +318,69 @@ export function CalendarLayout() {
               </div>
             </div>
 
-            {/* Guest configuration panel */}
-            <div className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <Users size={14} className="text-zinc-400" />
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-700">
-                  Guests
-                </span>
+            <div className="divide-y divide-zinc-100 bg-white">
+              <div className="p-4 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <Users size={13} className="text-zinc-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-700">
+                      Adults
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-zinc-400 font-light mt-0.5">Ages 13 or above</span>
+                </div>
+                <div className="flex items-center border border-zinc-200 rounded-sm overflow-hidden bg-white">
+                  <button
+                    onClick={() => handleAdultsChange(-1)}
+                    disabled={adultsCount <= 1}
+                    className="px-2.5 py-1.5 hover:bg-zinc-50 text-zinc-500 disabled:opacity-30 transition-colors cursor-pointer"
+                  >
+                    <Minus size={11} strokeWidth={3} />
+                  </button>
+                  <span className="text-xs font-bold w-8 text-center text-zinc-900 border-x border-zinc-200 py-1.5 font-sans bg-zinc-50/30">
+                    {adultsCount}
+                  </span>
+                  <button
+                    onClick={() => handleAdultsChange(1)}
+                    className="px-2.5 py-1.5 hover:bg-zinc-50 text-zinc-500 transition-colors cursor-pointer"
+                  >
+                    <Plus size={11} strokeWidth={3} />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center border border-zinc-200 rounded-sm overflow-hidden">
-                <button
-                  onClick={() => handleGuestChange(-1)}
-                  className="px-2.5 py-1.5 hover:bg-zinc-50 text-zinc-400 transition-colors"
-                >
-                  <Minus size={12} strokeWidth={2.5} />
-                </button>
-                <span className="text-xs font-bold w-8 text-center text-zinc-900 border-x border-zinc-200 py-1.5">
-                  {guestCount}
-                </span>
-                <button
-                  onClick={() => handleGuestChange(1)}
-                  className="px-2.5 py-1.5 hover:bg-zinc-50 text-zinc-400 transition-colors"
-                >
-                  <Plus size={12} strokeWidth={2.5} />
-                </button>
+
+              <div className="p-4 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <Users size={13} className="text-zinc-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-700">
+                      Children
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-zinc-400 font-light mt-0.5">Ages 0 to 12</span>
+                </div>
+                <div className="flex items-center border border-zinc-200 rounded-sm overflow-hidden bg-white">
+                  <button
+                    onClick={() => handleChildrenChange(-1)}
+                    disabled={childrenCount <= 0}
+                    className="px-2.5 py-1.5 hover:bg-zinc-50 text-zinc-500 disabled:opacity-30 transition-colors cursor-pointer"
+                  >
+                    <Minus size={11} strokeWidth={3} />
+                  </button>
+                  <span className="text-xs font-bold w-8 text-center text-zinc-900 border-x border-zinc-200 py-1.5 font-sans bg-zinc-50/30">
+                    {childrenCount}
+                  </span>
+                  <button
+                    onClick={() => handleChildrenChange(1)}
+                    className="px-2.5 py-1.5 hover:bg-zinc-50 text-zinc-500 transition-colors cursor-pointer"
+                  >
+                    <Plus size={11} strokeWidth={3} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Stay Timeline State Container Block */}
           {selectionComplete ? (
             <div className="border border-zinc-200 rounded-sm p-4 bg-white space-y-4">
               <div className="flex items-center justify-between">
@@ -384,7 +420,6 @@ export function CalendarLayout() {
             </div>
           )}
 
-          {/* Action Call-to-Action Link */}
           <button
             disabled={!selectionComplete}
             onClick={handleSearch}
