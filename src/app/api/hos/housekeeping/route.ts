@@ -63,7 +63,10 @@ export async function GET() {
         // Auto-inject virtual tasks for dirty rooms missing a task
         const pendingOrActiveTasks = tasks.filter((t: { status: string }) => t.status !== 'Completed');
         dirtyRoomsList.forEach((room: { id: number; room_number: string; operational_status_id?: number }) => {
-            const hasTask = pendingOrActiveTasks.some((t: { room_id?: { id: number } | number }) => (typeof t.room_id === 'object' && t.room_id !== null ? t.room_id.id : t.room_id) === room.id);
+            const hasTask = pendingOrActiveTasks.some((t: { room_id?: { id: number } | number }) => {
+                const taskIdVal = typeof t.room_id === 'object' && t.room_id !== null ? t.room_id.id : t.room_id;
+                return taskIdVal != null && Number(taskIdVal) === Number(room.id);
+            });
             if (!hasTask) {
                 tasks.unshift({
                     id: `virtual-${room.id}`,
@@ -83,8 +86,9 @@ export async function GET() {
             }
         });
 
-        // Calculate cleaningAndMaintenanceTasks: all tasks that belong to rooms with status != 1
+        // Calculate cleaningAndMaintenanceTasks: all pending/active tasks that belong to rooms with status != 1
         const cleaningAndMaintenanceTasks = tasks.filter((t: { room_id?: { id: number } | number, status: string }) => {
+            if (t.status === 'Completed') return false; // Exclude completed tasks
             const roomId = typeof t.room_id === 'object' && t.room_id !== null ? t.room_id.id : t.room_id;
             return dirtyRoomsList.some((r: { id: number }) => r.id === roomId);
         }).length;

@@ -11,6 +11,8 @@ import { StatCards } from "./components/stat-cards";
 import { ArrivalsTable } from "./components/arrivals-table";
 import { DeparturesTable } from "./components/departures-table";
 import { CheckInDialog } from "./components/check-in-dialog";
+import { ExtendStayDialog } from "./components/extend-stay-dialog";
+import { GuestFolioSheet } from "./components/guest-folio-sheet";
 
 interface StatsData {
     totalRooms: number;
@@ -63,8 +65,15 @@ export default function FrontDeskDashboardModule() {
     const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
     const [selectedArrival, setSelectedArrival] = useState<ArrivalItem | null>(null);
 
-    // Check-out loading state
-    const [checkingOutId, setCheckingOutId] = useState<number | null>(null);
+    // Extend stay dialog state
+    const [extendStayDialogOpen, setExtendStayDialogOpen] = useState(false);
+    const [selectedDeparture, setSelectedDeparture] = useState<DepartureItem | null>(null);
+
+    // Folio Sheet state
+    const [folioOpen, setFolioOpen] = useState(false);
+    const [selectedFolioDeparture, setSelectedFolioDeparture] = useState<DepartureItem | null>(null);
+
+
 
     const fetchDashboard = async () => {
         setLoading(true);
@@ -116,35 +125,16 @@ export default function FrontDeskDashboardModule() {
         setCheckInDialogOpen(true);
     };
 
-    const handleCheckOut = async (departure: DepartureItem) => {
-        if (!departure.roomId) {
-            toast.error("No room assigned to this reservation.");
-            return;
-        }
-
-        if (!confirm(`Check out ${departure.guestName} from Room ${departure.roomNumber}?`)) return;
-
-        setCheckingOutId(departure.reservationId);
-        try {
-            const res = await fetch("/api/hos/front-desk-dashboard/check-out", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    reservationId: departure.reservationId,
-                    roomId: departure.roomId,
-                }),
-            });
-
-            if (!res.ok) throw new Error("Check-out failed");
-
-            toast.success(`${departure.guestName} checked out successfully.`);
-            fetchDashboard();
-        } catch {
-            toast.error("Failed to check out guest.");
-        } finally {
-            setCheckingOutId(null);
-        }
+    const handleExtendStay = (departure: DepartureItem) => {
+        setSelectedDeparture(departure);
+        setExtendStayDialogOpen(true);
     };
+
+    const handleOpenFolio = (departure: DepartureItem) => {
+        setSelectedFolioDeparture(departure);
+        setFolioOpen(true);
+    };
+
 
     // --- Date display ---
     const today = new Date();
@@ -195,8 +185,9 @@ export default function FrontDeskDashboardModule() {
                 <DeparturesTable
                     departures={filteredDepartures}
                     isLoading={loading}
-                    onCheckOut={handleCheckOut}
-                    checkingOutId={checkingOutId}
+                    onExtendStay={handleExtendStay}
+                    onOpenFolio={handleOpenFolio}
+                    checkingOutId={null}
                 />
             </div>
 
@@ -206,6 +197,26 @@ export default function FrontDeskDashboardModule() {
                 onOpenChange={setCheckInDialogOpen}
                 arrival={selectedArrival}
                 onSuccess={fetchDashboard}
+            />
+
+            {/* Extend Stay Dialog */}
+            <ExtendStayDialog
+                open={extendStayDialogOpen}
+                onOpenChange={setExtendStayDialogOpen}
+                departure={selectedDeparture}
+                onSuccess={fetchDashboard}
+            />
+
+            {/* Guest Folio Sheet */}
+            <GuestFolioSheet
+                open={folioOpen}
+                onOpenChange={setFolioOpen}
+                reservationId={selectedFolioDeparture?.reservationId || null}
+                guestName={selectedFolioDeparture?.guestName || ""}
+                roomNumber={selectedFolioDeparture?.roomNumber || ""}
+                roomId={selectedFolioDeparture?.roomId || null}
+                roomTypeName={selectedFolioDeparture?.roomTypeName || ""}
+                onCheckOutSuccess={fetchDashboard}
             />
         </div>
     );

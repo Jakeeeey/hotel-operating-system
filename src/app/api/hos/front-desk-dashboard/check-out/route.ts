@@ -18,7 +18,7 @@ export async function POST(request: Request) {
             if (payload && payload.sub) userId = parseInt(payload.sub, 10);
         }
 
-        const { reservationId, roomId } = await request.json();
+        const { reservationId, roomId, depositId, resolution, refundAmount, forfeitAmount } = await request.json();
 
         if (!reservationId || !roomId) {
             return NextResponse.json({ error: 'reservationId and roomId are required.' }, { status: 400 });
@@ -29,6 +29,63 @@ export async function POST(request: Request) {
             'Content-Type': 'application/json',
             ...(staticToken ? { 'Authorization': `Bearer ${staticToken}` } : {}),
         };
+
+        // 0. Process Incidental Deposit Resolution
+        if (depositId) {
+            if (resolution === 'Refund' && refundAmount > 0) {
+                // Deduct from expected cash balance
+                const refundPayload = {
+                    reservation_id: reservationId,
+                    amount: -parseFloat(refundAmount),
+                    payment_method: 'Cash',
+                    reference_number: null,
+                    status: 'Completed',
+                    notes: 'Incidental Deposit Refund',
+                    payment_date: new Date().toISOString(),
+                    created_by: userId,
+                    updated_by: userId,
+                };
+                await fetch(`${API_BASE_URL}/items/payments_hos`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(refundPayload),
+                });
+            } else if (resolution === 'Forfeit' && forfeitAmount > 0) {
+                // Log damage charge
+                const chargePayload = {
+                    reservation_id: reservationId,
+                    charge_type: 'Damage',
+                    description: 'Incidental Deposit Forfeit - Damage Fee',
+                    amount: parseFloat(forfeitAmount),
+                    charge_date: new Date().toISOString(),
+                    created_by: userId,
+                    updated_by: userId,
+                };
+                await fetch(`${API_BASE_URL}/items/guest_charges_hos`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(chargePayload),
+                });
+
+                // Record matching payment to keep folio balanced
+                const payPayload = {
+                    reservation_id: reservationId,
+                    amount: parseFloat(forfeitAmount),
+                    payment_method: 'Cash',
+                    reference_number: null,
+                    status: 'Completed',
+                    notes: 'Incidental Deposit Forfeited Payment',
+                    payment_date: new Date().toISOString(),
+                    created_by: userId,
+                    updated_by: userId,
+                };
+                await fetch(`${API_BASE_URL}/items/payments_hos`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(payPayload),
+                });
+            }
+        }
 
         // 1. Update reservation status to "Checked-Out"
         const resUpdate = await fetch(`${API_BASE_URL}/items/reservations/${reservationId}`, {

@@ -5,10 +5,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { User, Calendar, Home, ArrowRight, Check, RotateCcw, AlertTriangle, Search, Loader2 } from "lucide-react";
+import { User, Calendar, Home, ArrowRight, Check, RotateCcw, AlertTriangle, Search, Loader2, CreditCard } from "lucide-react";
 import { ReviewModal } from "./review-modal";
+import { PaymentQrModal } from "./payment-qr-modal";
 
 interface RoomType {
     id: number;
@@ -64,6 +66,25 @@ export function BookingForm() {
 
     // Modal State
     const [reviewOpen, setReviewOpen] = useState(false);
+
+    // Payment States
+    const [paymentMethod, setPaymentMethod] = useState("GCash");
+    const [paymentAmount, setPaymentAmount] = useState("");
+    const [paymentNotes, setPaymentNotes] = useState("");
+
+    // QR Payment Modal State
+    const [qrModalOpen, setQrModalOpen] = useState(false);
+    const [savedBookingData, setSavedBookingData] = useState<{
+        reservationId: number;
+        guestName: string;
+        roomTypeName: string;
+        roomNumber: string;
+        nights: number;
+        basePrice: number;
+        totalAmount: number;
+        paymentMethod: string;
+        paymentAmount: number;
+    } | null>(null);
 
     // Fetch room types on load
     useEffect(() => {
@@ -167,6 +188,9 @@ export function BookingForm() {
         setSelectedRoomId(isWalkIn ? "" : "unassigned");
         setBookingSource(isWalkIn ? "Walk-In" : "Website");
         setLookupStatus("idle");
+        setPaymentMethod("GCash");
+        setPaymentAmount("");
+        setPaymentNotes("");
         if (!silent) toast.info("Form cleared.");
     };
 
@@ -203,6 +227,8 @@ export function BookingForm() {
     const handleConfirmBooking = async () => {
         setSubmitting(true);
         try {
+            const paidAmount = parseFloat(paymentAmount) || 0;
+
             const payload = {
                 guest: {
                     first_name: firstName.trim(),
@@ -217,6 +243,11 @@ export function BookingForm() {
                 room_type_id: parseInt(selectedRoomTypeId, 10),
                 room_id: selectedRoomId === "unassigned" ? null : parseInt(selectedRoomId, 10),
                 is_walk_in: isWalkIn,
+                payment: paidAmount > 0 ? {
+                    amount: paidAmount,
+                    payment_method: paymentMethod,
+                    notes: paymentNotes.trim() || undefined,
+                } : undefined,
             };
 
             const res = await fetch("/api/hos/room-booking", {
@@ -230,20 +261,47 @@ export function BookingForm() {
                 throw new Error(err.error || "Failed to create booking");
             }
 
+            const result = await res.json();
+
             toast.success(
                 isWalkIn
                     ? `Walk-in registered & checked in successfully!`
                     : `Advance reservation saved successfully!`
             );
 
-            // Close review modal & Reset form silently
+            // Close review modal
             setReviewOpen(false);
-            handleClearForm(true);
+
+            // If payment amount > 0 and method is digital (QR-eligible), show QR modal
+            if (paidAmount > 0 && (paymentMethod === "GCash" || paymentMethod === "PayMaya")) {
+                setSavedBookingData({
+                    reservationId: result.data?.reservationId,
+                    guestName: `${firstName.trim()} ${lastName.trim()}`,
+                    roomTypeName: currentRoomType ? currentRoomType.type_name : "",
+                    roomNumber: roomNumberStr,
+                    nights,
+                    basePrice,
+                    totalAmount: totalPrice,
+                    paymentMethod,
+                    paymentAmount: paidAmount,
+                });
+                setQrModalOpen(true);
+            } else {
+                // Cash or no payment — just reset
+                handleClearForm(true);
+            }
         } catch (error: unknown) {
             toast.error(error instanceof Error ? error.message : "An error occurred while creating booking.");
         } finally {
             setSubmitting(false);
         }
+    };
+
+    // Handle QR payment completion
+    const handleQrPaymentComplete = () => {
+        setQrModalOpen(false);
+        setSavedBookingData(null);
+        handleClearForm(true);
     };
 
     // Find assigned room number
@@ -539,6 +597,99 @@ export function BookingForm() {
                             )}
                         </CardContent>
                     </Card>
+
+                    {/* PAYMENT INFORMATION CARD */}
+                    <Card className="shadow-md border border-muted/80 rounded-2xl bg-card overflow-hidden">
+                        <CardHeader className="border-b bg-muted/20 pb-4">
+                            <CardTitle className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+                                <CreditCard className="h-5 w-5 text-muted-foreground" />
+                                Payment Information
+                            </CardTitle>
+                            <CardDescription>Capture initial payment or deposit details</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-6 space-y-4">
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-6">
+                                <div className="space-y-1.5">
+                                    <Label className="text-sm font-semibold">Payment Method</Label>
+                                    <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                                        <SelectTrigger className="rounded-xl border border-muted-foreground/20 bg-background text-foreground">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="GCash">GCash</SelectItem>
+                                            <SelectItem value="PayMaya">PayMaya</SelectItem>
+                                            <SelectItem value="Cash">Cash</SelectItem>
+                                            <SelectItem value="Credit Card">Credit Card</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="paymentAmount" className="text-sm font-semibold">
+                                        Amount to Pay Now (₱)
+                                    </Label>
+                                    <Input
+                                        id="paymentAmount"
+                                        type="number"
+                                        placeholder="0.00"
+                                        min="0"
+                                        step="0.01"
+                                        value={paymentAmount}
+                                        onChange={(e) => setPaymentAmount(e.target.value)}
+                                        className="rounded-xl border border-muted-foreground/20 font-medium"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Quick-fill buttons */}
+                            {totalPrice > 0 && (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs text-muted-foreground">Quick fill:</span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 text-xs rounded-lg"
+                                        onClick={() => setPaymentAmount((totalPrice / 2).toFixed(2))}
+                                    >
+                                        50% Deposit (₱{(totalPrice / 2).toLocaleString(undefined, { minimumFractionDigits: 2 })})
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 text-xs rounded-lg"
+                                        onClick={() => setPaymentAmount(totalPrice.toFixed(2))}
+                                    >
+                                        Full Amount (₱{totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })})
+                                    </Button>
+                                </div>
+                            )}
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="paymentNotes" className="text-sm font-semibold">
+                                    Notes <span className="text-muted-foreground font-normal">(Optional)</span>
+                                </Label>
+                                <Textarea
+                                    id="paymentNotes"
+                                    placeholder="Add any payment-related notes..."
+                                    value={paymentNotes}
+                                    onChange={(e) => setPaymentNotes(e.target.value)}
+                                    className="rounded-xl border border-muted-foreground/20 min-h-[60px]"
+                                    rows={2}
+                                />
+                            </div>
+
+                            {(paymentMethod === "GCash" || paymentMethod === "PayMaya") && parseFloat(paymentAmount) > 0 && (
+                                <div className="flex items-start gap-2 text-xs text-blue-800 dark:text-blue-400 bg-blue-500/10 p-2.5 rounded-lg border border-blue-500/20">
+                                    <CreditCard className="h-4 w-4 shrink-0 mt-0.5" />
+                                    <span>
+                                        A <strong>QR Code payment screen</strong> will appear after saving this reservation for {paymentMethod} verification.
+                                    </span>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Column 3: Booking Summary & Sidebar */}
@@ -652,10 +803,23 @@ export function BookingForm() {
                     roomNumber: roomNumberStr,
                     basePrice,
                     bookingSource,
+                    paymentMethod,
+                    paymentAmount: parseFloat(paymentAmount) || 0,
+                    paymentNotes,
                 }}
                 submitting={submitting}
                 onConfirm={handleConfirmBooking}
             />
+
+            {/* Mock QR Payment Modal */}
+            {savedBookingData && (
+                <PaymentQrModal
+                    open={qrModalOpen}
+                    onOpenChange={setQrModalOpen}
+                    bookingData={savedBookingData}
+                    onPaymentComplete={handleQrPaymentComplete}
+                />
+            )}
         </form>
     );
 }

@@ -71,9 +71,9 @@ export async function GET() {
             ...departuresList.filter((r: { status: string; id: number }) => r.status === 'Checked-In').map((r: { id: number }) => r.id),
         ];
 
-        const itemsMap: Record<number, { reservation_id: number; room_type_id?: { id?: number; type_name?: string }; room_id?: { id?: number; room_number?: string } }[]> = {};
+        const itemsMap: Record<number, { reservation_id: number; room_type_id?: { id?: number; type_name?: string }; room_id?: { id?: number; room_number?: string; housekeeping_status_id?: number } }[]> = {};
         if (allReservationIds.length > 0) {
-            const itemsRes = await fetch(`${API_BASE_URL}/items/reservation_items?limit=-1&fields=id,reservation_id,room_type_id.id,room_type_id.type_name,room_id.id,room_id.room_number&filter=${encodeURIComponent(JSON.stringify({
+            const itemsRes = await fetch(`${API_BASE_URL}/items/reservation_items?limit=-1&fields=id,reservation_id,room_type_id.id,room_type_id.type_name,room_id.id,room_id.room_number,room_id.housekeeping_status_id&filter=${encodeURIComponent(JSON.stringify({
                 reservation_id: { _in: allReservationIds },
             }))}`, { headers });
 
@@ -100,6 +100,7 @@ export async function GET() {
                 status: r.status,
                 roomId: firstItem?.room_id?.id || null,
                 roomNumber: firstItem?.room_id?.room_number || null,
+                roomHousekeepingStatusId: firstItem?.room_id?.housekeeping_status_id || null,
             };
         });
 
