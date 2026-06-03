@@ -35,7 +35,7 @@ export async function initiatePaymentSession(bookingData: BookingPayload): Promi
     const sessionAttributes: PayMongoSessionAttributes = {
       amount: amountInCentavos,
       currency: "PHP",
-      payment_method_types: ["gcash", "card"],
+      payment_method_types: ["gcash", "card", "qrph", "paymaya"],
       description: `Reservation Reference Allocation: #${bookingData.reservationId}`,
       line_items: [
         {

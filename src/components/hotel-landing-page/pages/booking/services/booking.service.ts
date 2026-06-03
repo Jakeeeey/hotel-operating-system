@@ -86,13 +86,29 @@ export async function getMonthlyInventory(
       return { capacity: 0, bookings: [] };
     }
 
+    const d = new Date(Date.now() - 15 * 60 * 1000);
+    const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+    const fifteenMinsAgo = manilaDate.toISOString().replace('Z', '');
+
     const activeBookings = await directus.request<InventoryBookingRecord[]>(
       readItems("reservation_items_hos", {
         filter: {
           _and: [
             { night_date: { _gte: startDate } },
             { night_date: { _lt: endDate } },
-            { room_id: { _in: eligibleRoomIds } }
+            { room_id: { _in: eligibleRoomIds } },
+            {
+              _or: [
+                { reservation_id: { status: { _eq: "paid" } } },
+                { reservation_id: { status: { _eq: "confirmed" } } },
+                {
+                  _and: [
+                    { reservation_id: { status: { _eq: "pending" } } },
+                    { reservation_id: { created_at: { _gte: fifteenMinsAgo } } }
+                  ]
+                }
+              ]
+            }
           ]
         },
         fields: ["night_date", "room_id"]
@@ -148,12 +164,28 @@ async function getAvailableRoomIds(typeId: number, checkin: string, checkout: st
     readItems("rooms_hos", { filter: { type_id: { _eq: typeId } } })
   );
 
+  const d = new Date(Date.now() - 15 * 60 * 1000);
+  const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+  const fifteenMinsAgo = manilaDate.toISOString().replace('Z', '');
+
   const bookedItems = await directus.request<Array<{ room_id: number }>>(
     readItems("reservation_items_hos", {
       filter: {
         _and: [
           { night_date: { _gte: checkin } },
-          { night_date: { _lt: checkout } }
+          { night_date: { _lt: checkout } },
+          {
+            _or: [
+              { reservation_id: { status: { _eq: "paid" } } },
+              { reservation_id: { status: { _eq: "confirmed" } } },
+              {
+                _and: [
+                  { reservation_id: { status: { _eq: "pending" } } },
+                  { reservation_id: { created_at: { _gte: fifteenMinsAgo } } }
+                ]
+              }
+            ]
+          }
         ]
       },
       fields: ['room_id']
@@ -162,9 +194,18 @@ async function getAvailableRoomIds(typeId: number, checkin: string, checkout: st
 
   const bookedRoomIds = new Set<number>(bookedItems.map((item) => item.room_id));
 
-  return allRooms
+  const availableIds = allRooms
     .filter((room) => !bookedRoomIds.has(room.id))
     .map((room) => room.id);
+
+  console.log("--- DEBUG getAvailableRoomIds ---");
+  console.log("fifteenMinsAgo (Manila):", fifteenMinsAgo);
+  console.log("bookedItems blocking:", JSON.stringify(bookedItems));
+  console.log("allRooms for type:", JSON.stringify(allRooms));
+  console.log("availableIds:", availableIds);
+  console.log("---------------------------------");
+
+  return availableIds;
 }
 
 /**
@@ -177,19 +218,44 @@ export async function createBookingTransaction(
   try {
     const guestId = await getOrCreateGuest(data);
 
-    // 1. Double check actual structural availability thresholds
-    const availableIds = await getAvailableRoomIds(details.roomTypeId, details.checkin, details.checkout);
-    if (availableIds.length < details.roomIds.length) {
-      throw new Error("Some selected rooms are no longer available for these dates.");
+    // 1. Build linear date sequence ranges
+    const start = new Date(details.checkin);
+    const end = new Date(details.checkout);
+    const dates: string[] = [];
+    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split("T")[0]);
     }
 
-    // 2. Coerce pricing securely to verify numbers before database writing or API calls
+    // 2. Map requested room types to available physical rooms
+    const typeAllocations: Record<number, number> = {};
+    for (const roomTypeId of details.roomIds) {
+      typeAllocations[roomTypeId] = (typeAllocations[roomTypeId] || 0) + 1;
+    }
+
+    const physicalRoomAllocations: Array<{ roomTypeId: number; physicalRoomId: number }> = [];
+
+    for (const [roomTypeIdStr, countRequested] of Object.entries(typeAllocations)) {
+      const roomTypeId = Number(roomTypeIdStr);
+      const availablePhysicalIds = await getAvailableRoomIds(roomTypeId, details.checkin, details.checkout);
+
+      if (availablePhysicalIds.length < countRequested) {
+        const roomTypeName = details.roomDetails.find(r => r.id === roomTypeId)?.name || `Type ${roomTypeId}`;
+        throw new Error(`Rooms for ${roomTypeName} are no longer available for these dates.`);
+      }
+
+      const allocatedForType = availablePhysicalIds.slice(0, countRequested);
+      for (const physicalRoomId of allocatedForType) {
+        physicalRoomAllocations.push({ roomTypeId, physicalRoomId });
+      }
+    }
+
+    // 3. Coerce pricing securely to verify numbers before database writing or API calls
     const trueNumericTotal = Number(details.total);
     if (isNaN(trueNumericTotal) || trueNumericTotal <= 0) {
       throw new Error(`Invalid total calculation parameter passed to server pipeline: (${details.total})`);
     }
 
-    // 3. Insert the tracking metadata header as "pending"
+    // 4. Insert the tracking metadata header as "pending"
     const reservation = await directus.request<DirectusReservationHeader>(
       createItem("reservations_hos", {
         guest_id: guestId,
@@ -200,27 +266,20 @@ export async function createBookingTransaction(
       })
     );
 
-    // 4. Build linear date sequence ranges
-    const start = new Date(details.checkin);
-    const end = new Date(details.checkout);
-    const dates: string[] = [];
-    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
-      dates.push(d.toISOString().split("T")[0]);
-    }
-
     // 5. Draft physical unit items to populate relational schema bindings
     const itemsToCreate: DirectusReservationItem[] = [];
-    for (const roomId of details.roomIds) {
+    for (const alloc of physicalRoomAllocations) {
       for (const date of dates) {
         itemsToCreate.push({
           reservation_id: reservation.id,
-          room_id: roomId,
+          room_id: alloc.physicalRoomId,
           night_date: date,
           adults_count: Number(details.adults ?? 2),
           children_count: Number(details.children ?? 0),
         });
       }
     }
+
     await directus.request(createItems("reservation_items_hos", itemsToCreate));
 
     // 6. --- CONNECT TO THE PAYMONGO SESSION GATEWAY ---
@@ -259,5 +318,83 @@ export async function createBookingTransaction(
       success: false,
       error: error instanceof Error ? error.message : "An unexpected backend error stalled initialization protocols.",
     };
+  }
+}
+
+/**
+ * Dynamically determines the actual availability of room types for a specified date range
+ */
+export async function getRoomTypesAvailability(
+  checkin: string,
+  checkout: string
+): Promise<Record<number, { available: boolean; remaining: number }>> {
+  try {
+    console.log("--- DEBUG getRoomTypesAvailability ---");
+    console.log("checkin:", checkin, "checkout:", checkout);
+    if (!checkin || !checkout) {
+      console.log("Missing checkin or checkout");
+      return {};
+    }
+
+    const allRooms = await directus.request<DirectusRoom[]>(
+      readItems("rooms_hos", { fields: ["id", "type_id"] })
+    );
+    console.log("allRooms:", JSON.stringify(allRooms));
+
+    const d = new Date(Date.now() - 15 * 60 * 1000);
+    const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+    const fifteenMinsAgo = manilaDate.toISOString().replace('Z', '');
+
+    const bookedItems = await directus.request<Array<{ room_id: number }>>(
+      readItems("reservation_items_hos", {
+        filter: {
+          _and: [
+            { night_date: { _gte: checkin } },
+            { night_date: { _lt: checkout } },
+            {
+              _or: [
+                { reservation_id: { status: { _eq: "paid" } } },
+                { reservation_id: { status: { _eq: "confirmed" } } },
+                {
+                  _and: [
+                    { reservation_id: { status: { _eq: "pending" } } },
+                    { reservation_id: { created_at: { _gte: fifteenMinsAgo } } }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        fields: ['room_id']
+      })
+    );
+    console.log("bookedItems:", JSON.stringify(bookedItems));
+
+    const bookedRoomIds = new Set<number>(bookedItems.map((item) => item.room_id));
+
+    const roomsByType: Record<number, number[]> = {};
+    for (const room of allRooms) {
+      if (!roomsByType[room.type_id]) {
+        roomsByType[room.type_id] = [];
+      }
+      roomsByType[room.type_id].push(room.id);
+    }
+
+    const availabilityMap: Record<number, { available: boolean; remaining: number }> = {};
+    for (const [typeIdStr, roomIds] of Object.entries(roomsByType)) {
+      const typeId = Number(typeIdStr);
+      const availableRooms = roomIds.filter(id => !bookedRoomIds.has(id));
+      availabilityMap[typeId] = {
+        available: availableRooms.length > 0,
+        remaining: availableRooms.length
+      };
+    }
+
+    console.log("availabilityMap:", JSON.stringify(availabilityMap));
+    console.log("--------------------------------------");
+    return availabilityMap;
+  } catch (error) {
+    console.error("Failed to check room types availability:", error);
+    return {};
   }
 }

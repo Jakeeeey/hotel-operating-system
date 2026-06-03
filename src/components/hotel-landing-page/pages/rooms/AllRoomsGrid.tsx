@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -18,6 +18,7 @@ import {
   DrawerDescription,
 } from "@/components/ui/drawer";
 import { RoomData } from "../home/types/room.types";
+import { getRoomTypesAvailability } from "../booking/services/booking.service";
 
 function formatDisplayDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
@@ -63,6 +64,32 @@ export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
       .map((id) => Number(id.trim()))
       .filter(Boolean);
   }, [existingRoomIdsRaw]);
+
+  const [availability, setAvailability] = useState<Record<number, { available: boolean; remaining: number }>>({});
+
+  useEffect(() => {
+    if (!checkinStr || !checkoutStr) {
+      Promise.resolve().then(() => {
+        setAvailability({});
+      });
+      return;
+    }
+
+    let active = true;
+    getRoomTypesAvailability(checkinStr, checkoutStr)
+      .then((data) => {
+        if (active) {
+          setAvailability(data);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to check room types availability:", err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [checkinStr, checkoutStr]);
 
   const categories = [
     "All",
@@ -312,15 +339,23 @@ export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
         {filteredRooms.map((room) => {
           const isAlreadySelected = activeSelectedIds.includes(room.id);
+          const isAvailable = checkinStr && checkoutStr && availability[room.id] !== undefined
+            ? availability[room.id].available
+            : true;
 
           return (
             <div
               key={room.id}
-              onClick={() => viewRoomDetails(room.id)}
-              className={`group bg-white border overflow-hidden transition-all duration-300 flex flex-col h-full cursor-pointer rounded-sm ${
+              onClick={() => {
+                if (!isAvailable) return;
+                viewRoomDetails(room.id);
+              }}
+              className={`group bg-white border overflow-hidden transition-all duration-300 flex flex-col h-full rounded-sm ${
                 isAlreadySelected
-                  ? "border-zinc-950 shadow-xs"
-                  : "border-zinc-200/80 hover:border-zinc-400"
+                  ? "border-zinc-950 shadow-xs cursor-pointer"
+                  : !isAvailable
+                  ? "border-zinc-200 opacity-60 grayscale cursor-not-allowed bg-zinc-50/50"
+                  : "border-zinc-200/80 hover:border-zinc-400 cursor-pointer"
               }`}
             >
               {/* Media Container Frame */}
@@ -334,6 +369,11 @@ export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
                 {isAlreadySelected && (
                   <span className="absolute top-3 right-3 text-[9px] uppercase font-bold tracking-[0.15em] bg-zinc-950 text-white px-2.5 py-1 rounded-sm shadow-xs flex items-center gap-1.5 animate-in fade-in duration-200">
                     <Check size={10} strokeWidth={3} /> Staged Selection
+                  </span>
+                )}
+                {!isAvailable && (
+                  <span className="absolute top-3 right-3 text-[9px] uppercase font-bold tracking-[0.15em] bg-red-600 text-white px-2.5 py-1 rounded-sm shadow-xs animate-in fade-in duration-200">
+                    Fully Booked
                   </span>
                 )}
               </div>
@@ -379,10 +419,12 @@ export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
                   <span className={`px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-200 rounded-sm flex items-center gap-1.5
                     ${isAlreadySelected 
                       ? "bg-zinc-100 text-zinc-400 border border-zinc-200" 
+                      : !isAvailable
+                      ? "bg-zinc-200 text-zinc-400 border border-zinc-200 cursor-not-allowed"
                       : "bg-zinc-950 text-white hover:bg-black"
                     }`}
                   >
-                    {isAlreadySelected ? "Selected" : "Reserve"}
+                    {isAlreadySelected ? "Selected" : !isAvailable ? "Fully Booked" : "Reserve"}
                   </span>
                 </div>
               </div>

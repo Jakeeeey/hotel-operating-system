@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Star,
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { RoomData } from "../home/types/room.types";
+import { getRoomTypesAvailability } from "../booking/services/booking.service";
 
 interface RoomDetailsViewProps {
   room: RoomData;
@@ -44,6 +45,37 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
   }, [existingRoomIdsRaw]);
 
   const isAlreadySelected = activeSelectedIds.includes(room.id);
+
+  const [isAvailable, setIsAvailable] = useState(true);
+
+  useEffect(() => {
+    if (!checkinStr || !checkoutStr) {
+      Promise.resolve().then(() => {
+        setIsAvailable((prev) => !prev ? true : prev);
+      });
+      return;
+    }
+
+    let active = true;
+    getRoomTypesAvailability(checkinStr, checkoutStr)
+      .then((data) => {
+        if (active) {
+          const typeAvail = data[room.id];
+          if (typeAvail) {
+            setIsAvailable(typeAvail.available);
+          } else {
+            setIsAvailable(false);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to check details room type availability:", err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [checkinStr, checkoutStr, room.id]);
 
   const handleSelectionAction = () => {
     const updatedIds = new Set([...activeSelectedIds, room.id]);
@@ -114,9 +146,19 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
               <span className="text-[9px] uppercase tracking-widest font-bold px-2.5 py-1 bg-zinc-950 text-white rounded-none">
                 {room.badge}
               </span>
-              <span className="text-[9px] uppercase tracking-widest font-bold px-2 py-1 bg-zinc-50 text-zinc-500 border border-zinc-200">
-                {room.availability}
-              </span>
+              {checkinStr && checkoutStr ? (
+                <span className={`text-[9px] uppercase tracking-widest font-bold px-2 py-1 border rounded-none ${
+                  !isAvailable 
+                    ? "bg-red-50 text-red-600 border-red-200" 
+                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                }`}>
+                  {!isAvailable ? "Fully Booked for Dates" : "Available for Dates"}
+                </span>
+              ) : (
+                <span className="text-[9px] uppercase tracking-widest font-bold px-2 py-1 bg-zinc-50 text-zinc-500 border border-zinc-200">
+                  {room.availability}
+                </span>
+              )}
             </div>
             <h1 className="text-3xl md:text-5xl font-serif font-normal tracking-tight text-zinc-900">
               {room.name}
@@ -280,9 +322,16 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
             ) : (
               <button
                 onClick={handleSelectionAction}
-                className="w-full py-3.5 bg-zinc-950 hover:bg-black text-white rounded-none text-[10px] font-bold uppercase tracking-[0.15em] border border-zinc-950 transition-colors cursor-pointer text-center flex items-center justify-center gap-2"
+                disabled={!isAvailable}
+                className={`w-full py-3.5 rounded-none text-[10px] font-bold uppercase tracking-[0.15em] border transition-colors text-center flex items-center justify-center gap-2
+                  ${!isAvailable
+                    ? "bg-zinc-200 text-zinc-400 border-zinc-200 cursor-not-allowed"
+                    : "bg-zinc-950 hover:bg-black text-white border-zinc-950 cursor-pointer"
+                  }`}
               >
-                {activeSelectedIds.length > 0 ? (
+                {!isAvailable ? (
+                  "Fully Booked"
+                ) : activeSelectedIds.length > 0 ? (
                   <>
                     <Plus size={12} strokeWidth={2.5} /> Add to Booking
                   </>

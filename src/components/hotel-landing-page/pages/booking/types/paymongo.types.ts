@@ -14,7 +14,7 @@ export interface PayMongoLineItem {
 export interface PayMongoSessionAttributes {
   amount: number; // In centavos
   currency: "PHP";
-  payment_method_types: ("gcash" | "card" | "paymaya" | "grab_pay")[];
+  payment_method_types: ("gcash" | "card" | "paymaya" | "grab_pay" | "qrph")[];
   description: string;
   line_items: PayMongoLineItem[];
   billing: PayMongoBillingInfo;

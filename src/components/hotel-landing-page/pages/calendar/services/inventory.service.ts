@@ -35,6 +35,10 @@ export async function getMonthlyInventory(year: number, month: number, adults: n
       };
     }
 
+    const d = new Date(Date.now() - 15 * 60 * 1000);
+    const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+    const fifteenMinsAgo = manilaDate.toISOString().replace('Z', '');
+
     // 3. Fetch existing reservation items for these eligible rooms within the month range
     const activeBookings = await directus.request(
       readItems("reservation_items_hos", {
@@ -42,7 +46,19 @@ export async function getMonthlyInventory(year: number, month: number, adults: n
           _and: [
             { night_date: { _gte: startDate } },
             { night_date: { _lt: endDate } },
-            { room_id: { _in: eligibleRoomIds } }
+            { room_id: { _in: eligibleRoomIds } },
+            {
+              _or: [
+                { reservation_id: { status: { _eq: "paid" } } },
+                { reservation_id: { status: { _eq: "confirmed" } } },
+                {
+                  _and: [
+                    { reservation_id: { status: { _eq: "pending" } } },
+                    { reservation_id: { created_at: { _gte: fifteenMinsAgo } } }
+                  ]
+                }
+              ]
+            }
           ]
         },
         fields: ["night_date", "room_id"]
