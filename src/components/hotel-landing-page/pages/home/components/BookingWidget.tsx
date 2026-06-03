@@ -26,7 +26,9 @@ export function BookingWidget({ dynamicBadges = [] }: BookingWidgetProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Safely extract and parse badge options from your actual database structure
+  // Fully dynamic — labels and variants derived entirely from DB badge values
+  const VARIANT_PALETTE = ["zinc", "amber", "dark", "emerald", "blue"] as const;
+
   const roomBadges = useMemo(() => {
     const baseOption = { id: "all", label: "All Rooms", variant: "zinc" };
     
@@ -34,40 +36,22 @@ export function BookingWidget({ dynamicBadges = [] }: BookingWidgetProps) {
 
     const fetchedOptions = dynamicBadges
       .map((item) => {
-        // Defensively check if the item is a raw string or an object row from room_types_hos
         const badgeName = typeof item === "string" ? item : item?.badge;
-        
         if (!badgeName || typeof badgeName !== "string") return null;
-
-        let label = `${badgeName} Rooms`;
-        let variant = "zinc";
-
-        // Dynamic theme matching matching your column values exactly
-        if (badgeName === "Featured") {
-          label = "Featured Rooms";
-          variant = "zinc";
-        } else if (badgeName === "Popular") {
-          label = "Popular Choice";
-          variant = "amber";
-        } else if (badgeName === "Exclusive") {
-          label = "Exclusive Rooms";
-          variant = "dark";
-        }
-
-        return {
-          id: badgeName,
-          label,
-          variant,
-        };
+        return badgeName;
       })
-      .filter((item): item is { id: string; label: string; variant: string } => item !== null);
+      .filter((b): b is string => b !== null);
 
-    // Deduplicate array values so badges only display once
-    const uniqueOptions = fetchedOptions.filter(
-      (value, index, self) => self.findIndex((t) => t.id === value.id) === index
-    );
+    // Deduplicate
+    const uniqueBadges = [...new Set(fetchedOptions)];
 
-    return [baseOption, ...uniqueOptions];
+    const options = uniqueBadges.map((badge, index) => ({
+      id: badge,
+      label: `${badge}`,
+      variant: VARIANT_PALETTE[index % VARIANT_PALETTE.length],
+    }));
+
+    return [baseOption, ...options];
   }, [dynamicBadges]);
 
   // Initialize states from URL if they exist to keep the UI synchronized
