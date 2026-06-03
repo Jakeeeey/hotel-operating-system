@@ -1,5 +1,22 @@
 import { NextResponse } from 'next/server';
 
+interface CalendarReservationItem {
+    id: string | number;
+    room_id?: string | number | null;
+    room_type_id?: string | number | null;
+    locked_price?: string | number | null;
+    reservation_id?: {
+        id: string | number;
+        status: string;
+        check_in_date: string;
+        check_out_date: string;
+        guest_id?: {
+            first_name: string;
+            last_name: string;
+        } | null;
+    } | null;
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL;
 
 export async function GET(request: Request) {
@@ -69,7 +86,7 @@ export async function GET(request: Request) {
         const rawItems = itemsData.data || [];
         const reservationsMap = new Map();
         
-        rawItems.forEach((item: any) => {
+        rawItems.forEach((item: CalendarReservationItem) => {
             const resInfo = item.reservation_id;
             if (resInfo) {
                 const key = `${resInfo.id}_${item.room_id || 'unassigned'}`;

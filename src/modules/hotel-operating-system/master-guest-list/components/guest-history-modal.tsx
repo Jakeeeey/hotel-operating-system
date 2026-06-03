@@ -101,7 +101,7 @@ export function GuestHistoryModal({ open, onOpenChange, guest }: GuestHistoryMod
                     if (checkIn && checkOut) {
                         nights = differenceInDays(parseISO(checkOut), parseISO(checkIn));
                     }
-                } catch (e) {
+                } catch {
                     // Ignore parsing error
                 }
                 return (

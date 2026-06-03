@@ -18,10 +18,14 @@ export async function POST(request: Request) {
             if (payload && payload.sub) userId = parseInt(payload.sub, 10);
         }
 
-        const { reservationId, roomId } = await request.json();
+        const { reservationId, roomId, depositAmount, depositMethod } = await request.json();
 
         if (!reservationId || !roomId) {
             return NextResponse.json({ error: 'reservationId and roomId are required.' }, { status: 400 });
+        }
+
+        if (!depositAmount || !depositMethod) {
+            return NextResponse.json({ error: 'Incidental deposit amount and method are required.' }, { status: 400 });
         }
 
         const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
@@ -29,6 +33,39 @@ export async function POST(request: Request) {
             'Content-Type': 'application/json',
             ...(staticToken ? { 'Authorization': `Bearer ${staticToken}` } : {}),
         };
+
+        // 0. Clean Room Mandate & Early Check-In Attempt Validation
+        const roomStatusRes = await fetch(`${API_BASE_URL}/items/rooms/${roomId}?fields=id,housekeeping_status_id`, { headers });
+        if (roomStatusRes.ok) {
+            const roomStatusData = await roomStatusRes.json();
+            const hkStatus = roomStatusData.data?.housekeeping_status_id;
+            if (hkStatus !== 1) { // 1 is Clean/Available
+                return NextResponse.json({ error: 'Room not ready. Reassign room or await Housekeeping clearance.' }, { status: 400 });
+            }
+        }
+
+        // 0b. Create Incidental Deposit Payment Record
+        const depositPayload = {
+            reservation_id: reservationId,
+            amount: parseFloat(depositAmount),
+            payment_method: depositMethod,
+            reference_number: null,
+            status: 'Completed',
+            notes: 'Incidental Deposit Hold',
+            payment_date: new Date().toISOString(),
+            created_by: userId,
+            updated_by: userId,
+        };
+        const depositRes = await fetch(`${API_BASE_URL}/items/payments_hos`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(depositPayload),
+        });
+        if (!depositRes.ok) {
+            const err = await depositRes.json().catch(() => ({}));
+            console.error('Failed to log incidental deposit:', err);
+            return NextResponse.json({ error: 'Failed to record incidental deposit.' }, { status: 500 });
+        }
 
         // 1. Update reservation status to "Checked-In"
         const resUpdate = await fetch(`${API_BASE_URL}/items/reservations/${reservationId}`, {

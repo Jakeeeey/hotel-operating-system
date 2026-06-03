@@ -77,6 +77,26 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
                 finalTargetTime = `${d}T${t}:00`;
             }
 
+            interface CheckRoomData {
+                id: number;
+                room_number: string | number;
+                operational_status_id: number | { id: number } | null;
+            }
+
+            // 1. Fetch Room occupancy status
+            const roomCheckRes = await fetch("/api/hos/room-registration");
+            const roomCheckData = await roomCheckRes.json();
+            const matchingRoom = (roomCheckData.data || []).find(
+                (r: CheckRoomData) => r.room_number.toString() === roomNumber.toString()
+            );
+
+            const isOccupied = matchingRoom
+                ? (typeof matchingRoom.operational_status_id === 'object' && matchingRoom.operational_status_id !== null 
+                    ? matchingRoom.operational_status_id.id === 2 
+                    : matchingRoom.operational_status_id === 2)
+                : false;
+
+            // 2. Submit standard task payload
             const res = await fetch("/api/hos/housekeeping", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -92,6 +112,22 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
             });
 
             if (!res.ok) throw new Error("Failed to create task");
+
+            // 3. OOO Transition if Critical and room is NOT occupied
+            if (blocksAvailability && !isOccupied && matchingRoom?.id) {
+                const oooStatus = taskTypes.find(
+                    (s) => s.status_name.toLowerCase().includes("order") || s.status_name.toLowerCase() === "ooo"
+                );
+                const oooStatusId = oooStatus?.id || 5; // fallback OOO status ID
+
+                await fetch(`/api/hos/room-registration/${matchingRoom.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        housekeeping_status_id: oooStatusId
+                    })
+                });
+            }
 
             toast.success("Task created successfully");
             
@@ -227,7 +263,7 @@ export function NewTaskModal({ open, onOpenChange, onSuccess }: NewTaskModalProp
                             onCheckedChange={(c) => setBlocksAvailability(c as boolean)} 
                         />
                         <Label htmlFor="blocks" className="text-xs font-semibold cursor-pointer">
-                            Blocks Availability
+                            Critical / Take Out of Order
                         </Label>
                     </div>
 

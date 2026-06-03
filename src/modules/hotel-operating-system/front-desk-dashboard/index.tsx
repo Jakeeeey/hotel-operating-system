@@ -73,8 +73,7 @@ export default function FrontDeskDashboardModule() {
     const [folioOpen, setFolioOpen] = useState(false);
     const [selectedFolioDeparture, setSelectedFolioDeparture] = useState<DepartureItem | null>(null);
 
-    // Check-out loading state
-    const [checkingOutId, setCheckingOutId] = useState<number | null>(null);
+
 
     const fetchDashboard = async () => {
         setLoading(true);
@@ -136,35 +135,6 @@ export default function FrontDeskDashboardModule() {
         setFolioOpen(true);
     };
 
-    const handleCheckOut = async (departure: DepartureItem) => {
-        if (!departure.roomId) {
-            toast.error("No room assigned to this reservation.");
-            return;
-        }
-
-        if (!confirm(`Check out ${departure.guestName} from Room ${departure.roomNumber}?`)) return;
-
-        setCheckingOutId(departure.reservationId);
-        try {
-            const res = await fetch("/api/hos/front-desk-dashboard/check-out", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    reservationId: departure.reservationId,
-                    roomId: departure.roomId,
-                }),
-            });
-
-            if (!res.ok) throw new Error("Check-out failed");
-
-            toast.success(`${departure.guestName} checked out successfully.`);
-            fetchDashboard();
-        } catch {
-            toast.error("Failed to check out guest.");
-        } finally {
-            setCheckingOutId(null);
-        }
-    };
 
     // --- Date display ---
     const today = new Date();
@@ -215,10 +185,9 @@ export default function FrontDeskDashboardModule() {
                 <DeparturesTable
                     departures={filteredDepartures}
                     isLoading={loading}
-                    onCheckOut={handleCheckOut}
                     onExtendStay={handleExtendStay}
                     onOpenFolio={handleOpenFolio}
-                    checkingOutId={checkingOutId}
+                    checkingOutId={null}
                 />
             </div>
 
@@ -245,6 +214,7 @@ export default function FrontDeskDashboardModule() {
                 reservationId={selectedFolioDeparture?.reservationId || null}
                 guestName={selectedFolioDeparture?.guestName || ""}
                 roomNumber={selectedFolioDeparture?.roomNumber || ""}
+                roomId={selectedFolioDeparture?.roomId || null}
                 roomTypeName={selectedFolioDeparture?.roomTypeName || ""}
                 onCheckOutSuccess={fetchDashboard}
             />

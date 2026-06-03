@@ -26,11 +26,16 @@ export function ArrivalsTable({ arrivals, isLoading, onCheckIn }: ArrivalsTableP
     const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
     useEffect(() => {
-        setCurrentTime(new Date());
+        const initialTimer = setTimeout(() => {
+            setCurrentTime(new Date());
+        }, 0);
         const interval = setInterval(() => {
             setCurrentTime(new Date());
         }, 15000); // Check every 15 seconds
-        return () => clearInterval(interval);
+        return () => {
+            clearTimeout(initialTimer);
+            clearInterval(interval);
+        };
     }, []);
 
     const getCheckInStatus = (arrival: ArrivalItem) => {

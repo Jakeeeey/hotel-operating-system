@@ -18,21 +18,25 @@ interface DepartureItem {
 interface DeparturesTableProps {
     departures: DepartureItem[];
     isLoading?: boolean;
-    onCheckOut: (departure: DepartureItem) => void;
     onExtendStay: (departure: DepartureItem) => void;
     onOpenFolio: (departure: DepartureItem) => void;
     checkingOutId: number | null;
 }
 
-export function DeparturesTable({ departures, isLoading, onCheckOut, onExtendStay, onOpenFolio, checkingOutId }: DeparturesTableProps) {
+export function DeparturesTable({ departures, isLoading, onExtendStay, onOpenFolio, checkingOutId }: DeparturesTableProps) {
     const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
     useEffect(() => {
-        setCurrentTime(new Date());
+        const initialTimer = setTimeout(() => {
+            setCurrentTime(new Date());
+        }, 0);
         const interval = setInterval(() => {
             setCurrentTime(new Date());
         }, 15000); // Check every 15 seconds
-        return () => clearInterval(interval);
+        return () => {
+            clearTimeout(initialTimer);
+            clearInterval(interval);
+        };
     }, []);
 
     const getRowStyleAndStatus = () => {
@@ -139,25 +143,13 @@ export function DeparturesTable({ departures, isLoading, onCheckOut, onExtendSta
                                             Extend
                                         </Button>
                                         <Button
-                                            variant="outline"
                                             size="sm"
-                                            className="h-8 text-xs font-semibold hover:bg-primary/10 hover:text-primary"
+                                            className="h-8 text-xs font-semibold"
                                             onClick={() => onOpenFolio(departure)}
                                             disabled={checkingOutId === departure.reservationId}
                                         >
                                             <Receipt className="h-3.5 w-3.5 mr-1" />
-                                            Folio
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-8 text-xs font-semibold bg-foreground text-background hover:bg-foreground/90 border-0"
-                                            onClick={() => onCheckOut(departure)}
-                                            disabled={checkingOutId === departure.reservationId}
-                                        >
-                                            {checkingOutId === departure.reservationId
-                                                ? "Processing..."
-                                                : "Check-Out"}
+                                            Check-Out / Folio
                                         </Button>
                                     </div>
                                 </div>

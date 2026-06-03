@@ -55,6 +55,7 @@ interface GuestFolioSheetProps {
     reservationId: number | null;
     guestName: string;
     roomNumber: string;
+    roomId: number | null;
     roomTypeName: string;
     onCheckOutSuccess: () => void;
 }
@@ -65,6 +66,7 @@ export function GuestFolioSheet({
     reservationId,
     guestName,
     roomNumber,
+    roomId,
     roomTypeName,
     onCheckOutSuccess,
 }: GuestFolioSheetProps) {
@@ -87,6 +89,15 @@ export function GuestFolioSheet({
     const [payReference, setPayReference] = useState("");
     const [payNotes, setPayNotes] = useState("");
     const [savingPayment, setSavingPayment] = useState(false);
+
+    // Resolve Incidental Deposit Dialog state
+    const [resolveDepositOpen, setResolveDepositOpen] = useState(false);
+    const [depositResolution, setDepositResolution] = useState<"Refund" | "Forfeit">("Refund");
+    const [forfeitOption, setForfeitOption] = useState<"Full" | "Partial">("Full");
+    const [forfeitAmount, setForfeitAmount] = useState<string>("1000");
+
+    // Confirm Check-Out Dialog state
+    const [confirmCheckoutOpen, setConfirmCheckoutOpen] = useState(false);
 
     const fetchFolio = useCallback(async () => {
         if (!reservationId) return;
@@ -193,17 +204,30 @@ export function GuestFolioSheet({
         }
     };
 
-    // Check-out with balance protection
+    const activeDeposit = payments.find(p => p.notes === "Incidental Deposit Hold");
+
+    // Check-out with balance protection and deposit resolution
     const handleFinalizeCheckout = async () => {
         if (!isBalanceClear) {
             toast.error("Outstanding balance must be ₱0.00 to finalize check-out.");
             return;
         }
 
-        // Find room ID from the reservation context — we use the departure data passed
-        // via the parent. For now, we perform the checkout via the existing API.
-        if (!confirm(`Finalize check-out for ${guestName} from Room ${roomNumber}?`)) return;
+        if (activeDeposit) {
+            setForfeitAmount(activeDeposit.amount.toString());
+            setResolveDepositOpen(true);
+            return;
+        }
 
+        setConfirmCheckoutOpen(true);
+    };
+
+    const executeCheckout = async (
+        depositId: number | null,
+        resolution: "Refund" | "Forfeit" | null,
+        refundVal: number,
+        forfeitVal: number
+    ) => {
         setCheckingOut(true);
         try {
             // We need roomId — fetch from reservation
@@ -216,13 +240,18 @@ export function GuestFolioSheet({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     reservationId,
-                    roomId: folioResult.data?.reservation?.room_id || null,
+                    roomId: roomId || folioResult.data?.reservation?.room_id || null,
+                    depositId,
+                    resolution,
+                    refundAmount: refundVal,
+                    forfeitAmount: forfeitVal,
                 }),
             });
 
             if (!resItemsRes.ok) throw new Error("Check-out failed");
 
             toast.success(`${guestName} checked out successfully.`);
+            setResolveDepositOpen(false);
             onOpenChange(false);
             onCheckOutSuccess();
         } catch {
@@ -598,6 +627,157 @@ export function GuestFolioSheet({
                                 </>
                             ) : (
                                 "Record Payment"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Resolve Incidental Deposit Dialog */}
+            <Dialog open={resolveDepositOpen} onOpenChange={setResolveDepositOpen}>
+                <DialogContent className="sm:max-w-[420px] rounded-2xl border-none shadow-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold">Resolve Incidental Deposit</DialogTitle>
+                        <DialogDescription className="text-sm text-muted-foreground">
+                            Resolve the incidental deposit hold of ₱{activeDeposit?.amount || "0.00"} for {guestName}.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-sm font-semibold">Resolution</Label>
+                            <Select 
+                                value={depositResolution} 
+                                onValueChange={(val: "Refund" | "Forfeit") => setDepositResolution(val)}
+                            >
+                                <SelectTrigger className="rounded-xl">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Refund">Refund Full Deposit</SelectItem>
+                                    <SelectItem value="Forfeit">Forfeit (Damage/Fees)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {depositResolution === "Forfeit" && (
+                            <>
+                                <div className="space-y-1.5">
+                                    <Label className="text-sm font-semibold">Forfeit Option</Label>
+                                    <Select 
+                                        value={forfeitOption} 
+                                        onValueChange={(val: "Full" | "Partial") => {
+                                            setForfeitOption(val);
+                                            if (val === "Full" && activeDeposit) {
+                                                setForfeitAmount(activeDeposit.amount.toString());
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger className="rounded-xl">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Full">Forfeit Full (₱{activeDeposit?.amount || "0.00"})</SelectItem>
+                                            <SelectItem value="Partial">Forfeit Partial Amount</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {forfeitOption === "Partial" && (
+                                    <div className="space-y-1.5">
+                                        <Label className="text-sm font-semibold">Forfeit Amount (₱)</Label>
+                                        <Input
+                                            type="number"
+                                            placeholder="0.00"
+                                            min="0"
+                                            max={activeDeposit?.amount || 0}
+                                            step="0.01"
+                                            value={forfeitAmount}
+                                            onChange={(e) => setForfeitAmount(e.target.value)}
+                                            className="rounded-xl"
+                                        />
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setResolveDepositOpen(false)} 
+                            className="rounded-xl"
+                            disabled={checkingOut}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                if (!activeDeposit) return;
+                                const fAmt = depositResolution === "Refund" 
+                                    ? 0 
+                                    : parseFloat(forfeitAmount || "0");
+                                const rAmt = depositResolution === "Refund" 
+                                    ? activeDeposit.amount 
+                                    : activeDeposit.amount - fAmt;
+                                
+                                if (fAmt > activeDeposit.amount || fAmt < 0) {
+                                    toast.error("Forfeit amount must be between ₱0.00 and the full deposit amount.");
+                                    return;
+                                }
+
+                                executeCheckout(activeDeposit.id, depositResolution, rAmt, fAmt);
+                            }}
+                            disabled={checkingOut}
+                            className="rounded-xl bg-foreground text-background hover:bg-foreground/90 font-semibold"
+                        >
+                            {checkingOut ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                    Processing...
+                                </>
+                            ) : (
+                                "Complete Check-Out"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Confirm Check-Out Dialog */}
+            <Dialog open={confirmCheckoutOpen} onOpenChange={setConfirmCheckoutOpen}>
+                <DialogContent className="sm:max-w-[420px] rounded-2xl border-none shadow-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold">Finalize Check-Out</DialogTitle>
+                        <DialogDescription className="text-sm text-muted-foreground mt-1">
+                            Are you sure you want to finalize the check-out for <span className="font-semibold">{guestName}</span> from Room <span className="font-semibold">{roomNumber}</span>?
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter className="gap-2 sm:gap-0 mt-4">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setConfirmCheckoutOpen(false)} 
+                            className="rounded-xl"
+                            disabled={checkingOut}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={async () => {
+                                await executeCheckout(null, null, 0, 0);
+                                setConfirmCheckoutOpen(false);
+                            }}
+                            disabled={checkingOut}
+                            className="rounded-xl bg-foreground text-background hover:bg-foreground/90 font-semibold"
+                        >
+                            {checkingOut ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                    Processing...
+                                </>
+                            ) : (
+                                "Confirm Check-Out"
                             )}
                         </Button>
                     </DialogFooter>

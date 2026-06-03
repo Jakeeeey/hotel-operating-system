@@ -1,5 +1,34 @@
 import { NextResponse } from 'next/server';
 
+interface RawGuest extends Record<string, unknown> {
+    id: string | number;
+    created_at?: string;
+}
+
+interface RawRoom extends Record<string, unknown> {
+    id: string | number;
+    room_number: string;
+    type_id: string | number | null;
+}
+
+interface RawRoomType extends Record<string, unknown> {
+    id: string | number;
+    type_name: string;
+}
+
+interface RawReservationItem extends Record<string, unknown> {
+    id: string | number;
+    room_id: string | number | { id: string | number; room_number: string } | null;
+    room_type_id: string | number | { id: string | number; type_name: string } | null;
+    reservation_id: string | number | { id: string | number } | null;
+}
+
+interface RawReservation extends Record<string, unknown> {
+    id: string | number;
+    guest_id: string | number | { id: string | number } | null;
+    reservation_items?: RawReservationItem[];
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL;
 
 export async function GET() {
@@ -39,46 +68,46 @@ export async function GET() {
         const roomsData = await roomsRes.json();
         const roomTypesData = await roomTypesRes.json();
 
-        const guests = guestsData.data || [];
-        const reservations = reservationsData.data || [];
-        const reservationItems = reservationItemsData.data || [];
-        const rooms = roomsData.data || [];
-        const roomTypes = roomTypesData.data || [];
+        const guests = (guestsData.data || []) as RawGuest[];
+        const reservations = (reservationsData.data || []) as RawReservation[];
+        const reservationItems = (reservationItemsData.data || []) as RawReservationItem[];
+        const rooms = (roomsData.data || []) as RawRoom[];
+        const roomTypes = (roomTypesData.data || []) as RawRoomType[];
 
         // 1. Stitch rooms and room_types into reservation_items
-        const enrichedReservationItems = reservationItems.map((item: any) => {
-            const roomId = typeof item.room_id === 'object' && item.room_id !== null ? item.room_id.id : item.room_id;
-            const foundRoom = rooms.find((room: any) => room.id === roomId);
+        const enrichedReservationItems = reservationItems.map((item: RawReservationItem) => {
+            const roomId = typeof item.room_id === 'object' && item.room_id !== null ? (item.room_id as { id: string | number }).id : item.room_id;
+            const foundRoom = rooms.find((room: RawRoom) => room.id === roomId);
             
             const roomTypeId = typeof item.room_type_id === 'object' && item.room_type_id !== null 
-                ? item.room_type_id.id 
+                ? (item.room_type_id as { id: string | number }).id 
                 : (item.room_type_id || (foundRoom ? foundRoom.type_id : null));
-            const foundType = roomTypes.find((t: any) => t.id === roomTypeId);
+            const foundType = roomTypes.find((t: RawRoomType) => t.id === roomTypeId);
 
             return {
                 ...item,
                 room_id: foundRoom ? { id: foundRoom.id, room_number: foundRoom.room_number } : item.room_id,
                 room_type_id: foundType ? { id: foundType.id, type_name: foundType.type_name } : item.room_type_id
-            };
+            } as RawReservationItem;
         });
 
         // 2. Stitch enriched reservation_items into reservations
-        const enrichedReservations = reservations.map((r: any) => {
-            const rId = typeof r.id === 'object' && r.id !== null ? r.id.id : r.id;
-            const itemsForRes = enrichedReservationItems.filter((item: any) => {
-                const itemResId = typeof item.reservation_id === 'object' && item.reservation_id !== null ? item.reservation_id.id : item.reservation_id;
+        const enrichedReservations = reservations.map((r: RawReservation) => {
+            const rId = typeof r.id === 'object' && r.id !== null ? (r.id as { id: string | number }).id : r.id;
+            const itemsForRes = enrichedReservationItems.filter((item: RawReservationItem) => {
+                const itemResId = typeof item.reservation_id === 'object' && item.reservation_id !== null ? (item.reservation_id as { id: string | number }).id : item.reservation_id;
                 return itemResId === rId;
             });
             return {
                 ...r,
                 reservation_items: itemsForRes
-            };
+            } as RawReservation;
         });
 
         // 3. Manually stitch enriched reservations into their corresponding guests
-        const guestsWithReservations = guests.map((guest: any) => {
-            const guestReservations = enrichedReservations.filter((r: any) => {
-                const rGuestId = typeof r.guest_id === 'object' && r.guest_id !== null ? r.guest_id.id : r.guest_id;
+        const guestsWithReservations = guests.map((guest: RawGuest) => {
+            const guestReservations = enrichedReservations.filter((r: RawReservation) => {
+                const rGuestId = typeof r.guest_id === 'object' && r.guest_id !== null ? (r.guest_id as { id: string | number }).id : r.guest_id;
                 return rGuestId === guest.id;
             });
             return {
@@ -88,8 +117,10 @@ export async function GET() {
         });
 
         // Sort guests by created_at descending (most recent first)
-        guestsWithReservations.sort((a: any, b: any) => {
-            return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+        guestsWithReservations.sort((a, b) => {
+            const dateB = typeof b.created_at === 'string' ? b.created_at : '';
+            const dateA = typeof a.created_at === 'string' ? a.created_at : '';
+            return new Date(dateB || 0).getTime() - new Date(dateA || 0).getTime();
         });
         
         return NextResponse.json({

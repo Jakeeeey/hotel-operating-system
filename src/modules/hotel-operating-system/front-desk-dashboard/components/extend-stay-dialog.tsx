@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useDeferredValue } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -62,7 +62,7 @@ export function ExtendStayDialog({ open, onOpenChange, departure, onSuccess }: E
             try {
                 // Get the current reservation to get the min date
                 const res = await fetch(`/api/hos/front-desk-dashboard`);
-                const result = await res.json();
+                await res.json();
                 
                 // Let's find this reservation checkout date or default to tomorrow
                 const today = new Date();
