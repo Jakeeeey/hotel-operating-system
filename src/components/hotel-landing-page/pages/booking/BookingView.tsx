@@ -4,20 +4,32 @@ import { useMemo, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { 
-  ArrowLeft
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { createBookingTransaction } from "./services/booking.service";
-
 import { RoomData } from "../home/types/room.types";
 import { BookingStatusModal, type ModalState } from "./components/BookingStatusModal";
 import { BookingSummaryCard } from "./components/BookingSummaryCard";
 import { BookingFormFields } from "./components/BookingFormFields";
 import { BookingFormValues, bookingSchema } from "./schema/booking.schema";
 
+interface BookingTransactionPayload {
+  roomIds: number[];
+  roomTypeId: number;
+  roomDetails: Array<{ id: number; name: string; price: number }>;
+  totalNights: number;
+  checkin: string;
+  checkout: string;
+  total: number;
+  adults: number;
+  children: number;
+}
 
+interface BookingTransactionResponse {
+  success: boolean;
+  checkoutUrl?: string;
+  error?: string;
+}
 
 export function BookingView({ rooms }: { rooms: RoomData[] }) {
   const searchParams = useSearchParams();
@@ -25,31 +37,31 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
 
   const [modal, setModal] = useState<ModalState>({
     isOpen: false,
-    type: "success",
+    type: "warning",
     title: "",
     description: "",
   });
 
-  const roomIdsRaw = searchParams.get("roomIds") || searchParams.get("roomId") || "1";
-  const checkinStr = searchParams.get("checkin") || "";
-  const checkoutStr = searchParams.get("checkout") || "";
+  const roomIdsRaw: string = searchParams.get("roomIds") || searchParams.get("roomId") || "1";
+  const checkinStr: string = searchParams.get("checkin") || "";
+  const checkoutStr: string = searchParams.get("checkout") || "";
   
-  const adultsCount = useMemo(() => {
+  const adultsCount = useMemo<number>(() => {
     return Number(searchParams.get("adults") ?? 2);
   }, [searchParams]);
 
-  const childrenCount = useMemo(() => {
+  const childrenCount = useMemo<number>(() => {
     return Number(searchParams.get("children") ?? 0);
   }, [searchParams]);
 
-  const matchedRooms = useMemo(() => {
-    const ids = roomIdsRaw.split(",").map(Number);
-    return rooms.filter((r) => ids.includes(r.id));
+  const matchedRooms = useMemo<RoomData[]>(() => {
+    const ids: number[] = roomIdsRaw.split(",").map(Number);
+    return rooms.filter((r: RoomData) => ids.includes(r.id));
   }, [roomIdsRaw, rooms]);
 
-  const handleRemoveRoom = (idToRemove: number) => {
-    const currentIds = roomIdsRaw.split(",").map(Number);
-    const updatedIds = currentIds.filter((id) => id !== idToRemove);
+  const handleRemoveRoom = (idToRemove: number): void => {
+    const currentIds: number[] = roomIdsRaw.split(",").map(Number);
+    const updatedIds: number[] = currentIds.filter((id: number) => id !== idToRemove);
 
     const params = new URLSearchParams(searchParams.toString());
 
@@ -64,7 +76,7 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
     router.push(`/hotel-landing-page/booking?${params.toString()}`);
   };
 
-  const totalNights = useMemo(() => {
+  const totalNights = useMemo<number>(() => {
     if (!checkinStr || !checkoutStr) return 0;
     const start = new Date(checkinStr);
     const end = new Date(checkoutStr);
@@ -73,7 +85,7 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
     return isNaN(diffDays) || diffDays <= 0 ? 0 : diffDays;
   }, [checkinStr, checkoutStr]);
 
-  const formatDisplayDate = (dateStr: string) => {
+  const formatDisplayDate = (dateStr: string): string => {
     if (!dateStr) return "Select date";
     try {
       const d = new Date(dateStr);
@@ -84,12 +96,12 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
     }
   };
 
-  const getInitialValues = () => {
+  const getInitialValues = (): BookingFormValues => {
     if (typeof window !== "undefined") {
       const draft = sessionStorage.getItem("bookingFormDraft");
       if (draft) {
         try {
-          return JSON.parse(draft);
+          return JSON.parse(draft) as BookingFormValues;
         } catch (e) {
           console.error("Failed to parse form draft", e);
         }
@@ -115,15 +127,14 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
     }
   }, [currentFormValues]);
   
-  const baseSubtotal = useMemo(() => {
-    const rateSum = matchedRooms.reduce((sum, room) => sum + room.price, 0);
+  const baseSubtotal = useMemo<number>(() => {
+    const rateSum: number = matchedRooms.reduce((sum: number, room: RoomData) => sum + room.price, 0);
     return rateSum * totalNights;
   }, [matchedRooms, totalNights]);
 
-  const totalInvoiceGross = baseSubtotal;
+  const totalInvoiceGross: number = baseSubtotal;
 
-  const onBookingExecute = async (data: BookingFormValues) => {
-    // 1. Check if check-in/check-out dates are missing
+  const onBookingExecute = async (data: BookingFormValues): Promise<void> => {
     if (!checkinStr || !checkoutStr) {
       setModal({
         isOpen: true,
@@ -134,7 +145,6 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
       return;
     }
 
-    // 2. Check if no rooms are selected
     if (matchedRooms.length === 0) {
       setModal({
         isOpen: true,
@@ -145,61 +155,58 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
       return;
     }
 
-    const payload = {
-      roomIds: matchedRooms.map(r => r.id),
+    const fallbackRoomTypeId: number = matchedRooms[0]?.id || 1;
+
+    const payload: BookingTransactionPayload = {
+      roomIds: matchedRooms.map((r: RoomData) => r.id),
+      roomTypeId: fallbackRoomTypeId,
+      roomDetails: matchedRooms.map((r: RoomData) => ({ id: r.id, name: r.name, price: r.price })),
+      totalNights: totalNights,
       checkin: checkinStr,
       checkout: checkoutStr,
       total: totalInvoiceGross,
       adults: adultsCount,
       children: childrenCount,
     };
-    
-    console.log("Sending to service:", { data, payload });
 
     try {
-      const result = await createBookingTransaction(data, payload);
+      const result = await createBookingTransaction(data, payload) as BookingTransactionResponse;
 
-      if (result?.success) {
-        sessionStorage.removeItem("bookingFormDraft");
-        setModal({
-          isOpen: true,
-          type: "success",
-          title: "Booking Confirmed!",
-          description: "Your reservation has been successfully placed. We have sent a complete breakdown copy directly to your inbox.",
-          reservationId: result.id,
-        });
+      if (result?.success && result.checkoutUrl) {
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("bookingFormDraft");
+          window.location.href = result.checkoutUrl;
+        }
       } else {
         setModal({
           isOpen: true,
           type: "error",
-          title: "Booking Failed",
-          description: result.error || "We couldn't process your payment registration. Please review your balance credentials and try again.",
+          title: "Payment Gateway Refused Connection",
+          description: result?.error || "We couldn't initialize your secure payment checkout loop. Please verify your details and try again.",
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Booking submission error:", error);
       setModal({
         isOpen: true,
         type: "error",
         title: "Network Connection Error",
-        description: "The request timed out or was interrupted. Please check your internet connection and resubmit.",
+        description: error instanceof Error ? error.message : "The request timed out or was interrupted. Please check your internet connection and resubmit.",
       });
     }
   };
 
-  const handleModalClose = () => {
-    setModal(prev => ({ ...prev, isOpen: false }));
-    
-    if (modal.type === "success") {
-      router.push("/hotel-landing-page/rooms");
-    }
+  const handleModalClose = (): void => {
+    setModal((prev: ModalState) => ({ ...prev, isOpen: false }));
   };
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10 relative">
-      
       <div className="mb-12 border-b border-zinc-200 pb-8">
-        <Link href={`/hotel-landing-page/rooms?${searchParams.toString()}`} className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 hover:text-zinc-900 transition-colors mb-5 group">
+        <Link 
+          href={`/hotel-landing-page/rooms?${searchParams.toString()}`} 
+          className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 hover:text-zinc-900 transition-colors mb-5 group"
+        >
           <ArrowLeft size={12} className="group-hover:-translate-x-0.5 transition-transform text-zinc-400 group-hover:text-zinc-900" />
           Back to Selection Catalog
         </Link>
@@ -209,10 +216,8 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
       </div>
 
       <form onSubmit={handleSubmit(onBookingExecute)} className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-        {/* Left Column Form inputs */}
         <BookingFormFields register={register} errors={errors} />
 
-        {/* Right Column Checkout Pricing Breakdown */}
         <BookingSummaryCard 
           matchedRooms={matchedRooms}
           handleRemoveRoom={handleRemoveRoom}
@@ -230,7 +235,6 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
         />
       </form>
 
-      {/* LUXURY HOTEL BOOKING DIALOG SYSTEM */}
       <BookingStatusModal modal={modal} onClose={handleModalClose} />
     </div>
   );
