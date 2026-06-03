@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, Tag, CheckCircle2, Info } from "lucide-react";
 import { offers } from "../../data/promo-offer-data";
@@ -20,7 +20,7 @@ const formatFullExpiryDate = (dateStr: string) => {
   return `Valid through ${date}`;
 };
 
-export function OfferDetailsView() {
+function OfferDetailsViewInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -154,5 +154,13 @@ export function OfferDetailsView() {
         ))}
       </div>
     </div>
+  );
+}
+
+export function OfferDetailsView() {
+  return (
+    <Suspense fallback={<div className="max-w-7xl mx-auto px-4 py-12"><div className="animate-pulse bg-zinc-100 rounded-sm h-64 w-full"></div></div>}>
+      <OfferDetailsViewInner />
+    </Suspense>
   );
 }

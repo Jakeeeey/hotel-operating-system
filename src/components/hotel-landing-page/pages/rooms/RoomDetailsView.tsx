@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { Suspense, useMemo, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Star,
@@ -21,7 +21,7 @@ interface RoomDetailsViewProps {
   room: RoomData;
 }
 
-export function RoomDetailsView({ room }: RoomDetailsViewProps) {
+function RoomDetailsViewInner({ room }: RoomDetailsViewProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -346,5 +346,13 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+export function RoomDetailsView({ room }: RoomDetailsViewProps) {
+  return (
+    <Suspense fallback={<div className="max-w-[1300px] mx-auto px-6 py-12"><div className="animate-pulse bg-zinc-100 rounded-sm h-[400px] w-full"></div></div>}>
+      <RoomDetailsViewInner room={room} />
+    </Suspense>
   );
 }

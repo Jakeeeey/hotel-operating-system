@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { Suspense, useState, useMemo } from "react";
 import { 
   Calendar as CalendarIcon, 
   User, 
@@ -21,7 +21,7 @@ interface BookingWidgetProps {
   dynamicBadges?: Array<string | { badge?: string }>;
 }
 
-export function BookingWidget({ dynamicBadges = [] }: BookingWidgetProps) {
+function BookingWidgetInner({ dynamicBadges = [] }: BookingWidgetProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -279,5 +279,13 @@ export function BookingWidget({ dynamicBadges = [] }: BookingWidgetProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+export function BookingWidget(props: BookingWidgetProps) {
+  return (
+    <Suspense fallback={<div className="w-full mx-auto p-0 min-h-[120px] bg-white rounded-xl shadow-xl shadow-zinc-950/5 relative border border-zinc-100 flex items-center justify-center"><span className="text-sm text-zinc-400">Loading...</span></div>}>
+      <BookingWidgetInner {...props} />
+    </Suspense>
   );
 }

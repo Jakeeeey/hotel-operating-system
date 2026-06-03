@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState } from "react";
+import { Suspense, useMemo, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +31,7 @@ interface BookingTransactionResponse {
   error?: string;
 }
 
-export function BookingView({ rooms }: { rooms: RoomData[] }) {
+function BookingViewInner({ rooms }: { rooms: RoomData[] }) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -240,5 +240,13 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
 
       <BookingStatusModal modal={modal} onClose={handleModalClose} />
     </div>
+  );
+}
+
+export function BookingView({ rooms }: { rooms: RoomData[] }) {
+  return (
+    <Suspense fallback={<div className="max-w-[1200px] mx-auto px-6 py-10"><div className="animate-pulse bg-zinc-100 rounded-sm h-64 w-full"></div></div>}>
+      <BookingViewInner rooms={rooms} />
+    </Suspense>
   );
 }

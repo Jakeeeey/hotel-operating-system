@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { Suspense, useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -34,7 +34,7 @@ interface AllRoomsGridProps {
   initialRooms: RoomData[];
 }
 
-export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
+function AllRoomsGridInner({ initialRooms }: AllRoomsGridProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -436,5 +436,13 @@ export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
       {/* Dynamic Native Mobile Spacer Area */}
       <div className="h-28 lg:hidden" />
     </div>
+  );
+}
+
+export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
+  return (
+    <Suspense fallback={<div className="max-w-[1300px] mx-auto px-6 py-12"><div className="animate-pulse bg-zinc-100 rounded-sm h-64 w-full"></div></div>}>
+      <AllRoomsGridInner initialRooms={initialRooms} />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Heart, Star, Crown } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -10,7 +10,7 @@ function formatPrice(price: number): string {
   return price >= 1000 ? `₱${price.toLocaleString()}` : `₱${price}`;
 }
 
-export function RoomCard({ room }: { room: RoomData }) {
+function RoomCardInner({ room }: { room: RoomData }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [liked, setLiked] = useState<boolean>(false);
@@ -126,5 +126,13 @@ export function RoomCard({ room }: { room: RoomData }) {
 
       </div>
     </div>
+  );
+}
+
+export function RoomCard({ room }: { room: RoomData }) {
+  return (
+    <Suspense fallback={<div className="bg-white border border-zinc-200/80 rounded-sm h-full min-h-[300px] animate-pulse"></div>}>
+      <RoomCardInner room={room} />
+    </Suspense>
   );
 }
