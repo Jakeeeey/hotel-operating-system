@@ -16,9 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 
 interface BookingWidgetProps {
-  /** * Accepts raw data directly from your database rows or mapped strings 
-   * Handles both: ["Featured", "Exclusive"] or [{ badge: "Featured" }, { badge: "Exclusive" }]
-   */
+
   dynamicBadges?: any[];
 }
 
@@ -26,7 +24,6 @@ export function BookingWidget({ dynamicBadges = [] }: BookingWidgetProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Fully dynamic — labels and variants derived entirely from DB badge values
   const VARIANT_PALETTE = ["zinc", "amber", "dark", "emerald", "blue"] as const;
 
   const roomBadges = useMemo(() => {

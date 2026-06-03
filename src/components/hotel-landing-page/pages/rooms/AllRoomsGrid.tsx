@@ -42,8 +42,8 @@ export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
 
   const existingRoomIdsRaw =
     searchParams.get("roomIds") || searchParams.get("roomId") || "";
-  const checkinStr = searchParams.get("checkin") || "2026-06-01";
-  const checkoutStr = searchParams.get("checkout") || "2026-06-04";
+  const checkinStr = searchParams.get("checkin") || "";
+  const checkoutStr = searchParams.get("checkout") || "";
   const adultsCount = Number(searchParams.get("adults") || 2);
   const childrenCount = Number(searchParams.get("children") || 0);
   const guestCount = adultsCount + childrenCount;
@@ -101,13 +101,18 @@ export function AllRoomsGrid({ initialRooms }: AllRoomsGridProps) {
                 Dates
               </span>
               <div className="flex items-baseline gap-2 font-serif text-lg text-zinc-900 tracking-tight">
-                <span>{formatDisplayDate(checkinStr)}</span>
-                <span className="text-zinc-300 font-light">—</span>
-                <span>{formatDisplayDate(checkoutStr)}</span>
-                <span className="text-zinc-400 text-xs font-sans tracking-normal ml-2">
-                  ({calculatedNights}{" "}
-                  {calculatedNights === 1 ? "night" : "nights"})
-                </span>
+                {checkinStr && checkoutStr ? (
+                  <>
+                    <span>{formatDisplayDate(checkinStr)}</span>
+                    <span className="text-zinc-300 font-light">—</span>
+                    <span>{formatDisplayDate(checkoutStr)}</span>
+                    <span className="text-zinc-400 text-xs font-sans tracking-normal ml-2">
+                      ({calculatedNights} {calculatedNights === 1 ? "night" : "nights"})
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-zinc-500 italic">No dates selected</span>
+                )}
               </div>
             </div>
 

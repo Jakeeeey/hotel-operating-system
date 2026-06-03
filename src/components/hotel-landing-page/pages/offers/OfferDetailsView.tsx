@@ -32,8 +32,8 @@ export function OfferDetailsView() {
   }, []);
 
   const activeOfferId = searchParams.get("id");
-  const checkinStr = searchParams.get("checkin") || "2026-06-01";
-  const checkoutStr = searchParams.get("checkout") || "2026-06-04";
+  const checkinStr = searchParams.get("checkin") || "";
+  const checkoutStr = searchParams.get("checkout") || "";
   const guestCount = searchParams.get("guests") || "2";
 
   const currentOffer = activeOfferId ? campaignDeck[activeOfferId] : null;

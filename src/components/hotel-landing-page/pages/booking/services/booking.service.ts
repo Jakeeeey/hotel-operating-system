@@ -1,7 +1,7 @@
 "use server";
 
 import { directus } from "../lib/directus";
-import { createItem, createItems, readItems } from "@directus/sdk";
+import { createItem, createItems, readItems, updateItem } from "@directus/sdk";
 
 /**
  * Dynamically fetches valid inventory capacity and bookings matching the month and guest configuration
@@ -67,7 +67,20 @@ async function getOrCreateGuest(data: any) {
   const existingGuests = await directus.request(
     readItems("guests_hos", { filter: { email: { _eq: data.email } } })
   );
-  if (existingGuests?.length > 0) return existingGuests[0].id;
+  
+  if (existingGuests?.length > 0) {
+    const existingId = existingGuests[0].id;
+    // Sync their latest information just in case it changed (e.g., they married, changed phone number)
+    await directus.request(
+      updateItem("guests_hos", existingId, {
+        first_name: data.firstName,
+        last_name: data.lastName,
+        contact_number: data.phone,
+      })
+    );
+    return existingId;
+  }
+  
   const newGuest = await directus.request(
     createItem("guests_hos", {
       first_name: data.firstName,

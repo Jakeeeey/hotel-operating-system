@@ -48,15 +48,23 @@ export function RoomDetailsView({ room }: RoomDetailsViewProps) {
   const handleSelectionAction = () => {
     const updatedIds = new Set([...activeSelectedIds, room.id]);
     const finalQueryString = Array.from(updatedIds).join(",");
+    
+    if (!checkinStr || !checkoutStr) {
+      router.push(
+        `/hotel-landing-page/availability?roomIds=${finalQueryString}&adults=${adultsCount}&children=${childrenCount}`
+      );
+      return;
+    }
+
     router.push(
-      `/hotel-landing-page/booking?roomIds=${finalQueryString}&checkin=${checkinStr}&checkout=${checkoutStr}&guests=${guestCount}`,
+      `/hotel-landing-page/booking?roomIds=${finalQueryString}&checkin=${checkinStr}&checkout=${checkoutStr}&adults=${adultsCount}&children=${childrenCount}`,
     );
   };
 
   return (
     <div className="max-w-[1300px] mx-auto px-6 font-sans">
       <Link
-        href={`/hotel-landing-page/rooms?roomIds=${existingRoomIdsRaw}&checkin=${checkinStr}&checkout=${checkoutStr}&guests=${guestCount}`}
+        href={`/hotel-landing-page/rooms?roomIds=${existingRoomIdsRaw}&checkin=${checkinStr}&checkout=${checkoutStr}&adults=${adultsCount}&children=${childrenCount}`}
         className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 transition-colors mb-8 group"
       >
         <ArrowLeft
