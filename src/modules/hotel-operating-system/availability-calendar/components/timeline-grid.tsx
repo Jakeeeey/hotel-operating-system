@@ -54,17 +54,20 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                 {dateCols.map((d) => {
                     const dateStr = format(d, "yyyy-MM-dd");
 
-                    // Find if there's a reservation item for this exact room + date
-                    const item = data.reservationItems.find((i) => {
+                    // Find if this date falls within a reservation for this room
+                    const res = data.reservations?.find((r) => {
                         const matchesRoom = isUnassigned
-                            ? i.room_id === null && i.room_type_id === typeId
-                            : i.room_id === roomId;
-                        return matchesRoom && i.night_date === dateStr;
+                            ? r.room_id === null && r.room_type_id === typeId
+                            : r.room_id === roomId;
+                            
+                        if (!matchesRoom || !r.check_in_date || !r.check_out_date) return false;
+                        
+                        return dateStr >= r.check_in_date && dateStr < r.check_out_date;
                     });
 
                     // Check for blocking tasks
                     let blockedTask = null;
-                    if (!item && !isUnassigned && data.blockingTasks) {
+                    if (!res && !isUnassigned && data.blockingTasks) {
                         blockedTask = data.blockingTasks.find((t) => {
                             const tRoomId = typeof t.room_id === 'object' && t.room_id !== null ? t.room_id.id : t.room_id;
                             if (Number(tRoomId) !== Number(roomId)) return false;
@@ -84,7 +87,7 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                         });
                     }
 
-                    if (!item && !blockedTask) {
+                    if (!res && !blockedTask) {
                         return (
                             <div key={dateStr} className="flex-1 min-w-[70px] md:min-w-[90px] border-r border-muted/20 p-1" />
                         );
@@ -140,8 +143,8 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                     }
 
                     // Render Reservation Block
-                    if (!item) return null; // Should never happen
-                    const resInfo = item.reservation_id;
+                    if (!res) return null; // Should never happen
+                    const resInfo = res;
                     const isStart = resInfo?.check_in_date === dateStr;
                     
                     // The night before checkout is the last 'night_date'
@@ -183,7 +186,7 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                                             <span className="text-muted-foreground">Check-Out:</span>
                                             <span>{resInfo?.check_out_date}</span>
                                             <span className="text-muted-foreground">Locked Rate:</span>
-                                            <span>₱{Number(item.locked_price).toLocaleString()}</span>
+                                            <span>₱{Number(resInfo.locked_price).toLocaleString()}</span>
                                         </div>
                                     </TooltipContent>
                                 </Tooltip>

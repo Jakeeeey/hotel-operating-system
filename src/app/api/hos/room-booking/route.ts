@@ -27,6 +27,7 @@ export async function POST(request: Request) {
             room_type_id,
             room_id,
             is_walk_in,
+            payment,
         } = body;
 
         // Validate required fields
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
         if (guest.email) {
             // Try to find existing guest by email
             const lookupRes = await fetch(
-                `${API_BASE_URL}/items/guests?filter=${encodeURIComponent(JSON.stringify({ email: { _eq: guest.email } }))}&fields=id&limit=1`,
+                `${API_BASE_URL}/items/guests_hos?filter=${encodeURIComponent(JSON.stringify({ email: { _eq: guest.email } }))}&fields=id&limit=1`,
                 { headers }
             );
             if (lookupRes.ok) {
@@ -72,10 +73,10 @@ export async function POST(request: Request) {
                 updated_by: userId,
             };
             if (guest.email) guestPayload.email = guest.email;
-            if (guest.phone_number) guestPayload.phone_number = guest.phone_number;
+            if (guest.phone_number) guestPayload.contact_number = guest.phone_number;
             if (guest.id_passport_number) guestPayload.id_passport_number = guest.id_passport_number;
 
-            const createGuestRes = await fetch(`${API_BASE_URL}/items/guests`, {
+            const createGuestRes = await fetch(`${API_BASE_URL}/items/guests_hos`, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify(guestPayload),
@@ -183,7 +184,63 @@ export async function POST(request: Request) {
         }
 
         // ──────────────────────────────────────────────
-        // 6. ROOM UPDATE — Walk-In only: set to Occupied
+        // 6. GUEST CHARGE — write base room charge to guest_charges_hos
+        // ──────────────────────────────────────────────
+        const chargePayload = {
+            reservation_id: reservationId,
+            charge_type: 'Room Charge',
+            description: `Base Room Charge (${nightDates.length} ${nightDates.length === 1 ? 'night' : 'nights'})`,
+            amount: totalAmount,
+            charge_date: new Date().toISOString(),
+            created_by: userId,
+            updated_by: userId,
+        };
+
+        const chargeCreate = await fetch(`${API_BASE_URL}/items/guest_charges_hos`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(chargePayload),
+        });
+
+        if (!chargeCreate.ok) {
+            const chargeErr = await chargeCreate.json().catch(() => ({}));
+            console.error('Failed to create base room charge in guest_charges_hos:', chargeErr);
+        }
+
+        // ──────────────────────────────────────────────
+        // 7. PAYMENT — record if Cash or Credit Card (non-QR methods)
+        //    QR methods (GCash/PayMaya) are handled on the frontend via the folio API
+        // ──────────────────────────────────────────────
+        if (payment && payment.amount > 0) {
+            const isNonQrMethod = payment.payment_method === 'Cash' || payment.payment_method === 'Credit Card';
+            if (isNonQrMethod) {
+                const paymentPayload = {
+                    reservation_id: reservationId,
+                    amount: payment.amount,
+                    payment_method: payment.payment_method,
+                    reference_number: null,
+                    status: 'Completed',
+                    notes: payment.notes || `Payment collected at booking via ${payment.payment_method}`,
+                    payment_date: new Date().toISOString(),
+                    created_by: userId,
+                    updated_by: userId,
+                };
+
+                const paymentCreate = await fetch(`${API_BASE_URL}/items/payments_hos`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(paymentPayload),
+                });
+
+                if (!paymentCreate.ok) {
+                    const payErr = await paymentCreate.json().catch(() => ({}));
+                    console.error('Failed to record payment in payments_hos:', payErr);
+                }
+            }
+        }
+
+        // ──────────────────────────────────────────────
+        // 8. ROOM UPDATE — Walk-In only: set to Occupied
         // ──────────────────────────────────────────────
         if (is_walk_in && room_id) {
             const roomUpdate = await fetch(`${API_BASE_URL}/items/rooms/${room_id}`, {

@@ -122,13 +122,17 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
         if (!updateRes.ok) throw new Error('Failed to update task');
 
-        // 4. Side Effect: Update physical room if Checkout Clean is Completed
-        if (status === 'Completed' && task.task_type === 'Checkout Clean' && task.room_id) {
+        // 4. Side Effect: Update physical room on task completion
+        if (status === 'Completed' && task.room_id) {
+            const isCritical = task.blocks_availability === 1 || task.blocks_availability === true;
+            // OOO tickets revert to Dirty (2) instead of standard Clean (1)
+            const targetStatus = isCritical ? 2 : 1; 
+
             await fetch(`${API_BASE_URL}/items/rooms/${task.room_id}`, {
                 method: 'PATCH',
                 headers,
                 body: JSON.stringify({
-                    housekeeping_status_id: 1, // Clean
+                    housekeeping_status_id: targetStatus,
                     updated_by: userId
                 })
             }).catch(e => console.error("Failed to update room status:", e));

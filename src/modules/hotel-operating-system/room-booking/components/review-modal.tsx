@@ -22,6 +22,9 @@ interface ReviewModalProps {
         roomNumber: string;
         basePrice: number;
         bookingSource: string;
+        paymentMethod: string;
+        paymentAmount: number;
+        paymentNotes: string;
     };
     submitting: boolean;
     onConfirm: () => void;
@@ -155,6 +158,32 @@ export function ReviewModal({ open, onOpenChange, bookingData, submitting, onCon
                                     ₱{totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                             </div>
+
+                            {/* Payment Info */}
+                            {bookingData.paymentAmount > 0 && (
+                                <>
+                                    <div className="border-t pt-2 mt-1 space-y-1.5">
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-muted-foreground">Payment Method</span>
+                                            <span className="font-semibold text-foreground">{bookingData.paymentMethod}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-muted-foreground">Amount to Pay Now</span>
+                                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                                ₱{bookingData.paymentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                        {totalPrice - bookingData.paymentAmount > 0 && (
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-muted-foreground">Remaining Balance</span>
+                                                <span className="font-semibold text-amber-600 dark:text-amber-400">
+                                                    ₱{(totalPrice - bookingData.paymentAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

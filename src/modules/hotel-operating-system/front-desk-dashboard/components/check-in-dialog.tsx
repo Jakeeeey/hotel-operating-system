@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 
 interface ArrivalItem {
     reservationId: number;
@@ -15,6 +17,7 @@ interface ArrivalItem {
     status: string;
     roomId: number | null;
     roomNumber: string | null;
+    roomHousekeepingStatusId?: number | null;
 }
 
 interface AvailableRoom {
@@ -33,11 +36,16 @@ interface CheckInDialogProps {
 export function CheckInDialog({ open, onOpenChange, arrival, onSuccess }: CheckInDialogProps) {
     const [availableRooms, setAvailableRooms] = useState<AvailableRoom[]>([]);
     const [selectedRoomId, setSelectedRoomId] = useState<string>("");
+    const [depositAmount, setDepositAmount] = useState<string>("1000");
+    const [depositMethod, setDepositMethod] = useState<string>("Cash");
     const [loadingRooms, setLoadingRooms] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     // Determine if room is already assigned
     const hasRoom = arrival?.roomId != null;
+
+    // Early Check-In / Dirty Room Mandate check
+    const isRoomDirty = hasRoom && arrival?.roomHousekeepingStatusId != null && arrival.roomHousekeepingStatusId !== 1;
 
     useEffect(() => {
         if (!open || !arrival) return;
@@ -75,6 +83,16 @@ export function CheckInDialog({ open, onOpenChange, arrival, onSuccess }: CheckI
             return;
         }
 
+        if (isRoomDirty) {
+            toast.error("Room not ready. Reassign room or await Housekeeping clearance.");
+            return;
+        }
+
+        if (!depositAmount || isNaN(parseFloat(depositAmount)) || parseFloat(depositAmount) <= 0) {
+            toast.error("Please enter a valid deposit amount.");
+            return;
+        }
+
         setSubmitting(true);
         try {
             const res = await fetch("/api/hos/front-desk-dashboard/check-in", {
@@ -83,16 +101,21 @@ export function CheckInDialog({ open, onOpenChange, arrival, onSuccess }: CheckI
                 body: JSON.stringify({
                     reservationId: arrival.reservationId,
                     roomId,
+                    depositAmount: parseFloat(depositAmount),
+                    depositMethod,
                 }),
             });
 
-            if (!res.ok) throw new Error("Check-in failed");
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || "Check-in failed");
+            }
 
             toast.success(`${arrival.guestName} checked in successfully.`);
             onOpenChange(false);
             onSuccess();
-        } catch {
-            toast.error("Failed to check in guest.");
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : "Failed to check in guest.");
         } finally {
             setSubmitting(false);
         }
@@ -111,6 +134,17 @@ export function CheckInDialog({ open, onOpenChange, arrival, onSuccess }: CheckI
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
+                    {/* Hard Stop Alert if room is dirty */}
+                    {isRoomDirty && (
+                        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 flex gap-2.5 items-start text-xs text-destructive">
+                            <AlertTriangle className="h-4 w-4 shrink-0 text-destructive mt-0.5" />
+                            <div>
+                                <p className="font-bold">Early Check-In Hard Stop</p>
+                                <p className="mt-0.5 leading-normal">Room not ready. Reassign room or await Housekeeping clearance.</p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Guest Info */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -140,7 +174,7 @@ export function CheckInDialog({ open, onOpenChange, arrival, onSuccess }: CheckI
                                     Loading available rooms...
                                 </div>
                             ) : availableRooms.length === 0 ? (
-                                <p className="text-sm text-destructive">
+                                <p className="text-sm text-destructive font-semibold">
                                     No available rooms for this type. Please clean or vacate a room first.
                                 </p>
                             ) : (
@@ -160,6 +194,39 @@ export function CheckInDialog({ open, onOpenChange, arrival, onSuccess }: CheckI
                             )}
                         </div>
                     )}
+
+                    {/* Incidental Deposit Section */}
+                    <div className="border-t pt-4 space-y-3">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                            Incidental Deposit Mandate
+                        </p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold">Deposit Method</Label>
+                                <Select value={depositMethod} onValueChange={setDepositMethod}>
+                                    <SelectTrigger className="h-9">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Cash">Cash</SelectItem>
+                                        <SelectItem value="Card Auth">Card Auth</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold">Deposit Amount (₱)</Label>
+                                <Input
+                                    type="number"
+                                    placeholder="1000.00"
+                                    min="0"
+                                    step="0.01"
+                                    value={depositAmount}
+                                    onChange={(e) => setDepositAmount(e.target.value)}
+                                    className="h-9 font-medium"
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <DialogFooter>
@@ -172,7 +239,7 @@ export function CheckInDialog({ open, onOpenChange, arrival, onSuccess }: CheckI
                     </Button>
                     <Button
                         onClick={handleCheckIn}
-                        disabled={submitting || (!hasRoom && !selectedRoomId)}
+                        disabled={submitting || (!hasRoom && !selectedRoomId) || isRoomDirty}
                     >
                         {submitting ? (
                             <>
