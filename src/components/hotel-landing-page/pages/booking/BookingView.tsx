@@ -120,12 +120,15 @@ export function BookingView({ rooms }: { rooms: RoomData[] }) {
     defaultValues: getInitialValues(),
   });
 
-  const currentFormValues = watch();
   useEffect(() => {
-    if (Object.keys(currentFormValues).length > 0) {
-      sessionStorage.setItem("bookingFormDraft", JSON.stringify(currentFormValues));
-    }
-  }, [currentFormValues]);
+    // eslint-disable-next-line react-hooks/incompatible-library
+    const subscription = watch((values) => {
+      if (Object.keys(values).length > 0) {
+        sessionStorage.setItem("bookingFormDraft", JSON.stringify(values));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch]);
   
   const baseSubtotal = useMemo<number>(() => {
     const rateSum: number = matchedRooms.reduce((sum: number, room: RoomData) => sum + room.price, 0);

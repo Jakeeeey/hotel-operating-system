@@ -2,6 +2,7 @@ import { directus } from "@/components/hotel-landing-page/pages/booking/lib/dire
 import { CalendarLayout } from "@/components/hotel-landing-page/pages/calendar/CalendarLayout";
 import { Suspense } from "react";
 import { readItems } from "@directus/sdk";
+import { CalendarRoom } from "@/components/hotel-landing-page/pages/calendar/types/types";
 
 export const metadata = {
   title: "Resort Availability Calendar Dashboard",
@@ -19,13 +20,13 @@ export default async function AvailabilityPage() {
   return (
     <main className="min-h-screen bg-white pt-6 pb-16">
       <Suspense 
-        fallback={
+        fallback = {
           <div className="max-w-[1400px] mx-auto px-6 py-6 text-sm text-zinc-400">
             Loading interactive calendar…
           </div>
         }
       >
-        <CalendarLayout rooms={roomsData} />
+        <CalendarLayout rooms={roomsData as CalendarRoom[]} />
       </Suspense>
     </main>
   );

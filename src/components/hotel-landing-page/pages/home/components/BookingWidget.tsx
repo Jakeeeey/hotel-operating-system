@@ -15,16 +15,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
-interface BookingWidgetProps {
+const VARIANT_PALETTE = ["zinc", "amber", "dark", "emerald", "blue"] as const;
 
-  dynamicBadges?: any[];
+interface BookingWidgetProps {
+  dynamicBadges?: Array<string | { badge?: string }>;
 }
 
 export function BookingWidget({ dynamicBadges = [] }: BookingWidgetProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  const VARIANT_PALETTE = ["zinc", "amber", "dark", "emerald", "blue"] as const;
 
   const roomBadges = useMemo(() => {
     const baseOption = { id: "all", label: "All Rooms", variant: "zinc" };

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, XCircle, Loader2, Calendar, ArrowRight } from "lucide-react";
 import { verifyAndFinalizeReservation } from "../services/payment/verification.service";
@@ -20,7 +19,6 @@ interface VerificationState {
 }
 
 export default function BookingSuccessPage({ searchParams }: SuccessPageProps) {
-  const router = useRouter();
   const resolvedParams = use(searchParams);
   const reservationId = typeof resolvedParams.reservationId === "string" ? resolvedParams.reservationId : "";
 

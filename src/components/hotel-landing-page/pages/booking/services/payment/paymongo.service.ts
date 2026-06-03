@@ -35,7 +35,7 @@ export async function initiatePaymentSession(bookingData: BookingPayload): Promi
     const sessionAttributes: PayMongoSessionAttributes = {
       amount: amountInCentavos,
       currency: "PHP",
-      payment_method_types: ["gcash", "card", "qrph", "paymaya"],
+      payment_method_types: ["gcash", "card", "qrph", "paymaya", "grab_pay"],
       description: `Reservation Reference Allocation: #${bookingData.reservationId}`,
       line_items: [
         {
@@ -66,7 +66,7 @@ export async function initiatePaymentSession(bookingData: BookingPayload): Promi
       body: JSON.stringify({ data: { attributes: sessionAttributes } }),
     });
 
-    const result = (await response.json()) as any;
+    const result = (await response.json()) as PayMongoSessionResponse;
 
     // 4. ROBUST SERVER TERMINAL DIAGNOSTICS
     // If PayMongo still objects to any parameter data layout, this dumps the exact target parameter error list
@@ -79,11 +79,9 @@ export async function initiatePaymentSession(bookingData: BookingPayload): Promi
       throw new Error(errorMsg);
     }
 
-    const validResult = result as PayMongoSessionResponse;
-
     return {
       success: true,
-      checkoutUrl: validResult.data.attributes.checkout_url,
+      checkoutUrl: result.data.attributes.checkout_url,
     };
 
   } catch (error: unknown) {

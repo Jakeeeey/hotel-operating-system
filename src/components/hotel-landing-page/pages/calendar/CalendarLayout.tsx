@@ -17,17 +17,10 @@ import {
 import { MonthPane } from "./components/MonthPane";
 import { formatDisplayDate } from "./utils/utils";
 import { getMonthlyInventory } from "./services/inventory.service";
+import { CalendarRoom, FlatInventoryLookup } from "./types/types";
 
-interface FlatDayInventory {
-  date: string;
-  totalInventory: number;
-  allocatedCount: number;
-  remainingAvailable: number;
-}
 
-type FlatInventoryLookup = Record<string, FlatDayInventory>;
-
-export function CalendarLayout({ rooms = [] }: { rooms?: any[] }) {
+export function CalendarLayout({ rooms = [] }: { rooms?: CalendarRoom[] }) {
   const [inventory, setInventory] = useState<{ capacity: number; bookings: Array<{ night_date: string }> }>({
     capacity: 20,
     bookings: []

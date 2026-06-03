@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: PageProps) {
       title: room ? `Book ${room.name} | Luxury Stays` : "Accommodation Profile View",
       description: room ? `Secure exclusive rates for the beautiful ${room.name}.` : "View details.",
     };
-  } catch (error) {
+  } catch {
     return { title: "Accommodation Profile View" };
   }
 }

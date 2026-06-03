@@ -329,17 +329,13 @@ export async function getRoomTypesAvailability(
   checkout: string
 ): Promise<Record<number, { available: boolean; remaining: number }>> {
   try {
-    console.log("--- DEBUG getRoomTypesAvailability ---");
-    console.log("checkin:", checkin, "checkout:", checkout);
     if (!checkin || !checkout) {
-      console.log("Missing checkin or checkout");
       return {};
     }
 
     const allRooms = await directus.request<DirectusRoom[]>(
       readItems("rooms_hos", { fields: ["id", "type_id"] })
     );
-    console.log("allRooms:", JSON.stringify(allRooms));
 
     const d = new Date(Date.now() - 15 * 60 * 1000);
     const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
@@ -368,7 +364,6 @@ export async function getRoomTypesAvailability(
         fields: ['room_id']
       })
     );
-    console.log("bookedItems:", JSON.stringify(bookedItems));
 
     const bookedRoomIds = new Set<number>(bookedItems.map((item) => item.room_id));
 
@@ -390,11 +385,9 @@ export async function getRoomTypesAvailability(
       };
     }
 
-    console.log("availabilityMap:", JSON.stringify(availabilityMap));
-    console.log("--------------------------------------");
     return availabilityMap;
   } catch (error) {
     console.error("Failed to check room types availability:", error);
     return {};
   }
-}
+}

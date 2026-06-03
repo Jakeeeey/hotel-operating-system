@@ -13,6 +13,19 @@ interface VerificationResult {
   error?: string;
 }
 
+interface GuestDetail {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+}
+
+interface ReservationDetail {
+  guest_id?: GuestDetail;
+  total_amount?: string | number;
+  check_in?: string;
+  check_out?: string;
+}
+
 /**
  * Reconciles the redirect payload, transitions status to paid, and resolves guest metadata.
  */
@@ -22,20 +35,21 @@ export async function verifyAndFinalizeReservation(reservationId: string): Promi
       return { success: false, error: "Missing reservation reference ID configuration parameter." };
     }
 
-    let reservation: any;
+    let reservation: ReservationDetail | null = null;
     
     // STAGE 1: Attempt to read the item along with its guest relationships
     try {
-      reservation = await directus.request<any>(
+      reservation = await directus.request<ReservationDetail>(
         readItem("reservations_hos", reservationId, {
           fields: ["*", "guest_id.*"],
         })
       );
-    } catch (readError: any) {
-      console.error("❌ [STAGE 1 FAILED] Directus Read Operation Error:", readError);
+    } catch (readError) {
+      const err = readError as Error;
+      console.error("❌ [STAGE 1 FAILED] Directus Read Operation Error:", err);
       return {
         success: false,
-        error: `[Directus Fetch Error]: ${readError.message || "Failed to read the reservation row."}`,
+        error: `[Directus Fetch Error]: ${err.message || "Failed to read the reservation row."}`,
       };
     }
 
@@ -50,11 +64,12 @@ export async function verifyAndFinalizeReservation(reservationId: string): Promi
           status: "paid",
         })
       );
-    } catch (updateError: any) {
-      console.error("❌ [STAGE 2 FAILED] Directus Update Operation Error:", updateError);
+    } catch (updateError) {
+      const err = updateError as Error;
+      console.error("❌ [STAGE 2 FAILED] Directus Update Operation Error:", err);
       return {
         success: false,
-        error: `[Directus Update Error]: ${updateError.message || "Failed to change status to 'paid'."}`,
+        error: `[Directus Update Error]: ${err.message || "Failed to change status to 'paid'."}`,
       };
     }
 

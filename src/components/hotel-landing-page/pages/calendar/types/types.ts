@@ -68,6 +68,19 @@ export interface FlatInventoryLookup {
 
 // 3. UI Component Display, State Props & Cache Layouts
 
+export interface CalendarRoom {
+  id: number;
+  room_number?: string;
+  type_id?: {
+    max_adults?: number;
+    max_children?: number;
+  };
+  max_adults?: number;
+  max_children?: number;
+  maxAdults?: number;
+  maxChildren?: number;
+}
+
 
 export interface DayStatusCache {
   isFullySoldOut: boolean;
@@ -85,3 +98,12 @@ export interface CalendarCell {
   dateStr: string | null;
   dayNumber: number | null;
 }
+
+export interface FlatDayInventory {
+  date: string;
+  totalInventory: number;
+  allocatedCount: number;
+  remainingAvailable: number;
+}
+
+export type CalendarFlatInventoryLookup = Record<string, FlatDayInventory>;

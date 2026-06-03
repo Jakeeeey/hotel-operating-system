@@ -2,11 +2,30 @@ import { readItems } from "@directus/sdk";
 import { RoomData, RoomType } from "../types/room.types";
 import { directus } from "../../booking/lib/directus";
 
+interface DirectusRoomType {
+  id: number;
+  name: string;
+  description?: string;
+  type?: string;
+  main_image_url?: string;
+  bed?: string;
+  sqm?: string;
+  max_adults?: number;
+  max_children?: number;
+  rating?: string;
+  review_count?: number;
+  amenities?: string[];
+  price: string;
+  original_price: string;
+  badge?: string;
+  availability?: string;
+}
+
 export const getRoomsService = async (): Promise<RoomData[]> => {
   try {
-    const data = await directus.request(readItems("room_types_hos"));
+    const data = await directus.request<DirectusRoomType[]>(readItems("room_types_hos"));
 
-    return data.map((r: any): RoomData => ({
+    return data.map((r: DirectusRoomType): RoomData => ({
       id: r.id,
       name: r.name,
       description: r.description || "",

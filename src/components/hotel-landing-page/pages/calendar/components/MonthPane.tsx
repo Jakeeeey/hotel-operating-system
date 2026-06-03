@@ -61,7 +61,7 @@ export const MonthPane = ({
         availableRoomsCount: available,
       };
     },
-    [inventoryLookup],
+    [inventoryLookup, dynamicCapacity],
   );
 
   const rangeEnd = checkOutDate ?? (checkInDate ? hoverDate : null);

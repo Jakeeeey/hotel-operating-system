@@ -1,16 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { RoomCard } from "./RoomCard";
 import { useRooms } from "../hooks/useRooms";
 
 export function BrowseRooms() {
   const { rooms, loading } = useRooms();
   const [activeFilter, setActiveFilter] = useState<string>("All");
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState<boolean>(false);
-  const [canScrollRight, setCanScrollRight] = useState<boolean>(true);
 
   const filterTabs = [
     "All",
@@ -20,18 +16,6 @@ export function BrowseRooms() {
   const filteredRooms = activeFilter === "All"
     ? rooms
     : rooms.filter((r) => r.badge === activeFilter);
-
-  const checkScroll = () => {
-    if (scrollRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-      setCanScrollLeft(scrollLeft > 10);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
-    }
-  };
-
-  useEffect(() => {
-    checkScroll();
-  }, [filteredRooms]);
 
   if (loading) return <div className="py-24 text-center">Loading Rooms...</div>;
 
@@ -57,7 +41,7 @@ export function BrowseRooms() {
       </div>
 
       <div className="relative group/carousel">
-        <div ref={scrollRef} onScroll={checkScroll} className="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-none pb-4 w-full">
+        <div className="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-none pb-4 w-full">
           {filteredRooms.map((room) => (
             <div key={room.id} className="w-[290px] sm:w-[340px] md:w-[360px] shrink-0 snap-start">
               <RoomCard room={room} />

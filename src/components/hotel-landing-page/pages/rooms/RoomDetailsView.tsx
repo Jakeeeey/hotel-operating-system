@@ -5,13 +5,10 @@ import { useSearchParams, useRouter } from "next/navigation";
 import {
   Star,
   BedDouble,
-  Maximize,
   Calendar,
   Users,
   ArrowLeft,
   CheckCircle2,
-  Wifi,
-  Wind,
   ShieldCheck,
   Plus,
   AlertTriangle,

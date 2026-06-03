@@ -25,7 +25,7 @@ export async function getMonthlyInventory(year: number, month: number, adults: n
       })
     );
 
-    const eligibleRoomIds = eligibleRooms.map((room: any) => room.id);
+    const eligibleRoomIds = (eligibleRooms as Array<{ id: number }>).map((room) => room.id);
 
     // If no room layouts can handle this party size configuration, return zero available inventory
     if (eligibleRoomIds.length === 0) {

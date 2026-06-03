@@ -29,7 +29,7 @@ export async function GET(_req: NextRequest, { params }: { params: Params }) {
       `${DIRECTUS_URL}/folders?filter[name][_eq]=${ROOMS_FOLDER_NAME}&fields=id`,
       { headers: authHeaders },
     );
-    const folderData = (await folderRes.json()) as { data?: { id: string }[], errors?: any };
+    const folderData = (await folderRes.json()) as { data?: { id: string }[] };
     console.log(`[IMAGE_ROUTE] Folder lookup response:`, folderData);
     const folderId = folderData.data?.[0]?.id;
 
@@ -48,7 +48,7 @@ export async function GET(_req: NextRequest, { params }: { params: Params }) {
         `${DIRECTUS_URL}/files?filter[folder][_eq]=${folderId}&filter[filename_download][_eq]=${encodeURIComponent(imageId)}&fields=id&limit=1`,
         { headers: authHeaders },
       );
-      const fileSearchData = (await fileSearchRes.json()) as { data?: { id: string }[], errors?: any };
+      const fileSearchData = (await fileSearchRes.json()) as { data?: { id: string }[] };
       console.log(`[IMAGE_ROUTE] File search response:`, fileSearchData);
       fileUUID = fileSearchData.data?.[0]?.id;
     }
