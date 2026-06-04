@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
         const filter = JSON.stringify({ email: { _eq: email.trim() } });
         const response = await fetch(
-            `${API_BASE_URL}/items/guests?filter=${encodeURIComponent(filter)}&fields=id,first_name,last_name,email,phone_number,id_passport_number&limit=1`,
+            `${API_BASE_URL}/items/guests_hos?filter=${encodeURIComponent(filter)}&fields=id,first_name,last_name,email,contact_number,id_passport_number&limit=1`,
             { headers }
         );
 

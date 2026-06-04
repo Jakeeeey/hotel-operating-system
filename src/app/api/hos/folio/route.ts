@@ -29,14 +29,21 @@ export async function GET(request: Request) {
 
         // Fetch reservation details for base info
         const resRes = await fetch(
-            `${API_BASE_URL}/items/reservations/${reservationId}?fields=id,guest_id,check_in_date,check_out_date,total_amount,status`,
+            `${API_BASE_URL}/items/reservations_hos/${reservationId}?fields=id,guest_id,check_in,check_out,total_amount,status`,
             { headers }
         );
 
         let reservation = null;
         if (resRes.ok) {
             const resData = await resRes.json();
-            reservation = resData.data || null;
+            const rawRes = resData.data || null;
+            if (rawRes) {
+                reservation = {
+                    ...rawRes,
+                    check_in_date: rawRes.check_in,
+                    check_out_date: rawRes.check_out
+                };
+            }
         }
 
         // Fetch charges from guest_charges_hos

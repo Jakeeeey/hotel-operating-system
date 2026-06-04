@@ -9,9 +9,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         if (!API_BASE_URL) return NextResponse.json({ error: 'Missing API config' }, { status: 500 });
         const { id } = await params;
         const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
-        const fieldsQuery = `?fields=*,type_id.id,type_id.type_name`;
+        const fieldsQuery = `?fields=*,type_id.id,type_id.name`;
         
-        const response = await fetch(`${API_BASE_URL}/items/rooms/${id}${fieldsQuery}`, {
+        const response = await fetch(`${API_BASE_URL}/items/rooms_hos/${id}${fieldsQuery}`, {
             headers: {
                 'Content-Type': 'application/json',
                 ...(staticToken ? { 'Authorization': `Bearer ${staticToken}` } : {}),
@@ -82,7 +82,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             updated_by: userId,
         };
 
-        const response = await fetch(`${API_BASE_URL}/items/rooms/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/items/rooms_hos/${id}`, {
             method: 'PATCH', // Directus uses PATCH for updates
             headers: {
                 'Content-Type': 'application/json',
@@ -109,7 +109,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         const { id } = await params;
         const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
         
-        const response = await fetch(`${API_BASE_URL}/items/rooms/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/items/rooms_hos/${id}`, {
             method: 'DELETE',
             headers: {
                 ...(staticToken ? { 'Authorization': `Bearer ${staticToken}` } : {}),

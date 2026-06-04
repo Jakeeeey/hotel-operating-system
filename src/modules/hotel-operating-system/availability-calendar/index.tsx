@@ -9,7 +9,7 @@ import { format, addDays, subDays, startOfDay } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export interface CalendarData {
-    types: { id: number; type_name: string }[];
+    types: { id: number; name: string }[];
     rooms: { id: number; type_id: number; room_number: string; floor_number?: string | number; operational_status_id?: { status_name?: string } }[];
     statuses: { id: number; status_name: string }[];
     reservations?: { id: number; check_in_date?: string; check_out_date?: string; status?: string; guest_id?: { first_name?: string; last_name?: string }; room_id?: number | null; room_type_id?: number; locked_price?: number }[];

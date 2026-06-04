@@ -11,14 +11,47 @@ import { RoomTypeForm } from "./type-form";
 import { toast } from "sonner";
 
 export function RoomTypeDataTable() {
-    const [data, setData] = useState<{ id: string; type_name: string; base_price: number; max_occupancy: number; bed_configuration: string }[]>([]);
+    const [data, setData] = useState<{ 
+        id: string; 
+        name: string; 
+        price: number; 
+        max_adults: number; 
+        max_children: number; 
+        bed: string; 
+        description?: string; 
+        original_price?: number; 
+        sqm?: string; 
+        badge?: string; 
+    }[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editingType, setEditingType] = useState<{ id: string; type_name: string; base_price: number; max_occupancy: number; bed_configuration: string } | null>(null);
+    const [editingType, setEditingType] = useState<{ 
+        id: string; 
+        name: string; 
+        price: number; 
+        max_adults: number; 
+        max_children: number; 
+        bed: string; 
+        description?: string; 
+        original_price?: number; 
+        sqm?: string; 
+        badge?: string; 
+    } | null>(null);
 
     const [isViewOpen, setIsViewOpen] = useState(false);
-    const [viewingType, setViewingType] = useState<{ id: string; type_name: string; base_price: number; max_occupancy: number; bed_configuration: string } | null>(null);
+    const [viewingType, setViewingType] = useState<{ 
+        id: string; 
+        name: string; 
+        price: number; 
+        max_adults: number; 
+        max_children: number; 
+        bed: string; 
+        description?: string; 
+        original_price?: number; 
+        sqm?: string; 
+        badge?: string; 
+    } | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -49,22 +82,34 @@ export function RoomTypeDataTable() {
         fetchData();
     }, []);
 
-    const columns: ColumnDef<{ id: string; type_name: string; base_price: number; max_occupancy: number; bed_configuration: string }>[] = [
+    const columns: ColumnDef<{ 
+        id: string; 
+        name: string; 
+        price: number; 
+        max_adults: number; 
+        max_children: number; 
+        bed: string; 
+        description?: string; 
+        original_price?: number; 
+        sqm?: string; 
+        badge?: string; 
+    }>[] = [
         {
-            accessorKey: "type_name",
+            accessorKey: "name",
             header: "Type Name",
         },
         {
-            accessorKey: "base_price",
-            header: "Base Price",
-            cell: ({ row }) => `₱${Number(row.getValue("base_price")).toFixed(2)}`,
+            accessorKey: "price",
+            header: "Price",
+            cell: ({ row }) => `₱${Number(row.getValue("price")).toFixed(2)}`,
         },
         {
-            accessorKey: "max_occupancy",
+            id: "occupancy",
             header: "Max Occupancy",
+            accessorFn: (row) => `${row.max_adults} A / ${row.max_children} C`,
         },
         {
-            accessorKey: "bed_configuration",
+            accessorKey: "bed",
             header: "Bed Configuration",
         },
         {
@@ -113,7 +158,7 @@ export function RoomTypeDataTable() {
                 columns={columns}
                 data={data}
                 isLoading={loading}
-                searchKey="type_name"
+                searchKey="name"
                 actionComponent={actionComponent}
                 emptyTitle="No room types found"
                 emptyDescription="Add a new room type to get started."
@@ -136,21 +181,21 @@ export function RoomTypeDataTable() {
                             <div className="grid grid-cols-2 gap-4 border-b pb-4">
                                 <div>
                                     <p className="text-sm font-medium text-muted-foreground">Type Name</p>
-                                    <p className="mt-1">{viewingType.type_name}</p>
+                                    <p className="mt-1">{viewingType.name}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Base Price</p>
-                                    <p className="mt-1">${Number(viewingType.base_price).toFixed(2)}</p>
+                                    <p className="text-sm font-medium text-muted-foreground">Price</p>
+                                    <p className="mt-1">₱{Number(viewingType.price).toFixed(2)}</p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4 border-b pb-4">
                                 <div>
                                     <p className="text-sm font-medium text-muted-foreground">Max Occupancy</p>
-                                    <p className="mt-1">{viewingType.max_occupancy}</p>
+                                    <p className="mt-1">{viewingType.max_adults} Adults / {viewingType.max_children} Children</p>
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-muted-foreground">Bed Configuration</p>
-                                    <p className="mt-1">{viewingType.bed_configuration}</p>
+                                    <p className="mt-1">{viewingType.bed}</p>
                                 </div>
                             </div>
                             <div className="pt-2 flex justify-end">

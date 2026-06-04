@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 
         // 1. Fetch current reservation details
         const resQuery = await fetch(
-            `${API_BASE_URL}/items/reservations/${reservationId}?fields=id,check_out_date,status`,
+            `${API_BASE_URL}/items/reservations_hos/${reservationId}?fields=id,check_out,status`,
             { headers }
         );
         if (!resQuery.ok) {
@@ -42,9 +42,9 @@ export async function GET(request: Request) {
 
         // Fetch corresponding reservation item to get room and type info
         const itemQuery = await fetch(
-            `${API_BASE_URL}/items/reservation_items?filter=${encodeURIComponent(
+            `${API_BASE_URL}/items/reservation_items_hos?filter=${encodeURIComponent(
                 JSON.stringify({ reservation_id: { _eq: parseInt(reservationId, 10) } })
-            )}&fields=room_id.id,room_id.room_number,room_type_id.id,room_type_id.type_name,locked_price&limit=1`,
+            )}&fields=room_id.id,room_id.room_number,room_id.type_id.id,room_id.type_id.name,room_id.type_id.price&limit=1`,
             { headers }
         );
         if (!itemQuery.ok) {
@@ -58,12 +58,12 @@ export async function GET(request: Request) {
         }
 
         const currentRoomId = firstItem.room_id?.id || null;
-        const roomTypeName = firstItem.room_type_id?.type_name || 'N/A';
-        const roomTypeId = firstItem.room_type_id?.id;
-        const lockedPrice = parseFloat(firstItem.locked_price) || 0;
+        const roomTypeName = firstItem.room_id?.type_id?.name || 'N/A';
+        const roomTypeId = firstItem.room_id?.type_id?.id;
+        const lockedPrice = parseFloat(firstItem.room_id?.type_id?.price) || 0;
 
         // 2. Generate extension night dates
-        const originalCheckOut = new Date(reservation.check_out_date);
+        const originalCheckOut = new Date(reservation.check_out);
         const extendedCheckOut = new Date(newCheckOutDate);
 
         if (extendedCheckOut <= originalCheckOut) {
@@ -85,7 +85,7 @@ export async function GET(request: Request) {
         let currentRoomConflict = false;
         if (currentRoomId) {
             const conflictQuery = await fetch(
-                `${API_BASE_URL}/items/reservation_items?filter=${encodeURIComponent(
+                `${API_BASE_URL}/items/reservation_items_hos?filter=${encodeURIComponent(
                     JSON.stringify({
                         room_id: { _eq: currentRoomId },
                         night_date: { _in: extensionNights },
@@ -110,9 +110,9 @@ export async function GET(request: Request) {
         if (currentRoomConflict && roomTypeId) {
             // Get all operational/clean rooms of this type
             const roomsQuery = await fetch(
-                `${API_BASE_URL}/items/rooms?filter=${encodeURIComponent(
+                `${API_BASE_URL}/items/rooms_hos?filter=${encodeURIComponent(
                     JSON.stringify({
-                        room_type_id: { _eq: roomTypeId },
+                        type_id: { _eq: roomTypeId },
                         operational_status_id: { _eq: 1 }, // Operational/Active
                     })
                 )}&fields=id,room_number&limit=-1`,
@@ -124,9 +124,11 @@ export async function GET(request: Request) {
                 
                 // Get all blocked room IDs for these dates
                 const blockedItemsQuery = await fetch(
-                    `${API_BASE_URL}/items/reservation_items?filter=${encodeURIComponent(
+                    `${API_BASE_URL}/items/reservation_items_hos?filter=${encodeURIComponent(
                         JSON.stringify({
-                            room_type_id: { _eq: roomTypeId },
+                            room_id: {
+                                type_id: { _eq: roomTypeId }
+                            },
                             night_date: { _in: extensionNights },
                             room_id: { _null: false }
                         })
@@ -201,7 +203,7 @@ export async function POST(request: Request) {
 
         // 1. Fetch current reservation details
         const resQuery = await fetch(
-            `${API_BASE_URL}/items/reservations/${reservationId}?fields=id,check_out_date,total_amount,status`,
+            `${API_BASE_URL}/items/reservations_hos/${reservationId}?fields=id,check_out,total_amount,status`,
             { headers }
         );
         if (!resQuery.ok) {
@@ -211,9 +213,9 @@ export async function POST(request: Request) {
 
         // Fetch corresponding reservation item to get room type and locked price
         const itemQuery = await fetch(
-            `${API_BASE_URL}/items/reservation_items?filter=${encodeURIComponent(
+            `${API_BASE_URL}/items/reservation_items_hos?filter=${encodeURIComponent(
                 JSON.stringify({ reservation_id: { _eq: parseInt(reservationId, 10) } })
-            )}&fields=room_id.id,room_type_id.id,locked_price&limit=1`,
+            )}&fields=room_id.id,room_id.type_id.id,room_id.type_id.price&limit=1`,
             { headers }
         );
         if (!itemQuery.ok) {
@@ -227,11 +229,11 @@ export async function POST(request: Request) {
         }
 
         const currentRoomId = firstItem.room_id?.id || null;
-        const roomTypeId = firstItem.room_type_id?.id;
-        const lockedPrice = parseFloat(firstItem.locked_price) || 0;
+        const roomTypeId = firstItem.room_id?.type_id?.id;
+        const lockedPrice = parseFloat(firstItem.room_id?.type_id?.price) || 0;
 
         // 2. Generate extension night dates
-        const originalCheckOut = new Date(reservation.check_out_date);
+        const originalCheckOut = new Date(reservation.check_out);
         const extendedCheckOut = new Date(newCheckOutDate);
 
         if (extendedCheckOut <= originalCheckOut) {
@@ -255,7 +257,7 @@ export async function POST(request: Request) {
         // 3. Double-check conflict for the selected room
         if (targetRoomId) {
             const conflictQuery = await fetch(
-                `${API_BASE_URL}/items/reservation_items?filter=${encodeURIComponent(
+                `${API_BASE_URL}/items/reservation_items_hos?filter=${encodeURIComponent(
                     JSON.stringify({
                         room_id: { _eq: targetRoomId },
                         night_date: { _in: extensionNights },
@@ -276,11 +278,11 @@ export async function POST(request: Request) {
         const additionCost = lockedPrice * extensionNights.length;
         const newTotalAmount = (parseFloat(reservation.total_amount) || 0) + additionCost;
 
-        const updateRes = await fetch(`${API_BASE_URL}/items/reservations/${reservationId}`, {
+        const updateRes = await fetch(`${API_BASE_URL}/items/reservations_hos/${reservationId}`, {
             method: 'PATCH',
             headers,
             body: JSON.stringify({
-                check_out_date: newCheckOutDate,
+                check_out: newCheckOutDate,
                 total_amount: newTotalAmount,
                 updated_by: userId,
             }),
@@ -293,15 +295,15 @@ export async function POST(request: Request) {
         // 5. Create new night-by-night reservation items
         const itemPayloads = extensionNights.map((nightDate) => ({
             reservation_id: parseInt(reservationId, 10),
-            room_type_id: roomTypeId,
             room_id: targetRoomId,
             night_date: nightDate,
-            locked_price: lockedPrice,
+            adults_count: 1,
+            children_count: 0,
             created_by: userId,
             updated_by: userId,
         }));
 
-        const itemsCreate = await fetch(`${API_BASE_URL}/items/reservation_items`, {
+        const itemsCreate = await fetch(`${API_BASE_URL}/items/reservation_items_hos`, {
             method: 'POST',
             headers,
             body: JSON.stringify(itemPayloads),

@@ -97,14 +97,14 @@ export async function POST(request: Request) {
         }
 
         // ──────────────────────────────────────────────
-        // 2. Fetch room type base_price for locked_price
+        // 2. Fetch room type price for calculation
         // ──────────────────────────────────────────────
-        const typeRes = await fetch(`${API_BASE_URL}/items/room_types/${room_type_id}?fields=id,base_price`, { headers });
+        const typeRes = await fetch(`${API_BASE_URL}/items/room_types_hos/${room_type_id}?fields=id,price`, { headers });
         if (!typeRes.ok) {
             return NextResponse.json({ error: 'Failed to fetch room type.' }, { status: 500 });
         }
         const typeData = await typeRes.json();
-        const basePrice = parseFloat(typeData.data?.base_price) || 0;
+        const basePrice = parseFloat(typeData.data?.price) || 0;
 
         // ──────────────────────────────────────────────
         // 3. Calculate nights
@@ -135,8 +135,8 @@ export async function POST(request: Request) {
         // ──────────────────────────────────────────────
         const reservationPayload = {
             guest_id: guestId,
-            check_in_date,
-            check_out_date,
+            check_in: check_in_date,
+            check_out: check_out_date,
             booking_source: booking_source || (is_walk_in ? 'Walk-In' : 'Website'),
             total_amount: totalAmount,
             status: is_walk_in ? 'Checked-In' : 'Pending',
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
             updated_by: userId,
         };
 
-        const resCreate = await fetch(`${API_BASE_URL}/items/reservations`, {
+        const resCreate = await fetch(`${API_BASE_URL}/items/reservations_hos`, {
             method: 'POST',
             headers,
             body: JSON.stringify(reservationPayload),
@@ -164,16 +164,16 @@ export async function POST(request: Request) {
         // ──────────────────────────────────────────────
         const itemPayloads = nightDates.map((nightDate) => ({
             reservation_id: reservationId,
-            room_type_id,
             room_id: room_id || null,
             night_date: nightDate,
-            locked_price: basePrice,
+            adults_count: body.adults_count || 1,
+            children_count: body.children_count || 0,
             created_by: userId,
             updated_by: userId,
         }));
 
         // Bulk create items
-        const itemsCreate = await fetch(`${API_BASE_URL}/items/reservation_items`, {
+        const itemsCreate = await fetch(`${API_BASE_URL}/items/reservation_items_hos`, {
             method: 'POST',
             headers,
             body: JSON.stringify(itemPayloads),
@@ -243,7 +243,7 @@ export async function POST(request: Request) {
         // 8. ROOM UPDATE — Walk-In only: set to Occupied
         // ──────────────────────────────────────────────
         if (is_walk_in && room_id) {
-            const roomUpdate = await fetch(`${API_BASE_URL}/items/rooms/${room_id}`, {
+            const roomUpdate = await fetch(`${API_BASE_URL}/items/rooms_hos/${room_id}`, {
                 method: 'PATCH',
                 headers,
                 body: JSON.stringify({

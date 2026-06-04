@@ -16,7 +16,7 @@ interface RoomRecord {
     main_image_url?: string;
     room_number: string;
     floor_number?: number;
-    type_id?: { id: number; type_name: string } | number;
+    type_id?: { id: number; name: string } | number;
     operational_status_id?: { id: number; status_name: string } | number;
     housekeeping_status_id?: { id: number; status_name: string } | number;
     [key: string]: unknown;
@@ -32,7 +32,7 @@ export function RoomDataTable() {
     const [isViewOpen, setIsViewOpen] = useState(false);
     const [viewingRoom, setViewingRoom] = useState<RoomRecord | null>(null);
 
-    const [types, setTypes] = useState<{ id: number; type_name: string }[]>([]);
+    const [types, setTypes] = useState<{ id: number; name: string }[]>([]);
     const [opStatuses, setOpStatuses] = useState<{ id: number; status_name: string; ui_color_code: string }[]>([]);
     const [hkStatuses, setHkStatuses] = useState<{ id: number; status_name: string; ui_color_code: string }[]>([]);
     const [filterType, setFilterType] = useState("all");
@@ -124,8 +124,8 @@ export function RoomDataTable() {
             header: "Floor",
         },
         {
-            accessorFn: (row) => (typeof row.type_id === 'object' && row.type_id !== null ? row.type_id.type_name : "N/A"),
-            id: "type_name",
+            accessorFn: (row) => (typeof row.type_id === 'object' && row.type_id !== null ? row.type_id.name : "N/A"),
+            id: "name",
             header: "Type",
         },
         {
@@ -224,7 +224,7 @@ export function RoomDataTable() {
                 <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
                     {types.map((t) => (
-                        <SelectItem key={t.id} value={t.id.toString()}>{t.type_name}</SelectItem>
+                        <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>
@@ -307,7 +307,7 @@ export function RoomDataTable() {
                             <div className="grid grid-cols-2 gap-4 border-b pb-4">
                                 <div>
                                     <p className="text-sm font-medium text-muted-foreground">Type</p>
-                                    <p className="mt-1">{typeof viewingRoom.type_id === 'object' && viewingRoom.type_id !== null ? viewingRoom.type_id.type_name : "N/A"}</p>
+                                    <p className="mt-1">{typeof viewingRoom.type_id === 'object' && viewingRoom.type_id !== null ? viewingRoom.type_id.name : "N/A"}</p>
                                 </div>
                                 <div></div>
                             </div>

@@ -14,8 +14,8 @@ import { PaymentQrModal } from "./payment-qr-modal";
 
 interface RoomType {
     id: number;
-    type_name: string;
-    base_price: string | number;
+    name: string;
+    price: string | number;
 }
 
 interface AvailableRoom {
@@ -172,7 +172,7 @@ export function BookingForm() {
 
     // Get current room type pricing
     const currentRoomType = roomTypes.find((t) => t.id.toString() === selectedRoomTypeId);
-    const basePrice = currentRoomType ? Number(currentRoomType.base_price) : 0;
+    const basePrice = currentRoomType ? Number(currentRoomType.price) : 0;
     const totalPrice = basePrice * nights;
 
     // Reset Form
@@ -277,7 +277,7 @@ export function BookingForm() {
                 setSavedBookingData({
                     reservationId: result.data?.reservationId,
                     guestName: `${firstName.trim()} ${lastName.trim()}`,
-                    roomTypeName: currentRoomType ? currentRoomType.type_name : "",
+                    roomTypeName: currentRoomType ? currentRoomType.name : "",
                     roomNumber: roomNumberStr,
                     nights,
                     basePrice,
@@ -516,7 +516,7 @@ export function BookingForm() {
                                             <SelectContent>
                                                 {roomTypes.map((type) => (
                                                     <SelectItem key={type.id} value={type.id.toString()}>
-                                                        {type.type_name} (₱{Number(type.base_price).toLocaleString()}/night)
+                                                        {type.name} (₱{Number(type.price).toLocaleString()}/night)
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -721,7 +721,7 @@ export function BookingForm() {
                                 <div className="flex justify-between items-center py-1.5 border-b border-muted/60">
                                     <span className="text-muted-foreground">Room Type</span>
                                     <span className="font-semibold text-foreground truncate max-w-[150px]">
-                                        {currentRoomType ? currentRoomType.type_name : "-"}
+                                        {currentRoomType ? currentRoomType.name : "-"}
                                     </span>
                                 </div>
 
@@ -798,7 +798,7 @@ export function BookingForm() {
                     checkInDate,
                     checkOutDate,
                     roomTypeId: selectedRoomTypeId,
-                    roomTypeName: currentRoomType ? currentRoomType.type_name : "",
+                    roomTypeName: currentRoomType ? currentRoomType.name : "",
                     roomId: selectedRoomId,
                     roomNumber: roomNumberStr,
                     basePrice,
