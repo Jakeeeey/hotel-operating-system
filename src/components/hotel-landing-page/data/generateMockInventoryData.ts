@@ -1,5 +1,5 @@
-import { InventoryNight } from "../pages/calendar/types";
-import { RoomType } from "../pages/calendar/types";
+import { InventoryNight } from "../pages/calendar/types/types";
+import { RoomType } from "../pages/calendar/types/types";
 
 export const generateMockInventoryData = (): InventoryNight[] => {
   const data: InventoryNight[] = [];

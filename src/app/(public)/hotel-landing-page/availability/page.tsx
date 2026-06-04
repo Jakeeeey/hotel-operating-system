@@ -1,23 +1,34 @@
+import { directus } from "@/components/hotel-landing-page/pages/booking/lib/directus";
 import { CalendarLayout } from "@/components/hotel-landing-page/pages/calendar/CalendarLayout";
 import { Suspense } from "react";
-// Pointing to your new modular layout
+import { readItems } from "@directus/sdk";
+import { CalendarRoom } from "@/components/hotel-landing-page/pages/calendar/types/types";
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: "Resort Availability Calendar Dashboard",
   description: "Explore our real-time overnight room capacity and plan your stay."
 };
 
-export default function AvailabilityPage() {
+export default async function AvailabilityPage() {
+
+  const roomsData = await directus.request(
+    readItems("rooms_hos", {
+      fields: ["id", "room_number", { type_id: ["max_adults", "max_children"] }]
+    })
+  );
+  
   return (
     <main className="min-h-screen bg-white pt-6 pb-16">
       <Suspense 
-        fallback={
+        fallback = {
           <div className="max-w-[1400px] mx-auto px-6 py-6 text-sm text-zinc-400">
             Loading interactive calendar…
           </div>
         }
       >
-        <CalendarLayout />
+        <CalendarLayout rooms={roomsData as CalendarRoom[]} />
       </Suspense>
     </main>
   );

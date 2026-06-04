@@ -1,4 +1,5 @@
-import { RoomData, ReviewData, PromoOfferData, OverviewStatData, PartnerLogoData } from "../types/types";
+import { ReviewData, PromoOfferData, OverviewStatData, PartnerLogoData } from "../types/types";
+import { RoomData } from "../pages/home/types/room.types";
 
 // ==========================================
 // 1. PROMO OFFERS DATA (<PromoOffers />)

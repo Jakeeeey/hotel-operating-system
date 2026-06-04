@@ -1,7 +1,8 @@
 import { DM_Sans } from "next/font/google";
 import { NavBar, Footer } from "@/components/hotel-landing-page";
 import { AllRoomsGrid } from "@/components/hotel-landing-page/pages/rooms/AllRoomsGrid";
-import { Suspense } from "react";
+import { getRoomsService } from "@/components/hotel-landing-page/pages/home/services/room.service";
+import { RoomData } from "@/components/hotel-landing-page/pages/home/types/room.types";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -13,14 +14,23 @@ export const metadata = {
   description: "Browse our hand-selected catalog of contemporary suites and villas designed for uncompromised comfort.",
 };
 
-export default function AllRoomsDirectoryPage() {
+export default async function AllRoomsDirectoryPage() {
+  let roomData: RoomData[] = [];
+  
+  try {
+    roomData = await getRoomsService() || [];
+  } catch (error) {
+    console.error("🚨 Failed to fetch room catalog overview lists:", error);
+    // Provide a safe fallback array so the page interface grid still loads an elegant empty/error state
+    roomData = []; 
+  }
+
   return (
     <main className={`${dmSans.className} min-h-screen bg-white flex flex-col`}>
       <NavBar />
       <div className="pt-28 pb-20 flex-grow">
-        <Suspense fallback={<div className="text-center py-20 text-sm text-zinc-500">Loading accommodations catalog...</div>}>
-          <AllRoomsGrid />
-        </Suspense>
+        {/* Render grid directly; to stream this page with an active loading state, use a loading.tsx file in this directory */}
+        <AllRoomsGrid initialRooms={roomData} />
       </div>
       <Footer />
     </main>
