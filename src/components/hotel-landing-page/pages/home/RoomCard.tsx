@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Heart, Star, Crown } from "lucide-react";
-import { RoomData } from "../../types/types";
 import Image from "next/image";
+import { RoomData } from "./types/room.types";
 
 function formatPrice(price: number): string {
   return price >= 1000 ? `₱${price.toLocaleString()}` : `₱${price}`;
@@ -76,7 +76,7 @@ export function RoomCard({ room }: { room: RoomData }) {
 
           {/* Contextual Amenity Tags Layout Array */}
           <div className="flex flex-wrap gap-1.5 mt-4">
-            {room.amenities.slice(0, 3).map((amenity) => (
+            {room.amenities.slice(0, 3).map((amenity: string) => (
               <span
                 key={amenity}
                 className="bg-zinc-50/50 text-zinc-500 border border-zinc-200/60 text-[9px] font-bold uppercase tracking-wider rounded-sm px-2 py-0.5"
