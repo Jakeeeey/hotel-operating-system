@@ -95,7 +95,9 @@ export function TransactionTable({
 
     const fmtDate = (d: string) => {
         try {
-            return new Date(d).toLocaleString("en-PH", {
+            const dateStr = d.endsWith("Z") || d.includes("+") ? d : `${d}Z`;
+            return new Date(dateStr).toLocaleString("en-PH", {
+                timeZone: "Asia/Manila",
                 month: "short",
                 day: "numeric",
                 hour: "2-digit",

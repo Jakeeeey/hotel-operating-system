@@ -136,16 +136,6 @@ export function CloseShiftDialog({
                 </DialogHeader>
 
                 <div className="space-y-4 py-2">
-                    {/* Expected cash (read-only) */}
-                    <div className="rounded-lg bg-muted/50 p-3 space-y-1">
-                        <p className="text-xs text-muted-foreground font-medium">
-                            System Expected Cash
-                        </p>
-                        <p className="text-xl font-bold tracking-tight">
-                            {fmtCurrency(expectedCash)}
-                        </p>
-                    </div>
-
                     {/* Actual cash input */}
                     <div className="space-y-2">
                         <Label htmlFor="actual-cash">Actual Cash Count (₱)</Label>
@@ -164,30 +154,6 @@ export function CloseShiftDialog({
                         />
                     </div>
 
-                    {/* Variance indicator */}
-                    {actualCash && (
-                        <div
-                            className={`flex items-center gap-2 rounded-lg p-3 text-sm font-medium ${
-                                variance === 0
-                                    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
-                                    : "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400"
-                            }`}
-                        >
-                            {variance === 0 ? (
-                                <>
-                                    <CheckCircle2 className="h-4 w-4" />
-                                    Cash count matches expected amount.
-                                </>
-                            ) : (
-                                <>
-                                    <AlertTriangle className="h-4 w-4" />
-                                    Variance: {fmtCurrency(variance)} (
-                                    {variance > 0 ? "Over" : "Short"})
-                                </>
-                            )}
-                        </div>
-                    )}
-
                     {/* Manager Override Section */}
                     {showOverride && (
                         <div className="space-y-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/30 p-4">
@@ -198,9 +164,26 @@ export function CloseShiftDialog({
                                 </p>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                Cash count does not match. A Manager PIN is required to
-                                proceed.
+                                The entered cash count does not match the system calculations. A Manager PIN and resolution notes are required to force-close this shift.
                             </p>
+                            
+                            <div className="text-sm space-y-1.5 p-3 rounded-lg bg-muted/50 border">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">System Expected:</span>
+                                    <span className="font-semibold">{fmtCurrency(expectedCash)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Your Count:</span>
+                                    <span className="font-semibold">{fmtCurrency(counted)}</span>
+                                </div>
+                                <div className="flex justify-between border-t pt-1.5 mt-1.5 font-bold">
+                                    <span className="text-red-700 dark:text-red-400">Variance:</span>
+                                    <span className="text-red-700 dark:text-red-400">
+                                        {fmtCurrency(variance)} ({variance > 0 ? "Over" : "Short"})
+                                    </span>
+                                </div>
+                            </div>
+
                             <div className="space-y-2">
                                 <Label htmlFor="override-pin">Manager PIN</Label>
                                 <Input

@@ -14,7 +14,7 @@ import { CloseShiftDialog } from "./components/close-shift-dialog";
 
 interface ActiveShift {
     id: number;
-    opened_by: number | null;
+    user_id: number | null;
     opened_at: string;
     starting_cash: number;
     status: string;
@@ -99,7 +99,9 @@ export default function ShiftLedgerModule() {
 
     const fmtTime = (iso: string) => {
         try {
-            return new Date(iso).toLocaleString("en-PH", {
+            const dateStr = iso.endsWith("Z") || iso.includes("+") ? iso : `${iso}Z`;
+            return new Date(dateStr).toLocaleString("en-PH", {
+                timeZone: "Asia/Manila",
                 month: "short",
                 day: "numeric",
                 hour: "2-digit",

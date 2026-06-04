@@ -5,15 +5,6 @@ import { decodeJwtPayload, COOKIE_NAME } from '@/lib/auth-utils';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL;
 
 /**
- * Helper: Manila time ISO string (UTC+8)
- */
-function getManilaISO(): string {
-    const now = new Date();
-    const manila = new Date(now.getTime() + 8 * 60 * 60 * 1000);
-    return manila.toISOString().replace('Z', '');
-}
-
-/**
  * GET /api/hos/shift-ledger
  *
  * Returns the active shift for the current user, along with aggregated
@@ -44,17 +35,23 @@ export async function GET() {
             status: { _eq: 'Open' },
         }));
         const shiftRes = await fetch(
-            `${API_BASE_URL}/items/shifts_hos?filter=${shiftFilter}&sort=-opened_at&limit=1&fields=id,opened_by,opened_at,starting_cash,status`,
+            `${API_BASE_URL}/items/shifts_hos?filter=${shiftFilter}&sort=-opened_at&limit=1&fields=id,user_id,opened_at,starting_cash,status`,
             { headers }
         );
+
+        console.log('[Shift Ledger API GET] Fetch shifts_hos response status:', shiftRes.status);
 
         let activeShift = null;
         if (shiftRes.ok) {
             const shiftData = await shiftRes.json();
+            console.log('[Shift Ledger API GET] Fetch shifts_hos response data:', JSON.stringify(shiftData));
             const shifts = shiftData.data || [];
             if (shifts.length > 0) {
                 activeShift = shifts[0];
             }
+        } else {
+            const errBody = await shiftRes.text().catch(() => '');
+            console.error('[Shift Ledger API GET] Fetch shifts_hos failed:', errBody);
         }
 
         // 2. Fetch recent closed shifts for history (last 10)
@@ -62,7 +59,7 @@ export async function GET() {
             status: { _eq: 'Closed' },
         }));
         const closedShiftsRes = await fetch(
-            `${API_BASE_URL}/items/shifts_hos?filter=${closedFilter}&sort=-closed_at&limit=10&fields=id,opened_by,opened_at,closed_at,starting_cash,expected_cash,actual_cash,variance,status,resolved_by,resolution_notes`,
+            `${API_BASE_URL}/items/shifts_hos?filter=${closedFilter}&sort=-closed_at&limit=10&fields=id,user_id,opened_at,closed_at,starting_cash,expected_cash,actual_cash,variance,status,resolved_by,resolution_notes`,
             { headers }
         );
         let closedShifts: unknown[] = [];
@@ -224,8 +221,8 @@ export async function POST(request: Request) {
             }
 
             const shiftPayload = {
-                opened_by: userId,
-                opened_at: getManilaISO(),
+                user_id: userId,
+                opened_at: new Date().toISOString(),
                 starting_cash: parseFloat(starting_cash),
                 status: 'Open',
                 created_by: userId,
@@ -264,7 +261,7 @@ export async function POST(request: Request) {
             const variance = Math.round((actualCash - expCash) * 100) / 100;
 
             const closePayload: Record<string, unknown> = {
-                closed_at: getManilaISO(),
+                closed_at: new Date().toISOString(),
                 expected_cash: expCash,
                 actual_cash: actualCash,
                 variance,
