@@ -126,11 +126,17 @@ export async function GET(request: Request) {
                 const blockedItemsQuery = await fetch(
                     `${API_BASE_URL}/items/reservation_items_hos?filter=${encodeURIComponent(
                         JSON.stringify({
-                            room_id: {
-                                type_id: { _eq: roomTypeId }
-                            },
-                            night_date: { _in: extensionNights },
-                            room_id: { _null: false }
+                            _and: [
+                                {
+                                    room_id: {
+                                        type_id: { _eq: roomTypeId }
+                                    }
+                                },
+                                {
+                                    room_id: { _null: false }
+                                }
+                            ],
+                            night_date: { _in: extensionNights }
                         })
                     )}&fields=room_id&limit=-1`,
                     { headers }
