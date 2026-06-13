@@ -27,7 +27,6 @@ import {
     Plus,
     CreditCard,
     Loader2,
-    Printer,
     AlertTriangle,
 } from "lucide-react";
 

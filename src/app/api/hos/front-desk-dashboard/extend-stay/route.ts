@@ -229,7 +229,6 @@ export async function POST(request: Request) {
         }
 
         const currentRoomId = firstItem.room_id?.id || null;
-        const roomTypeId = firstItem.room_id?.type_id?.id;
         const lockedPrice = parseFloat(firstItem.room_id?.type_id?.price) || 0;
 
         // 2. Generate extension night dates

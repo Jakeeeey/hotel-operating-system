@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 
 interface CloseShiftDialogProps {
     open: boolean;
