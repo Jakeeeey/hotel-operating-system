@@ -29,7 +29,7 @@ export async function GET(request: Request) {
         });
 
         const response = await fetch(
-            `${API_BASE_URL}/items/rooms?limit=-1&fields=id,room_number,floor_number&filter=${encodeURIComponent(filter)}`,
+            `${API_BASE_URL}/items/rooms_hos?limit=-1&fields=id,room_number,floor_number&filter=${encodeURIComponent(filter)}`,
             { headers }
         );
 

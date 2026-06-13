@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-    title: "VOS ERP | Human Resource Management",
-    description: "Premium Enterprise Human Resource Management System",
+    title: "VOS ERP | Hotel Operating System",
+    description: "Premium Enterprise Hotel Operating System",
 }
 
 export default function RootLayout({

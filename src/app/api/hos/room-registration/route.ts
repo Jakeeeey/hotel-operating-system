@@ -22,9 +22,9 @@ export async function GET(request: Request) {
         if (type) filter.type_id = { _eq: type };
 
         const filterQuery = Object.keys(filter).length > 0 ? `&filter=${encodeURIComponent(JSON.stringify(filter))}` : '';
-        const fieldsQuery = `&fields=*,type_id.id,type_id.type_name`;
+        const fieldsQuery = `&fields=*,type_id.id,type_id.name`;
 
-        const response = await fetch(`${API_BASE_URL}/items/rooms?limit=-1${fieldsQuery}${filterQuery}`, {
+        const response = await fetch(`${API_BASE_URL}/items/rooms_hos?limit=-1${fieldsQuery}${filterQuery}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
             updated_by: userId,
         };
 
-        const response = await fetch(`${API_BASE_URL}/items/rooms`, {
+        const response = await fetch(`${API_BASE_URL}/items/rooms_hos`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

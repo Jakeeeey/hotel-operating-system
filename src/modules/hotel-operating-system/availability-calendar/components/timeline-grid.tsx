@@ -240,7 +240,7 @@ export function TimelineGrid({ data, startDate, numDays }: TimelineGridProps) {
                             <div className="flex bg-muted/40 border-b border-muted/60">
                                 <div className="w-[200px] shrink-0 border-r border-muted/50 px-3 py-2 sticky left-0 z-30 bg-muted/95 backdrop-blur-md">
                                     <span className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
-                                        {type.type_name}
+                                        {type.name}
                                     </span>
                                 </div>
                                 <div className="flex-1" />

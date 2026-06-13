@@ -14,8 +14,8 @@ import { PaymentQrModal } from "./payment-qr-modal";
 
 interface RoomType {
     id: number;
-    type_name: string;
-    base_price: string | number;
+    name: string;
+    price: string | number;
 }
 
 interface AvailableRoom {
@@ -172,8 +172,9 @@ export function BookingForm() {
 
     // Get current room type pricing
     const currentRoomType = roomTypes.find((t) => t.id.toString() === selectedRoomTypeId);
-    const basePrice = currentRoomType ? Number(currentRoomType.base_price) : 0;
-    const totalPrice = basePrice * nights;
+    const basePrice = currentRoomType ? Number(currentRoomType.price) : 0;
+    const depositInsurance = selectedRoomTypeId && nights > 0 ? 1000 : 0;
+    const totalPrice = (basePrice * nights) + depositInsurance;
 
     // Reset Form
     const handleClearForm = (silent = false) => {
@@ -204,6 +205,11 @@ export function BookingForm() {
             return;
         }
 
+        if (!email.trim() || !email.includes("@")) {
+            toast.error("Please enter a valid guest Email Address.");
+            return;
+        }
+
         if (!selectedRoomTypeId) {
             toast.error("Please select a Room Type.");
             return;
@@ -229,6 +235,8 @@ export function BookingForm() {
         try {
             const paidAmount = parseFloat(paymentAmount) || 0;
 
+            const isDigitalMethod = paymentMethod === "GCash" || paymentMethod === "PayMaya";
+
             const payload = {
                 guest: {
                     first_name: firstName.trim(),
@@ -243,11 +251,7 @@ export function BookingForm() {
                 room_type_id: parseInt(selectedRoomTypeId, 10),
                 room_id: selectedRoomId === "unassigned" ? null : parseInt(selectedRoomId, 10),
                 is_walk_in: isWalkIn,
-                payment: paidAmount > 0 ? {
-                    amount: paidAmount,
-                    payment_method: paymentMethod,
-                    notes: paymentNotes.trim() || undefined,
-                } : undefined,
+                payment: undefined, // Handled separately below to split room fee and deposit
             };
 
             const res = await fetch("/api/hos/room-booking", {
@@ -262,6 +266,59 @@ export function BookingForm() {
             }
 
             const result = await res.json();
+            const reservationId = result.data?.reservationId;
+
+            // Trigger Reservation Confirmation Email via HOS API route
+            if (reservationId) {
+                try {
+                    await fetch("/api/hos/send-booking-email", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ reservationId: reservationId.toString() }),
+                    });
+                    toast.success("Confirmation email sent to guest successfully!");
+                } catch (emailError) {
+                    console.error("Failed to send reservation email:", emailError);
+                }
+            }
+
+            // For Cash/Credit Card payments, split room fee and deposit hold separately via folio API
+            if (reservationId && paidAmount > 0 && !isDigitalMethod) {
+                try {
+                    const roomPayAmount = Math.max(0, paidAmount - 1000);
+                    const depositAmount = Math.min(paidAmount, 1000);
+
+                    if (roomPayAmount > 0) {
+                        await fetch("/api/hos/folio", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                type: "payment",
+                                reservationId,
+                                amount: roomPayAmount,
+                                payment_method: paymentMethod,
+                                notes: `Payment collected at booking via ${paymentMethod}`,
+                            }),
+                        });
+                    }
+
+                    if (depositAmount > 0) {
+                        await fetch("/api/hos/folio", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                type: "payment",
+                                reservationId,
+                                amount: depositAmount,
+                                payment_method: paymentMethod,
+                                notes: "Incidental Deposit Hold",
+                            }),
+                        });
+                    }
+                } catch (e) {
+                    console.error("Failed to record cash/card payments", e);
+                }
+            }
 
             toast.success(
                 isWalkIn
@@ -277,7 +334,7 @@ export function BookingForm() {
                 setSavedBookingData({
                     reservationId: result.data?.reservationId,
                     guestName: `${firstName.trim()} ${lastName.trim()}`,
-                    roomTypeName: currentRoomType ? currentRoomType.type_name : "",
+                    roomTypeName: currentRoomType ? currentRoomType.name : "",
                     roomNumber: roomNumberStr,
                     nights,
                     basePrice,
@@ -376,7 +433,7 @@ export function BookingForm() {
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-6">
                                 <div className="space-y-1.5">
                                     <Label htmlFor="email" className="text-sm font-semibold">
-                                        Email Address <span className="text-muted-foreground font-normal">(Used for lookups)</span>
+                                        Email Address <span className="text-destructive">*</span>
                                     </Label>
                                     <div className="relative">
                                         <Input
@@ -390,6 +447,7 @@ export function BookingForm() {
                                             }}
                                             onBlur={handleEmailBlur}
                                             className="rounded-xl border border-muted-foreground/20 focus-visible:ring-1 focus-visible:ring-ring"
+                                            required
                                         />
                                     </div>
                                 </div>
@@ -516,7 +574,7 @@ export function BookingForm() {
                                             <SelectContent>
                                                 {roomTypes.map((type) => (
                                                     <SelectItem key={type.id} value={type.id.toString()}>
-                                                        {type.type_name} (₱{Number(type.base_price).toLocaleString()}/night)
+                                                        {type.name} (₱{Number(type.price).toLocaleString()}/night)
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -721,7 +779,7 @@ export function BookingForm() {
                                 <div className="flex justify-between items-center py-1.5 border-b border-muted/60">
                                     <span className="text-muted-foreground">Room Type</span>
                                     <span className="font-semibold text-foreground truncate max-w-[150px]">
-                                        {currentRoomType ? currentRoomType.type_name : "-"}
+                                        {currentRoomType ? currentRoomType.name : "-"}
                                     </span>
                                 </div>
 
@@ -737,6 +795,12 @@ export function BookingForm() {
                                         <span>Base Price / Night</span>
                                         <span>₱{basePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                                     </div>
+                                    {nights > 0 && selectedRoomTypeId && (
+                                        <div className="flex justify-between text-xs text-muted-foreground">
+                                            <span>Deposit Insurance (Refundable)</span>
+                                            <span>₱1,000.00</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between text-base font-bold text-foreground pt-1 border-t">
                                         <span>Estimated Total</span>
                                         <span className="text-primary font-extrabold text-lg">
@@ -798,7 +862,7 @@ export function BookingForm() {
                     checkInDate,
                     checkOutDate,
                     roomTypeId: selectedRoomTypeId,
-                    roomTypeName: currentRoomType ? currentRoomType.type_name : "",
+                    roomTypeName: currentRoomType ? currentRoomType.name : "",
                     roomId: selectedRoomId,
                     roomNumber: roomNumberStr,
                     basePrice,

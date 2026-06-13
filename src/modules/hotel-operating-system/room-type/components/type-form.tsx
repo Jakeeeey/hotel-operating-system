@@ -11,10 +11,15 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 const formSchema = z.object({
-    type_name: z.string().min(1, "Type name is required"),
-    base_price: z.number().min(0, "Base price cannot be negative"),
-    max_occupancy: z.number().min(1, "Max occupancy must be at least 1"),
-    bed_configuration: z.string().min(1, "Bed configuration is required"),
+    name: z.string().min(1, "Name is required"),
+    price: z.number().min(0, "Price cannot be negative"),
+    max_adults: z.number().min(1, "Max adults must be at least 1"),
+    max_children: z.number().min(0, "Max children cannot be negative"),
+    bed: z.string().min(1, "Bed configuration is required"),
+    description: z.string().optional().nullable(),
+    original_price: z.number().min(0, "Original price cannot be negative").optional().nullable(),
+    sqm: z.string().optional().nullable(),
+    badge: z.string().optional().nullable(),
 });
 
 type RoomTypeFormValues = z.infer<typeof formSchema>;
@@ -22,7 +27,18 @@ type RoomTypeFormValues = z.infer<typeof formSchema>;
 interface RoomTypeFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    initialData?: { id?: string; type_name?: string; base_price?: number; max_occupancy?: number; bed_configuration?: string };
+    initialData?: { 
+        id?: string; 
+        name?: string; 
+        price?: number; 
+        max_adults?: number; 
+        max_children?: number; 
+        bed?: string; 
+        description?: string; 
+        original_price?: number; 
+        sqm?: string; 
+        badge?: string; 
+    };
     onSuccess: () => void;
 }
 
@@ -32,10 +48,15 @@ export function RoomTypeForm({ open, onOpenChange, initialData, onSuccess }: Roo
     const form = useForm<RoomTypeFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            type_name: "",
-            base_price: 0,
-            max_occupancy: 1,
-            bed_configuration: "",
+            name: "",
+            price: 0,
+            max_adults: 1,
+            max_children: 0,
+            bed: "King Bed",
+            description: "",
+            original_price: null,
+            sqm: "",
+            badge: "Featured",
         },
     });
 
@@ -43,17 +64,27 @@ export function RoomTypeForm({ open, onOpenChange, initialData, onSuccess }: Roo
         if (open) {
             if (initialData) {
                 form.reset({
-                    type_name: initialData.type_name,
-                    base_price: Number(initialData.base_price) || 0,
-                    max_occupancy: initialData.max_occupancy || 1,
-                    bed_configuration: initialData.bed_configuration || "",
+                    name: initialData.name || "",
+                    price: Number(initialData.price) || 0,
+                    max_adults: initialData.max_adults || 1,
+                    max_children: initialData.max_children || 0,
+                    bed: initialData.bed || "King Bed",
+                    description: initialData.description || "",
+                    original_price: initialData.original_price ? Number(initialData.original_price) : null,
+                    sqm: initialData.sqm || "",
+                    badge: initialData.badge || "Featured",
                 });
             } else {
                 form.reset({
-                    type_name: "",
-                    base_price: 0,
-                    max_occupancy: 1,
-                    bed_configuration: "",
+                    name: "",
+                    price: 0,
+                    max_adults: 1,
+                    max_children: 0,
+                    bed: "King Bed",
+                    description: "",
+                    original_price: null,
+                    sqm: "",
+                    badge: "Featured",
                 });
             }
         }
@@ -85,15 +116,15 @@ export function RoomTypeForm({ open, onOpenChange, initialData, onSuccess }: Roo
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-[450px]">
                 <DialogHeader>
                     <DialogTitle>{initialData ? "Edit Room Type" : "New Room Type"}</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[75vh] overflow-y-auto px-1">
                         <FormField
                             control={form.control}
-                            name="type_name"
+                            name="name"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Type Name</FormLabel>
@@ -106,52 +137,133 @@ export function RoomTypeForm({ open, onOpenChange, initialData, onSuccess }: Roo
                         />
                         <FormField
                             control={form.control}
-                            name="base_price"
+                            name="description"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Base Price</FormLabel>
+                                    <FormLabel>Description</FormLabel>
                                     <FormControl>
-                                        <Input 
-                                            type="number" 
-                                            step="0.01" 
-                                            {...field} 
-                                            onChange={(e) => field.onChange(e.target.valueAsNumber)} 
-                                        />
+                                        <Input placeholder="e.g. A spacious room with beautiful view" {...field} value={field.value || ""} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="price"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Price</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                type="number" 
+                                                step="0.01" 
+                                                {...field} 
+                                                onChange={(e) => field.onChange(e.target.valueAsNumber)} 
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="original_price"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Original Price</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                type="number" 
+                                                step="0.01" 
+                                                {...field} 
+                                                value={field.value ?? ""}
+                                                onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} 
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="max_adults"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Max Adults</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                type="number" 
+                                                {...field} 
+                                                onChange={(e) => field.onChange(e.target.valueAsNumber)} 
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="max_children"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Max Children</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                type="number" 
+                                                {...field} 
+                                                onChange={(e) => field.onChange(e.target.valueAsNumber)} 
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                         <FormField
                             control={form.control}
-                            name="max_occupancy"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Max Occupancy</FormLabel>
-                                    <FormControl>
-                                        <Input 
-                                            type="number" 
-                                            {...field} 
-                                            onChange={(e) => field.onChange(e.target.valueAsNumber)} 
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="bed_configuration"
+                            name="bed"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Bed Configuration</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="e.g. 1 King, 2 Queen" {...field} />
+                                        <Input placeholder="e.g. 1 King Bed" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="sqm"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Room Size (SQM)</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g. 35 sqm" {...field} value={field.value || ""} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="badge"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Badge</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g. Featured, Popular" {...field} value={field.value || ""} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
                         <div className="flex justify-end gap-2 pt-4">
                             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

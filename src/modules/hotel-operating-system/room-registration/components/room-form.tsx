@@ -31,7 +31,7 @@ interface RoomFormProps {
 }
 
 export function RoomForm({ open, onOpenChange, initialData, onSuccess }: RoomFormProps) {
-    const [types, setTypes] = useState<{ id: number; type_name: string }[]>([]);
+    const [types, setTypes] = useState<{ id: number; name: string }[]>([]);
     const [opStatuses, setOpStatuses] = useState<{ id: number; status_name: string; ui_color_code: string }[]>([]);
     const [hkStatuses, setHkStatuses] = useState<{ id: number; status_name: string; ui_color_code: string }[]>([]);
     const [loading, setLoading] = useState(false);
@@ -169,7 +169,7 @@ export function RoomForm({ open, onOpenChange, initialData, onSuccess }: RoomFor
                                             <SelectContent>
                                                 {types.map((t) => (
                                                     <SelectItem key={t.id} value={t.id.toString()}>
-                                                        {t.type_name}
+                                                        {t.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>

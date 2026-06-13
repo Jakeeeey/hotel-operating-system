@@ -35,7 +35,7 @@ export async function POST(request: Request) {
         };
 
         // 0. Clean Room Mandate & Early Check-In Attempt Validation
-        const roomStatusRes = await fetch(`${API_BASE_URL}/items/rooms/${roomId}?fields=id,housekeeping_status_id`, { headers });
+        const roomStatusRes = await fetch(`${API_BASE_URL}/items/rooms_hos/${roomId}?fields=id,housekeeping_status_id`, { headers });
         if (roomStatusRes.ok) {
             const roomStatusData = await roomStatusRes.json();
             const hkStatus = roomStatusData.data?.housekeeping_status_id;
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
         }
 
         // 1. Update reservation status to "Checked-In"
-        const resUpdate = await fetch(`${API_BASE_URL}/items/reservations/${reservationId}`, {
+        const resUpdate = await fetch(`${API_BASE_URL}/items/reservations_hos/${reservationId}`, {
             method: 'PATCH',
             headers,
             body: JSON.stringify({
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
         }
 
         // 2. Update reservation_items — assign room_id to all items of this reservation
-        const itemsRes = await fetch(`${API_BASE_URL}/items/reservation_items?filter=${encodeURIComponent(JSON.stringify({
+        const itemsRes = await fetch(`${API_BASE_URL}/items/reservation_items_hos?filter=${encodeURIComponent(JSON.stringify({
             reservation_id: { _eq: reservationId },
         }))}&fields=id`, { headers });
 
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
             const itemsData = await itemsRes.json();
             const items = itemsData.data || [];
             for (const item of items) {
-                await fetch(`${API_BASE_URL}/items/reservation_items/${item.id}`, {
+                await fetch(`${API_BASE_URL}/items/reservation_items_hos/${item.id}`, {
                     method: 'PATCH',
                     headers,
                     body: JSON.stringify({
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
         }
 
         // 3. Update room operational_status_id to 2 (Occupied)
-        const roomUpdate = await fetch(`${API_BASE_URL}/items/rooms/${roomId}`, {
+        const roomUpdate = await fetch(`${API_BASE_URL}/items/rooms_hos/${roomId}`, {
             method: 'PATCH',
             headers,
             body: JSON.stringify({
