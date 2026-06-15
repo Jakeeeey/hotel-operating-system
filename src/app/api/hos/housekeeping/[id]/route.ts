@@ -48,7 +48,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
             const now = getManilaISOString();
             
             if (status === 'Completed') {
-                await fetch(`${API_BASE_URL}/items/rooms/${virtualRoomId}`, {
+                await fetch(`${API_BASE_URL}/items/rooms_hos/${virtualRoomId}`, {
                     method: 'PATCH',
                     headers,
                     body: JSON.stringify({
@@ -128,7 +128,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
             // OOO tickets revert to Dirty (2) instead of standard Clean (1)
             const targetStatus = isCritical ? 2 : 1; 
 
-            await fetch(`${API_BASE_URL}/items/rooms/${task.room_id}`, {
+            await fetch(`${API_BASE_URL}/items/rooms_hos/${task.room_id}`, {
                 method: 'PATCH',
                 headers,
                 body: JSON.stringify({
