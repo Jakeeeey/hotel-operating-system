@@ -1,7 +1,7 @@
 "use server";
 
 import { directus } from "../lib/directus";
-import { createItem, createItems, readItems, updateItem } from "@directus/sdk";
+import { createItem, createItems, readItems, updateItem, updateItems } from "@directus/sdk";
 import { initiatePaymentSession } from "./payment/paymongo.service";
 import { BookingFormValues } from "../schema/booking.schema";
 
@@ -55,6 +55,62 @@ interface InventoryBookingRecord {
   room_id: number;
 }
 
+export async function getLockedReservationIds(): Promise<(string | number)[]> {
+  const d = new Date(Date.now() - 15 * 60 * 1000);
+  const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+  const fifteenMinsAgo = manilaDate.toISOString().replace('Z', '');
+
+  const reservations = await directus.request<DirectusReservationHeader[]>(
+    readItems("reservations_hos", {
+      filter: {
+        _or: [
+          { status: { _eq: "paid" } },
+          { status: { _eq: "confirmed" } },
+          {
+            _and: [
+              { status: { _eq: "pending" } },
+              { created_at: { _gte: fifteenMinsAgo } }
+            ]
+          }
+        ]
+      },
+      fields: ["id"],
+      limit: -1
+    })
+  );
+
+  return reservations.map(r => r.id);
+}
+
+export async function cleanupExpiredPendingReservations(): Promise<void> {
+  const d = new Date(Date.now() - 15 * 60 * 1000);
+  const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+  const fifteenMinsAgo = manilaDate.toISOString().replace('Z', '');
+
+  const expiredReservations = await directus.request<DirectusReservationHeader[]>(
+    readItems("reservations_hos", {
+      filter: {
+        _and: [
+          { status: { _eq: "pending" } },
+          { created_at: { _lt: fifteenMinsAgo } }
+        ]
+      },
+      fields: ["id"],
+      limit: -1
+    })
+  );
+
+  if (expiredReservations && expiredReservations.length > 0) {
+    const expiredIds = expiredReservations.map(r => r.id);
+    await directus.request(
+      updateItems("reservations_hos", expiredIds as string[], {
+        status: "cancelled"
+      })
+    );
+    console.log(`Cleaned up expired pending reservations:`, expiredIds);
+  }
+}
+
 /**
  * Dynamically fetches valid inventory capacity and bookings matching the month and guest configuration
  */
@@ -86,9 +142,7 @@ export async function getMonthlyInventory(
       return { capacity: 0, bookings: [] };
     }
 
-    const d = new Date(Date.now() - 15 * 60 * 1000);
-    const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
-    const fifteenMinsAgo = manilaDate.toISOString().replace('Z', '');
+    const lockedReservationIds = await getLockedReservationIds();
 
     const activeBookings = await directus.request<InventoryBookingRecord[]>(
       readItems("reservation_items_hos", {
@@ -97,18 +151,7 @@ export async function getMonthlyInventory(
             { night_date: { _gte: startDate } },
             { night_date: { _lt: endDate } },
             { room_id: { _in: eligibleRoomIds } },
-            {
-              _or: [
-                { reservation_id: { status: { _eq: "paid" } } },
-                { reservation_id: { status: { _eq: "confirmed" } } },
-                {
-                  _and: [
-                    { reservation_id: { status: { _eq: "pending" } } },
-                    { reservation_id: { created_at: { _gte: fifteenMinsAgo } } }
-                  ]
-                }
-              ]
-            }
+            { reservation_id: { _in: lockedReservationIds.length > 0 ? lockedReservationIds : [-1] } }
           ]
         },
         fields: ["night_date", "room_id"]
@@ -164,9 +207,7 @@ async function getAvailableRoomIds(typeId: number, checkin: string, checkout: st
     readItems("rooms_hos", { filter: { type_id: { _eq: typeId } } })
   );
 
-  const d = new Date(Date.now() - 15 * 60 * 1000);
-  const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
-  const fifteenMinsAgo = manilaDate.toISOString().replace('Z', '');
+  const lockedReservationIds = await getLockedReservationIds();
 
   const bookedItems = await directus.request<Array<{ room_id: number }>>(
     readItems("reservation_items_hos", {
@@ -174,18 +215,7 @@ async function getAvailableRoomIds(typeId: number, checkin: string, checkout: st
         _and: [
           { night_date: { _gte: checkin } },
           { night_date: { _lt: checkout } },
-          {
-            _or: [
-              { reservation_id: { status: { _eq: "paid" } } },
-              { reservation_id: { status: { _eq: "confirmed" } } },
-              {
-                _and: [
-                  { reservation_id: { status: { _eq: "pending" } } },
-                  { reservation_id: { created_at: { _gte: fifteenMinsAgo } } }
-                ]
-              }
-            ]
-          }
+          { reservation_id: { _in: lockedReservationIds.length > 0 ? lockedReservationIds : [-1] } }
         ]
       },
       fields: ['room_id']
@@ -199,7 +229,6 @@ async function getAvailableRoomIds(typeId: number, checkin: string, checkout: st
     .map((room) => room.id);
 
   console.log("--- DEBUG getAvailableRoomIds ---");
-  console.log("fifteenMinsAgo (Manila):", fifteenMinsAgo);
   console.log("bookedItems blocking:", JSON.stringify(bookedItems));
   console.log("allRooms for type:", JSON.stringify(allRooms));
   console.log("availableIds:", availableIds);
@@ -216,6 +245,8 @@ export async function createBookingTransaction(
   details: BookingTransactionPayload
 ): Promise<{ success: boolean; id?: string | number; checkoutUrl?: string; error?: string }> {
   try {
+    await cleanupExpiredPendingReservations();
+
     const guestId = await getOrCreateGuest(data);
 
     // 1. Build linear date sequence ranges
@@ -262,6 +293,7 @@ export async function createBookingTransaction(
         check_in: details.checkin,
         check_out: details.checkout,
         total_amount: trueNumericTotal,
+        booking_source: "web",
         status: "pending",
       })
     );
@@ -337,9 +369,7 @@ export async function getRoomTypesAvailability(
       readItems("rooms_hos", { fields: ["id", "type_id"] })
     );
 
-    const d = new Date(Date.now() - 15 * 60 * 1000);
-    const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
-    const fifteenMinsAgo = manilaDate.toISOString().replace('Z', '');
+    const lockedReservationIds = await getLockedReservationIds();
 
     const bookedItems = await directus.request<Array<{ room_id: number }>>(
       readItems("reservation_items_hos", {
@@ -347,18 +377,7 @@ export async function getRoomTypesAvailability(
           _and: [
             { night_date: { _gte: checkin } },
             { night_date: { _lt: checkout } },
-            {
-              _or: [
-                { reservation_id: { status: { _eq: "paid" } } },
-                { reservation_id: { status: { _eq: "confirmed" } } },
-                {
-                  _and: [
-                    { reservation_id: { status: { _eq: "pending" } } },
-                    { reservation_id: { created_at: { _gte: fifteenMinsAgo } } }
-                  ]
-                }
-              ]
-            }
+            { reservation_id: { _in: lockedReservationIds.length > 0 ? lockedReservationIds : [-1] } }
           ]
         },
         fields: ['room_id']
@@ -390,4 +409,4 @@ export async function getRoomTypesAvailability(
     console.error("Failed to check room types availability:", error);
     return {};
   }
-}
+}

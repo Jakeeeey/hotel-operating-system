@@ -45,7 +45,7 @@ export default async function HotelLandingPageRooms({ params }: PageProps) {
   // If database is down or record doesn't exist, handle it safely
   if (!room) {
     console.warn(`⚠️ Room ID ${roomId} not found in database. Triggering notFound().`);
-    notFound();
+    return <div>Room not found: {roomId}</div>;
   }
 
   return (
