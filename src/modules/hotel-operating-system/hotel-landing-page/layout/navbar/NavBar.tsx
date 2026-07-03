@@ -54,7 +54,7 @@ export function NavBar() {
           {/* Left Side: Logo + Desktop Links */}
           <div className="flex items-center gap-7">
             {/* Logo Wrapper */}
-            <Link href="/" className="flex items-center gap-2 cursor-pointer select-none shrink-0">
+            <Link href="/public" className="flex items-center gap-2 cursor-pointer select-none shrink-0">
               <svg
                 className={`w-[22px] h-[22px] fill-current transition-colors duration-300 ${
                   isOpen ? "text-white lg:text-[#111111]" : "text-[#111111]"

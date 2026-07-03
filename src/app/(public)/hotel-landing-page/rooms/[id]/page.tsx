@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { DM_Sans } from "next/font/google";
-import { NavBar, Footer } from "@/components/hotel-landing-page";
-import { RoomDetailsView } from "@/components/hotel-landing-page/pages/rooms/RoomDetailsView";
-import { getRoomByIdService } from "@/components/hotel-landing-page/pages/home/services/room.service";
+import { NavBar, Footer } from "../../../../../modules/hotel-operating-system/hotel-landing-page";
+import { RoomDetailsView } from "@/modules/hotel-operating-system/hotel-landing-page/pages/rooms/RoomDetailsView";
+import { getRoomByIdService } from "@/modules/hotel-operating-system/hotel-landing-page/pages/home/services/room.service";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -45,7 +45,7 @@ export default async function HotelLandingPageRooms({ params }: PageProps) {
   // If database is down or record doesn't exist, handle it safely
   if (!room) {
     console.warn(`⚠️ Room ID ${roomId} not found in database. Triggering notFound().`);
-    notFound();
+    return <div>Room not found: {roomId}</div>;
   }
 
   return (

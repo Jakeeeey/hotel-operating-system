@@ -2,6 +2,7 @@
 
 import { readItems } from "@directus/sdk";
 import { directus } from "../../booking/lib/directus";
+import { getLockedReservationIds } from "../../booking/services/booking.service";
 
 /**
  * Dynamically fetches valid inventory capacity and bookings matching the month and guest configuration
@@ -35,9 +36,7 @@ export async function getMonthlyInventory(year: number, month: number, adults: n
       };
     }
 
-    const d = new Date(Date.now() - 15 * 60 * 1000);
-    const manilaDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
-    const fifteenMinsAgo = manilaDate.toISOString().replace('Z', '');
+    const lockedReservationIds = await getLockedReservationIds();
 
     // 3. Fetch existing reservation items for these eligible rooms within the month range
     const activeBookings = await directus.request(
@@ -47,18 +46,7 @@ export async function getMonthlyInventory(year: number, month: number, adults: n
             { night_date: { _gte: startDate } },
             { night_date: { _lt: endDate } },
             { room_id: { _in: eligibleRoomIds } },
-            {
-              _or: [
-                { reservation_id: { status: { _eq: "paid" } } },
-                { reservation_id: { status: { _eq: "confirmed" } } },
-                {
-                  _and: [
-                    { reservation_id: { status: { _eq: "pending" } } },
-                    { reservation_id: { created_at: { _gte: fifteenMinsAgo } } }
-                  ]
-                }
-              ]
-            }
+            { reservation_id: { _in: lockedReservationIds.length > 0 ? lockedReservationIds : [-1] } }
           ]
         },
         fields: ["night_date", "room_id"]

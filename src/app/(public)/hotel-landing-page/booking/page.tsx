@@ -1,8 +1,8 @@
 import { DM_Sans } from "next/font/google";
-import { NavBar, Footer } from "@/components/hotel-landing-page";
-import { BookingView } from "@/components/hotel-landing-page/pages/booking/BookingView";
+import { NavBar, Footer } from "../../../../modules/hotel-operating-system/hotel-landing-page";
+import { BookingView } from "@/modules/hotel-operating-system/hotel-landing-page/pages/booking/BookingView";
 import { Suspense } from "react";
-import { getRoomsService } from "@/components/hotel-landing-page/pages/home/services/room.service";
+import { getRoomsService } from "@/modules/hotel-operating-system/hotel-landing-page/pages/home/services/room.service";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
