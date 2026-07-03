@@ -11,6 +11,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
 
 interface PaymentRecord {
     id: number;
@@ -21,6 +23,8 @@ interface PaymentRecord {
     reference_number?: string;
     status: string;
     notes?: string;
+    guestName: string;
+    isOnline: boolean;
 }
 
 interface ChargeRecord {
@@ -30,6 +34,7 @@ interface ChargeRecord {
     description: string;
     amount: number;
     charge_date: string;
+    guestName: string;
 }
 
 type LedgerEntry = {
@@ -41,12 +46,15 @@ type LedgerEntry = {
     amount: number;
     status: string;
     date: string;
+    guestName: string;
+    isOnline?: boolean;
 };
 
 interface TransactionTableProps {
     payments: PaymentRecord[];
     charges: ChargeRecord[];
     isLoading?: boolean;
+    onViewDetails: (reservationId: number) => void;
 }
 
 function statusBadgeVariant(status: string) {
@@ -62,6 +70,7 @@ export function TransactionTable({
     payments,
     charges,
     isLoading,
+    onViewDetails,
 }: TransactionTableProps) {
     // Merge payments + charges into a unified ledger
     const entries: LedgerEntry[] = [
@@ -74,6 +83,8 @@ export function TransactionTable({
             amount: parseFloat(String(p.amount)) || 0,
             status: p.status,
             date: p.payment_date,
+            guestName: p.guestName,
+            isOnline: p.isOnline,
         })),
         ...charges.map((c) => ({
             id: `chg-${c.id}`,
@@ -84,6 +95,7 @@ export function TransactionTable({
             amount: parseFloat(String(c.amount)) || 0,
             status: "Settled",
             date: c.charge_date,
+            guestName: c.guestName,
         })),
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -125,19 +137,21 @@ export function TransactionTable({
                 <TableHeader>
                     <TableRow>
                         <TableHead className="w-[100px]">Type</TableHead>
-                        <TableHead>Res. ID</TableHead>
+                        <TableHead>Online</TableHead>
+                        <TableHead>Guest</TableHead>
                         <TableHead>Description</TableHead>
                         <TableHead>Method</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Date/Time</TableHead>
+                        <TableHead className="w-[60px]"></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {entries.length === 0 ? (
                         <TableRow>
                             <TableCell
-                                colSpan={7}
+                                colSpan={9}
                                 className="h-24 text-center text-muted-foreground"
                             >
                                 No transactions recorded this shift.
@@ -158,8 +172,18 @@ export function TransactionTable({
                                         {entry.type}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="font-mono text-sm">
-                                    #{entry.reservationId}
+                                <TableCell>
+                                    {entry.type === "Payment" ? (
+                                        <Badge
+                                            variant={entry.isOnline ? "default" : "outline"}
+                                            className={`text-[10px] ${entry.isOnline ? "bg-violet-100 text-violet-800 hover:bg-violet-200 border-violet-200" : ""}`}
+                                        >
+                                            {entry.isOnline ? "Online" : "Walk-In"}
+                                        </Badge>
+                                    ) : null}
+                                </TableCell>
+                                <TableCell className="font-medium text-sm">
+                                    {entry.guestName || `#${entry.reservationId}`}
                                 </TableCell>
                                 <TableCell className="max-w-[200px] truncate">
                                     {entry.description}
@@ -180,6 +204,17 @@ export function TransactionTable({
                                 </TableCell>
                                 <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                                     {fmtDate(entry.date)}
+                                </TableCell>
+                                <TableCell>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => onViewDetails(entry.reservationId)}
+                                        title="View Invoice Details"
+                                    >
+                                        <FileText className="h-4 w-4" />
+                                    </Button>
                                 </TableCell>
                             </TableRow>
                         ))

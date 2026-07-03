@@ -74,13 +74,22 @@ export async function GET() {
         let recognizedRevenue = 0;
         let liabilities = 0;
         let expectedCash = 0;
+        let onlinePaymentsTotal = 0;
 
         if (activeShift) {
-            const shiftOpenedAt = activeShift.opened_at;
+            const openedDate = new Date(activeShift.opened_at);
+            
+            // Get the calendar date in Manila time (YYYY-MM-DD)
+            const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' });
+            const manilaDateStr = formatter.format(openedDate); 
+            
+            // Create UTC bounds for that specific Manila day
+            const startOfDayManila = new Date(`${manilaDateStr}T00:00:00+08:00`).toISOString();
+            const endOfDayManila = new Date(`${manilaDateStr}T23:59:59.999+08:00`).toISOString();
 
-            // Fetch all payments created during this shift
+            // Fetch all payments created during this specific day
             const payFilter = encodeURIComponent(JSON.stringify({
-                payment_date: { _gte: shiftOpenedAt },
+                payment_date: { _between: [startOfDayManila, endOfDayManila] },
             }));
             const payRes = await fetch(
                 `${API_BASE_URL}/items/payments_hos?filter=${payFilter}&sort=-payment_date&limit=-1&fields=id,reservation_id,amount,payment_method,payment_date,reference_number,status,notes,created_at`,
@@ -91,9 +100,9 @@ export async function GET() {
                 payments = payData.data || [];
             }
 
-            // Fetch all guest charges during this shift
+            // Fetch all guest charges during this specific day
             const chargeFilter = encodeURIComponent(JSON.stringify({
-                charge_date: { _gte: shiftOpenedAt },
+                charge_date: { _between: [startOfDayManila, endOfDayManila] },
             }));
             const chargeRes = await fetch(
                 `${API_BASE_URL}/items/guest_charges_hos?filter=${chargeFilter}&sort=-charge_date&limit=-1&fields=id,reservation_id,charge_type,description,amount,charge_date,created_at`,
@@ -104,10 +113,54 @@ export async function GET() {
                 charges = chargeData.data || [];
             }
 
+            // Batch lookup reservations
+            const reservationIds = new Set<number>();
+            (payments as any[]).forEach(p => p.reservation_id && reservationIds.add(p.reservation_id));
+            (charges as any[]).forEach(c => c.reservation_id && reservationIds.add(c.reservation_id));
+
+            const resMap = new Map<number, { guestName: string; isOnline: boolean }>();
+            if (reservationIds.size > 0) {
+                const resFilter = encodeURIComponent(JSON.stringify({
+                    id: { _in: Array.from(reservationIds) }
+                }));
+                const reservationsRes = await fetch(
+                    `${API_BASE_URL}/items/reservations_hos?filter=${resFilter}&limit=-1&fields=id,booking_source,guest_id.first_name,guest_id.last_name`,
+                    { headers }
+                );
+                if (reservationsRes.ok) {
+                    const reservationsData = await reservationsRes.json();
+                    const reservations = reservationsData.data || [];
+                    reservations.forEach((res: any) => {
+                        const firstName = res.guest_id?.first_name || '';
+                        const lastName = res.guest_id?.last_name || '';
+                        const guestName = `${firstName} ${lastName}`.trim();
+                        const isOnline = res.booking_source && res.booking_source !== 'Walk-In';
+                        resMap.set(res.id, { guestName, isOnline });
+                    });
+                }
+            }
+
+            // Enrich payments and charges
+            payments = (payments as any[]).map(p => {
+                const resData = resMap.get(p.reservation_id);
+                return {
+                    ...p,
+                    guestName: resData?.guestName || '',
+                    isOnline: !!resData?.isOnline,
+                };
+            });
+            charges = (charges as any[]).map(c => {
+                const resData = resMap.get(c.reservation_id);
+                return {
+                    ...c,
+                    guestName: resData?.guestName || '',
+                };
+            });
+
             // Calculate aggregates
             const startingCash = parseFloat(activeShift.starting_cash) || 0;
 
-            for (const p of payments as { amount: number; payment_method: string; status: string; notes?: string }[]) {
+            for (const p of payments as { amount: number; payment_method: string; status: string; notes?: string; isOnline: boolean }[]) {
                 const amt = parseFloat(String(p.amount)) || 0;
                 const method = (p.payment_method || '').toUpperCase();
                 const status = (p.status || '').toLowerCase();
@@ -119,6 +172,9 @@ export async function GET() {
                         liabilities += amt;
                     } else {
                         recognizedRevenue += amt;
+                        if (p.isOnline) {
+                            onlinePaymentsTotal += amt;
+                        }
                     }
                 }
 
@@ -130,6 +186,9 @@ export async function GET() {
                 // Refunded/Voided (subtract from recognized revenue)
                 if (status === 'refunded' || status === 'voided') {
                     recognizedRevenue -= amt;
+                    if (p.isOnline) {
+                        onlinePaymentsTotal -= amt;
+                    }
                     if (method === 'CASH') {
                         expectedCash -= amt;
                     }
@@ -153,6 +212,7 @@ export async function GET() {
                 charges,
                 aggregates: {
                     recognizedRevenue: Math.round(recognizedRevenue * 100) / 100,
+                    onlinePaymentsTotal: Math.round(onlinePaymentsTotal * 100) / 100,
                     liabilities: Math.round(liabilities * 100) / 100,
                     expectedCash: Math.round(expectedCash * 100) / 100,
                 },

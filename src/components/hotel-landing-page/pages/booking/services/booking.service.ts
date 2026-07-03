@@ -263,6 +263,7 @@ export async function createBookingTransaction(
         check_out: details.checkout,
         total_amount: trueNumericTotal,
         status: "pending",
+        booking_source: "Website",
       })
     );
 

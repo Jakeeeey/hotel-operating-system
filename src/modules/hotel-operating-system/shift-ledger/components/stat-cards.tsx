@@ -1,11 +1,12 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { DollarSign, ShieldCheck, Wallet } from "lucide-react";
+import { DollarSign, ShieldCheck, Wallet, Globe } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ShiftStatCardsProps {
     recognizedRevenue: number;
+    onlinePaymentsTotal: number;
     liabilities: number;
     expectedCash: number;
     startingCash: number;
@@ -14,6 +15,7 @@ interface ShiftStatCardsProps {
 
 export function ShiftStatCards({
     recognizedRevenue,
+    onlinePaymentsTotal,
     liabilities,
     expectedCash,
     startingCash,
@@ -35,6 +37,14 @@ export function ShiftStatCards({
             bg: "bg-emerald-50 dark:bg-emerald-950/40",
         },
         {
+            label: "Online Payments",
+            value: fmt(onlinePaymentsTotal),
+            sub: "Non Walk-In payments this shift",
+            icon: Globe,
+            color: "text-violet-600 dark:text-violet-400",
+            bg: "bg-violet-50 dark:bg-violet-950/40",
+        },
+        {
             label: "Active Liabilities",
             value: fmt(liabilities),
             sub: "Incidental deposit holds",
@@ -53,7 +63,7 @@ export function ShiftStatCards({
     ];
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             {cards.map((card) => (
                 <Card
                     key={card.label}

@@ -19,10 +19,10 @@ interface ArrivalItem {
 interface ArrivalsTableProps {
     arrivals: ArrivalItem[];
     isLoading?: boolean;
-    onCheckIn: (arrival: ArrivalItem) => void;
+    onReview: (arrival: ArrivalItem) => void;
 }
 
-export function ArrivalsTable({ arrivals, isLoading, onCheckIn }: ArrivalsTableProps) {
+export function ArrivalsTable({ arrivals, isLoading, onReview }: ArrivalsTableProps) {
     const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
     useEffect(() => {
@@ -121,10 +121,11 @@ export function ArrivalsTable({ arrivals, isLoading, onCheckIn }: ArrivalsTableP
                                     ) : (
                                         <Button
                                             size="sm"
-                                            className="h-8 text-xs font-semibold"
-                                            onClick={() => onCheckIn(arrival)}
+                                            variant="outline"
+                                            className="h-8 text-xs font-semibold gap-1.5"
+                                            onClick={() => onReview(arrival)}
                                         >
-                                            Check-In
+                                            Review
                                         </Button>
                                     )}
                                 </div>

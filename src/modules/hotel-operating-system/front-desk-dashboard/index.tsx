@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { StatCards } from "./components/stat-cards";
 import { ArrivalsTable } from "./components/arrivals-table";
 import { DeparturesTable } from "./components/departures-table";
-import { CheckInDialog } from "./components/check-in-dialog";
+import { ReservationReviewDialog } from "./components/reservation-review-dialog";
 import { ExtendStayDialog } from "./components/extend-stay-dialog";
 import { GuestFolioSheet } from "./components/guest-folio-sheet";
 
@@ -61,8 +61,8 @@ export default function FrontDeskDashboardModule() {
     const [departures, setDepartures] = useState<DepartureItem[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
 
-    // Check-in dialog state
-    const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
+    // Review & Check-in dialog state
+    const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
     const [selectedArrival, setSelectedArrival] = useState<ArrivalItem | null>(null);
 
     // Extend stay dialog state
@@ -120,9 +120,9 @@ export default function FrontDeskDashboardModule() {
     }, [departures, searchQuery]);
 
     // --- Handlers ---
-    const handleCheckIn = (arrival: ArrivalItem) => {
+    const handleReview = (arrival: ArrivalItem) => {
         setSelectedArrival(arrival);
-        setCheckInDialogOpen(true);
+        setReviewDialogOpen(true);
     };
 
     const handleExtendStay = (departure: DepartureItem) => {
@@ -180,7 +180,7 @@ export default function FrontDeskDashboardModule() {
                 <ArrivalsTable
                     arrivals={filteredArrivals}
                     isLoading={loading}
-                    onCheckIn={handleCheckIn}
+                    onReview={handleReview}
                 />
                 <DeparturesTable
                     departures={filteredDepartures}
@@ -191,10 +191,10 @@ export default function FrontDeskDashboardModule() {
                 />
             </div>
 
-            {/* Check-In Dialog */}
-            <CheckInDialog
-                open={checkInDialogOpen}
-                onOpenChange={setCheckInDialogOpen}
+            {/* Review Dialog */}
+            <ReservationReviewDialog
+                open={reviewDialogOpen}
+                onOpenChange={setReviewDialogOpen}
                 arrival={selectedArrival}
                 onSuccess={fetchDashboard}
             />

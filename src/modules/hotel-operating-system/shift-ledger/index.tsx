@@ -11,6 +11,7 @@ import { ShiftStatCards } from "./components/stat-cards";
 import { TransactionTable } from "./components/transaction-table";
 import { OpenShiftDialog } from "./components/open-shift-dialog";
 import { CloseShiftDialog } from "./components/close-shift-dialog";
+import { InvoiceDetailDialog } from "./components/invoice-detail-dialog";
 
 interface ActiveShift {
     id: number;
@@ -29,6 +30,8 @@ interface PaymentRecord {
     reference_number?: string;
     status: string;
     notes?: string;
+    guestName: string;
+    isOnline: boolean;
 }
 
 interface ChargeRecord {
@@ -38,10 +41,12 @@ interface ChargeRecord {
     description: string;
     amount: number;
     charge_date: string;
+    guestName: string;
 }
 
 interface Aggregates {
     recognizedRevenue: number;
+    onlinePaymentsTotal: number;
     liabilities: number;
     expectedCash: number;
 }
@@ -53,6 +58,7 @@ export default function ShiftLedgerModule() {
     const [charges, setCharges] = useState<ChargeRecord[]>([]);
     const [aggregates, setAggregates] = useState<Aggregates>({
         recognizedRevenue: 0,
+        onlinePaymentsTotal: 0,
         liabilities: 0,
         expectedCash: 0,
     });
@@ -60,6 +66,7 @@ export default function ShiftLedgerModule() {
     // Dialog states
     const [openShiftDialog, setOpenShiftDialog] = useState(false);
     const [closeShiftDialog, setCloseShiftDialog] = useState(false);
+    const [selectedReservationId, setSelectedReservationId] = useState<number | null>(null);
 
     const fetchLedger = useCallback(async () => {
         setLoading(true);
@@ -73,6 +80,7 @@ export default function ShiftLedgerModule() {
                 setAggregates(
                     result.data.aggregates || {
                         recognizedRevenue: 0,
+                        onlinePaymentsTotal: 0,
                         liabilities: 0,
                         expectedCash: 0,
                     }
@@ -190,6 +198,7 @@ export default function ShiftLedgerModule() {
             {/* Stat Cards */}
             <ShiftStatCards
                 recognizedRevenue={aggregates.recognizedRevenue}
+                onlinePaymentsTotal={aggregates.onlinePaymentsTotal}
                 liabilities={aggregates.liabilities}
                 expectedCash={aggregates.expectedCash}
                 startingCash={
@@ -210,6 +219,7 @@ export default function ShiftLedgerModule() {
                         payments={payments}
                         charges={charges}
                         isLoading={loading}
+                        onViewDetails={(id) => setSelectedReservationId(id)}
                     />
                 </CardContent>
             </Card>
@@ -226,6 +236,13 @@ export default function ShiftLedgerModule() {
                 shiftId={activeShift?.id || null}
                 expectedCash={aggregates.expectedCash}
                 onSuccess={fetchLedger}
+            />
+            <InvoiceDetailDialog
+                open={selectedReservationId !== null}
+                onOpenChange={(open) => !open && setSelectedReservationId(null)}
+                reservationId={selectedReservationId}
+                payments={payments}
+                charges={charges}
             />
         </div>
     );
