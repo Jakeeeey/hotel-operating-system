@@ -1,8 +1,8 @@
-import { directus } from "@/components/hotel-landing-page/pages/booking/lib/directus";
-import { CalendarLayout } from "@/components/hotel-landing-page/pages/calendar/CalendarLayout";
+import { directus } from "@/modules/hotel-operating-system/hotel-landing-page/pages/booking/lib/directus";
+import { CalendarLayout } from "@/modules/hotel-operating-system/hotel-landing-page/pages/calendar/CalendarLayout";
 import { Suspense } from "react";
 import { readItems } from "@directus/sdk";
-import { CalendarRoom } from "@/components/hotel-landing-page/pages/calendar/types/types";
+import { CalendarRoom } from "@/modules/hotel-operating-system/hotel-landing-page/pages/calendar/types/types";
 
 export const dynamic = 'force-dynamic';
 
