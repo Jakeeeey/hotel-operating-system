@@ -28,17 +28,17 @@ export async function GET() {
             departuresRes,
         ] = await Promise.all([
             // 1. Total rooms count
-            fetch(`${API_BASE_URL}/items/rooms?limit=-1&fields=id`, { headers }),
+            fetch(`${API_BASE_URL}/items/rooms_hos?limit=-1&fields=id`, { headers }),
             // 2. Available rooms (operational_status_id = 1 AND housekeeping_status_id = 1)
-            fetch(`${API_BASE_URL}/items/rooms?limit=-1&fields=id&filter=${encodeURIComponent(JSON.stringify({ operational_status_id: { _eq: 1 }, housekeeping_status_id: { _eq: 1 } }))}`, { headers }),
+            fetch(`${API_BASE_URL}/items/rooms_hos?limit=-1&fields=id&filter=${encodeURIComponent(JSON.stringify({ operational_status_id: { _eq: 1 }, housekeeping_status_id: { _eq: 1 } }))}`, { headers }),
             // 3. Today's arrivals (Pending or Checked-In)
-            fetch(`${API_BASE_URL}/items/reservations?limit=-1&fields=id,status,guest_id.id,guest_id.first_name,guest_id.last_name&filter=${encodeURIComponent(JSON.stringify({
-                check_in_date: { _eq: today },
+            fetch(`${API_BASE_URL}/items/reservations_hos?limit=-1&fields=id,status,guest_id.id,guest_id.first_name,guest_id.last_name&filter=${encodeURIComponent(JSON.stringify({
+                check_in: { _eq: today },
                 status: { _in: ['Pending', 'Checked-In'] },
             }))}`, { headers }),
             // 4. Today's departures (Checked-In only — guests who can check out)
-            fetch(`${API_BASE_URL}/items/reservations?limit=-1&fields=id,status,guest_id.id,guest_id.first_name,guest_id.last_name&filter=${encodeURIComponent(JSON.stringify({
-                check_out_date: { _eq: today },
+            fetch(`${API_BASE_URL}/items/reservations_hos?limit=-1&fields=id,status,guest_id.id,guest_id.first_name,guest_id.last_name&filter=${encodeURIComponent(JSON.stringify({
+                check_out: { _eq: today },
                 status: { _in: ['Checked-In', 'Checked-Out'] },
             }))}`, { headers }),
         ]);
@@ -71,9 +71,9 @@ export async function GET() {
             ...departuresList.filter((r: { status: string; id: number }) => r.status === 'Checked-In').map((r: { id: number }) => r.id),
         ];
 
-        const itemsMap: Record<number, { reservation_id: number; room_type_id?: { id?: number; type_name?: string }; room_id?: { id?: number; room_number?: string; housekeeping_status_id?: number } }[]> = {};
+        const itemsMap: Record<number, { reservation_id: number; room_id?: { id?: number; room_number?: string; housekeeping_status_id?: number; type_id?: { id?: number; name?: string } } }[]> = {};
         if (allReservationIds.length > 0) {
-            const itemsRes = await fetch(`${API_BASE_URL}/items/reservation_items?limit=-1&fields=id,reservation_id,room_type_id.id,room_type_id.type_name,room_id.id,room_id.room_number,room_id.housekeeping_status_id&filter=${encodeURIComponent(JSON.stringify({
+            const itemsRes = await fetch(`${API_BASE_URL}/items/reservation_items_hos?limit=-1&fields=id,reservation_id,room_id.id,room_id.room_number,room_id.housekeeping_status_id,room_id.type_id.id,room_id.type_id.name&filter=${encodeURIComponent(JSON.stringify({
                 reservation_id: { _in: allReservationIds },
             }))}`, { headers });
 
@@ -95,8 +95,8 @@ export async function GET() {
             return {
                 reservationId: r.id,
                 guestName: `${r.guest_id?.first_name || ''} ${r.guest_id?.last_name || ''}`.trim(),
-                roomTypeName: firstItem?.room_type_id?.type_name || 'N/A',
-                roomTypeId: firstItem?.room_type_id?.id || null,
+                roomTypeName: firstItem?.room_id?.type_id?.name || 'N/A',
+                roomTypeId: firstItem?.room_id?.type_id?.id || null,
                 status: r.status,
                 roomId: firstItem?.room_id?.id || null,
                 roomNumber: firstItem?.room_id?.room_number || null,
@@ -115,7 +115,7 @@ export async function GET() {
                     guestName: `${r.guest_id?.first_name || ''} ${r.guest_id?.last_name || ''}`.trim(),
                     roomNumber: firstItem?.room_id?.room_number || 'N/A',
                     roomId: firstItem?.room_id?.id || null,
-                    roomTypeName: firstItem?.room_type_id?.type_name || '',
+                    roomTypeName: firstItem?.room_id?.type_id?.name || '',
                     status: r.status,
                 };
             });

@@ -17,14 +17,14 @@ export interface ReservationItem {
         room_number?: string;
     };
     room_type_id?: {
-        type_name?: string;
+        name?: string;
     };
 }
 
 export interface Reservation {
     id: number;
-    check_in_date: string;
-    check_out_date: string;
+    check_in: string;
+    check_out: string;
     status: string;
     reservation_items?: ReservationItem[];
 }
@@ -49,7 +49,7 @@ export function GuestHistoryModal({ open, onOpenChange, guest }: GuestHistoryMod
     const sortedReservations = useMemo(() => {
         if (!guest?.reservations) return [];
         return [...guest.reservations].sort((a, b) => {
-            return new Date(b.check_in_date).getTime() - new Date(a.check_in_date).getTime();
+            return new Date(b.check_in).getTime() - new Date(a.check_in).getTime();
         });
     }, [guest]);
 
@@ -72,7 +72,7 @@ export function GuestHistoryModal({ open, onOpenChange, guest }: GuestHistoryMod
             header: "Room Type",
             cell: ({ row }) => {
                 const types = (row.original.reservation_items || [])
-                    .map(item => item.room_type_id?.type_name)
+                    .map(item => item.room_type_id?.name)
                     .filter(Boolean)
                     // unique types
                     .filter((v, i, a) => a.indexOf(v) === i)
@@ -81,21 +81,21 @@ export function GuestHistoryModal({ open, onOpenChange, guest }: GuestHistoryMod
             }
         },
         {
-            accessorKey: "check_in_date",
+            accessorKey: "check_in",
             header: "Check In",
-            cell: ({ row }) => <span>{row.original.check_in_date}</span>
+            cell: ({ row }) => <span>{row.original.check_in}</span>
         },
         {
-            accessorKey: "check_out_date",
+            accessorKey: "check_out",
             header: "Check Out",
-            cell: ({ row }) => <span>{row.original.check_out_date}</span>
+            cell: ({ row }) => <span>{row.original.check_out}</span>
         },
         {
             id: "length_of_stay",
             header: "Length of Stay",
             cell: ({ row }) => {
-                const checkIn = row.original.check_in_date;
-                const checkOut = row.original.check_out_date;
+                const checkIn = row.original.check_in;
+                const checkOut = row.original.check_out;
                 let nights = 0;
                 try {
                     if (checkIn && checkOut) {

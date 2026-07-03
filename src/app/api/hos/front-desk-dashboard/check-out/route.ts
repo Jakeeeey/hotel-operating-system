@@ -88,7 +88,7 @@ export async function POST(request: Request) {
         }
 
         // 1. Update reservation status to "Checked-Out"
-        const resUpdate = await fetch(`${API_BASE_URL}/items/reservations/${reservationId}`, {
+        const resUpdate = await fetch(`${API_BASE_URL}/items/reservations_hos/${reservationId}`, {
             method: 'PATCH',
             headers,
             body: JSON.stringify({
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
         }
 
         // 2. Update room: operational_status_id = 1 (Vacant), housekeeping_status_id = 2 (Dirty)
-        const roomUpdate = await fetch(`${API_BASE_URL}/items/rooms/${roomId}`, {
+        const roomUpdate = await fetch(`${API_BASE_URL}/items/rooms_hos/${roomId}`, {
             method: 'PATCH',
             headers,
             body: JSON.stringify({

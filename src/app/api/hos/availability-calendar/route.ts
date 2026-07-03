@@ -3,13 +3,11 @@ import { NextResponse } from 'next/server';
 interface CalendarReservationItem {
     id: string | number;
     room_id?: string | number | null;
-    room_type_id?: string | number | null;
-    locked_price?: string | number | null;
     reservation_id?: {
         id: string | number;
         status: string;
-        check_in_date: string;
-        check_out_date: string;
+        check_in: string;
+        check_out: string;
         guest_id?: {
             first_name: string;
             last_name: string;
@@ -48,16 +46,16 @@ export async function GET(request: Request) {
             tasksRes
         ] = await Promise.all([
             // 1. Room Types
-            fetch(`${API_BASE_URL}/items/room_types?limit=-1&sort=id`, { headers }),
+            fetch(`${API_BASE_URL}/items/room_types_hos?limit=-1&sort=id`, { headers }),
             // 2. Rooms (with operational status)
-            fetch(`${API_BASE_URL}/items/rooms?limit=-1&sort=room_number&fields=id,room_number,floor_number,type_id,operational_status_id.id,operational_status_id.status_name,operational_status_id.ui_color_code`, { headers }),
+            fetch(`${API_BASE_URL}/items/rooms_hos?limit=-1&sort=room_number&fields=id,room_number,floor_number,type_id,operational_status_id.id,operational_status_id.status_name,operational_status_id.ui_color_code`, { headers }),
             // 3. Operational Statuses
             fetch(`${API_BASE_URL}/items/operational_statuses?limit=-1`, { headers }),
             // 4. Reservation Items (within date range) with Joins
-            fetch(`${API_BASE_URL}/items/reservation_items?limit=-1&fields=id,night_date,locked_price,room_id,room_type_id,reservation_id.id,reservation_id.status,reservation_id.check_in_date,reservation_id.check_out_date,reservation_id.guest_id.first_name,reservation_id.guest_id.last_name&filter=${encodeURIComponent(JSON.stringify({
+            fetch(`${API_BASE_URL}/items/reservation_items_hos?limit=-1&fields=id,night_date,room_id,reservation_id.id,reservation_id.status,reservation_id.check_in,reservation_id.check_out,reservation_id.guest_id.first_name,reservation_id.guest_id.last_name&filter=${encodeURIComponent(JSON.stringify({
                 _and: [
-                    { reservation_id: { check_in_date: { _lte: end } } },
-                    { reservation_id: { check_out_date: { _gte: start } } }
+                    { reservation_id: { check_in: { _lte: end } } },
+                    { reservation_id: { check_out: { _gte: start } } }
                 ]
             }))}`, { headers }),
             // 5. Blocking Maintenance Tasks
@@ -93,13 +91,11 @@ export async function GET(request: Request) {
                 if (!reservationsMap.has(key)) {
                     reservationsMap.set(key, {
                         id: resInfo.id,
-                        check_in_date: resInfo.check_in_date,
-                        check_out_date: resInfo.check_out_date,
+                        check_in_date: resInfo.check_in,
+                        check_out_date: resInfo.check_out,
                         status: resInfo.status,
                         guest_id: resInfo.guest_id,
                         room_id: item.room_id,
-                        room_type_id: item.room_type_id,
-                        locked_price: item.locked_price
                     });
                 }
             }

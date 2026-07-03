@@ -27,7 +27,6 @@ import {
     Plus,
     CreditCard,
     Loader2,
-    Printer,
     AlertTriangle,
 } from "lucide-react";
 
@@ -127,6 +126,7 @@ export function GuestFolioSheet({
     const totalPayments = payments.reduce((sum, p) => sum + parseFloat(String(p.amount)), 0);
     const balance = totalCharges - totalPayments;
     const isBalanceClear = Math.abs(balance) < 0.01;
+    const depositHoldPayment = payments.find(p => p.notes === "Incidental Deposit Hold");
 
     const formatDate = (dateStr: string) => {
         if (!dateStr) return "-";
@@ -204,7 +204,31 @@ export function GuestFolioSheet({
         }
     };
 
-    const activeDeposit = payments.find(p => p.notes === "Incidental Deposit Hold");
+    const handleReturnDeposit = async (depPayment: PaymentItem) => {
+        setLoading(true);
+        try {
+            const res = await fetch("/api/hos/folio", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    type: "payment",
+                    reservationId,
+                    amount: -parseFloat(String(depPayment.amount)),
+                    payment_method: depPayment.payment_method,
+                    notes: "Deposit Refunded",
+                }),
+            });
+            if (!res.ok) throw new Error("Failed to refund");
+            toast.success("Deposit returned successfully.");
+            fetchFolio();
+        } catch {
+            toast.error("Failed to return deposit.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const activeDeposit = payments.find(p => p.notes === "Incidental Deposit Hold" && !payments.some(refund => refund.notes === "Deposit Refunded"));
 
     // Check-out with balance protection and deposit resolution
     const handleFinalizeCheckout = async () => {
@@ -281,9 +305,6 @@ export function GuestFolioSheet({
                                     {guestName} &bull; Room {roomNumber} ({roomTypeName})
                                 </SheetDescription>
                             </div>
-                            <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8">
-                                <Printer className="h-4 w-4" />
-                            </Button>
                         </div>
                     </SheetHeader>
 
@@ -361,12 +382,30 @@ export function GuestFolioSheet({
                                         <span>Date / Item</span>
                                         <span>Amount</span>
                                     </div>
-                                    {charges.length === 0 ? (
+                                    {charges.length === 0 && !depositHoldPayment ? (
                                         <div className="px-4 py-6 text-center text-sm text-muted-foreground">
                                             No charges recorded.
                                         </div>
                                     ) : (
                                         <div className="divide-y divide-muted/30">
+                                            {depositHoldPayment && (
+                                                <div className="flex justify-between items-start px-4 py-3 bg-amber-500/[0.03] border-b border-muted/30">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                                                            Initial Deposit
+                                                            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">(Refundable)</span>
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {formatDate(depositHoldPayment.payment_date)}
+                                                        </p>
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-foreground shrink-0">
+                                                        ₱{parseFloat(String(depositHoldPayment.amount)).toLocaleString(undefined, {
+                                                            minimumFractionDigits: 2,
+                                                        })}
+                                                    </span>
+                                                </div>
+                                            )}
                                             {charges.map((charge) => (
                                                 <div
                                                     key={charge.id}
@@ -425,7 +464,10 @@ export function GuestFolioSheet({
                                                         </div>
                                                         <div>
                                                             <p className="text-sm font-medium text-foreground">
-                                                                {payment.payment_method} Payment
+                                                                {payment.notes === "Deposit Refunded" ? "Deposit Refunded" : `${payment.payment_method} Payment`}
+                                                                {payment.notes === "Incidental Deposit Hold" && (
+                                                                    <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold ml-2">(Deposit Hold)</span>
+                                                                )}
                                                             </p>
                                                             <p className="text-xs text-muted-foreground">
                                                                 {formatDate(payment.payment_date)}
@@ -433,10 +475,24 @@ export function GuestFolioSheet({
                                                                     <> &bull; {payment.reference_number}</>
                                                                 )}
                                                             </p>
+                                                            {payment.notes === "Incidental Deposit Hold" && !payments.some(refund => refund.notes === "Deposit Refunded") && (
+                                                                <Button
+                                                                    variant="link"
+                                                                    size="sm"
+                                                                    className="h-auto p-0 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 mt-1 flex items-center gap-1"
+                                                                    onClick={() => handleReturnDeposit(payment)}
+                                                                >
+                                                                    Return Deposit
+                                                                </Button>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                    <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
-                                                        - ₱{parseFloat(String(payment.amount)).toLocaleString(undefined, {
+                                                    <span className={`text-sm font-semibold shrink-0 ${
+                                                        parseFloat(String(payment.amount)) < 0
+                                                            ? "text-rose-600 dark:text-rose-400"
+                                                            : "text-emerald-600 dark:text-emerald-400"
+                                                    }`}>
+                                                        {parseFloat(String(payment.amount)) < 0 ? "-" : "+"} ₱{Math.abs(parseFloat(String(payment.amount))).toLocaleString(undefined, {
                                                             minimumFractionDigits: 2,
                                                         })}
                                                     </span>

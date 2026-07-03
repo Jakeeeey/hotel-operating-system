@@ -27,7 +27,7 @@ export async function GET() {
         // Fetch tasks and rooms in parallel
         const [tasksRes, roomsRes] = await Promise.all([
             fetch(`${API_BASE_URL}/items/housekeeping_tasks?limit=-1&fields=*,room_id.*`, { headers }),
-            fetch(`${API_BASE_URL}/items/rooms?limit=-1&fields=id,room_number,housekeeping_status_id.id,operational_status_id`, { headers })
+            fetch(`${API_BASE_URL}/items/rooms_hos?limit=-1&fields=id,room_number,housekeeping_status_id.id,operational_status_id`, { headers })
         ]);
 
         if (!tasksRes.ok || !roomsRes.ok) {
@@ -140,7 +140,7 @@ export async function POST(request: Request) {
         };
 
         // Lookup room_id from room_number
-        const roomRes = await fetch(`${API_BASE_URL}/items/rooms?filter[room_number][_eq]=${encodeURIComponent(room_number)}`, { headers });
+        const roomRes = await fetch(`${API_BASE_URL}/items/rooms_hos?filter[room_number][_eq]=${encodeURIComponent(room_number)}`, { headers });
         if (!roomRes.ok) throw new Error('Failed to find room');
         const roomData = await roomRes.json();
         if (!roomData.data || roomData.data.length === 0) {
@@ -198,7 +198,7 @@ export async function POST(request: Request) {
                 }
 
                 if (matchedStatus) {
-                    const patchRes = await fetch(`${API_BASE_URL}/items/rooms/${room_id}`, {
+                    const patchRes = await fetch(`${API_BASE_URL}/items/rooms_hos/${room_id}`, {
                         method: 'PATCH',
                         headers,
                         body: JSON.stringify({ housekeeping_status_id: matchedStatus.id })

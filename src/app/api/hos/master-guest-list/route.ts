@@ -13,19 +13,20 @@ interface RawRoom extends Record<string, unknown> {
 
 interface RawRoomType extends Record<string, unknown> {
     id: string | number;
-    type_name: string;
+    name: string;
 }
 
 interface RawReservationItem extends Record<string, unknown> {
     id: string | number;
     room_id: string | number | { id: string | number; room_number: string } | null;
-    room_type_id: string | number | { id: string | number; type_name: string } | null;
     reservation_id: string | number | { id: string | number } | null;
 }
 
 interface RawReservation extends Record<string, unknown> {
     id: string | number;
     guest_id: string | number | { id: string | number } | null;
+    check_in: string;
+    check_out: string;
     reservation_items?: RawReservationItem[];
 }
 
@@ -46,10 +47,10 @@ export async function GET() {
         // Fetch all 5 tables independently to completely bypass Directus nested relation bugs
         const [guestsRes, reservationsRes, reservationItemsRes, roomsRes, roomTypesRes] = await Promise.all([
             fetch(`${API_BASE_URL}/items/guests_hos?limit=-1`, { headers }),
-            fetch(`${API_BASE_URL}/items/reservations?limit=-1`, { headers }),
-            fetch(`${API_BASE_URL}/items/reservation_items?limit=-1`, { headers }),
-            fetch(`${API_BASE_URL}/items/rooms?limit=-1`, { headers }),
-            fetch(`${API_BASE_URL}/items/room_types?limit=-1`, { headers })
+            fetch(`${API_BASE_URL}/items/reservations_hos?limit=-1`, { headers }),
+            fetch(`${API_BASE_URL}/items/reservation_items_hos?limit=-1`, { headers }),
+            fetch(`${API_BASE_URL}/items/rooms_hos?limit=-1`, { headers }),
+            fetch(`${API_BASE_URL}/items/room_types_hos?limit=-1`, { headers })
         ]);
 
         if (!guestsRes.ok || !reservationsRes.ok || !reservationItemsRes.ok || !roomsRes.ok || !roomTypesRes.ok) {
@@ -79,16 +80,14 @@ export async function GET() {
             const roomId = typeof item.room_id === 'object' && item.room_id !== null ? (item.room_id as { id: string | number }).id : item.room_id;
             const foundRoom = rooms.find((room: RawRoom) => room.id === roomId);
             
-            const roomTypeId = typeof item.room_type_id === 'object' && item.room_type_id !== null 
-                ? (item.room_type_id as { id: string | number }).id 
-                : (item.room_type_id || (foundRoom ? foundRoom.type_id : null));
+            const roomTypeId = foundRoom ? foundRoom.type_id : null;
             const foundType = roomTypes.find((t: RawRoomType) => t.id === roomTypeId);
 
             return {
                 ...item,
                 room_id: foundRoom ? { id: foundRoom.id, room_number: foundRoom.room_number } : item.room_id,
-                room_type_id: foundType ? { id: foundType.id, type_name: foundType.type_name } : item.room_type_id
-            } as RawReservationItem;
+                room_type_id: foundType ? { id: foundType.id, name: foundType.name } : null
+            } as unknown as RawReservationItem;
         });
 
         // 2. Stitch enriched reservation_items into reservations

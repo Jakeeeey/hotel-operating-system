@@ -20,7 +20,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         const body = await request.json();
         const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
         
-        const response = await fetch(`${API_BASE_URL}/items/room_types/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/items/room_types_hos/${id}`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -43,7 +43,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         const { id } = await params;
         const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
         
-        const response = await fetch(`${API_BASE_URL}/items/room_types/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/items/room_types_hos/${id}`, {
             method: 'DELETE',
             headers: {
                 ...(staticToken ? { 'Authorization': `Bearer ${staticToken}` } : {}),

@@ -12,9 +12,9 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const search = searchParams.get('search');
         
-        let url = `${API_BASE_URL}/items/room_types?limit=-1&sort=-created_at`;
+        let url = `${API_BASE_URL}/items/room_types_hos?limit=-1&sort=-created_at`;
         if (search) {
-            const filter = { type_name: { _icontains: search } };
+            const filter = { name: { _icontains: search } };
             url += `&filter=${encodeURIComponent(JSON.stringify(filter))}`;
         }
 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
         const body = await request.json();
         const staticToken = process.env.DIRECTUS_STATIC_TOKEN;
 
-        const response = await fetch(`${API_BASE_URL}/items/room_types`, {
+        const response = await fetch(`${API_BASE_URL}/items/room_types_hos`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

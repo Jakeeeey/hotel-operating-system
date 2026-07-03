@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CreditCard, Check, QrCode, Loader2, Smartphone } from "lucide-react";
+import { CreditCard, Check, QrCode, Loader2, Smartphone, ExternalLink } from "lucide-react";
+import { initiateMockPaymentSession } from "../services/paymongo-mock.service";
 
 interface PaymentQrModalProps {
     open: boolean;
@@ -28,6 +29,28 @@ export function PaymentQrModal({ open, onOpenChange, bookingData, onPaymentCompl
     const [referenceNumber, setReferenceNumber] = useState("");
     const [verifying, setVerifying] = useState(false);
     const [verified, setVerified] = useState(false);
+    const [checkoutUrl, setCheckoutUrl] = useState("");
+    const [loadingCheckout, setLoadingCheckout] = useState(false);
+
+    useEffect(() => {
+        if (open && bookingData) {
+            setLoadingCheckout(true);
+            initiateMockPaymentSession({
+                amount: bookingData.paymentAmount,
+                guestName: bookingData.guestName,
+                guestEmail: "",
+                roomName: bookingData.roomTypeName,
+                reservationId: bookingData.reservationId.toString(),
+            }).then((res) => {
+                if (res.success && res.checkoutUrl) {
+                    setCheckoutUrl(res.checkoutUrl);
+                }
+                setLoadingCheckout(false);
+            }).catch(() => {
+                setLoadingCheckout(false);
+            });
+        }
+    }, [open, bookingData]);
 
     const remainingBalance = bookingData.totalAmount - bookingData.paymentAmount;
 
@@ -38,20 +61,41 @@ export function PaymentQrModal({ open, onOpenChange, bookingData, onPaymentCompl
 
         setVerifying(true);
         try {
-            const res = await fetch("/api/hos/folio", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    type: "payment",
-                    reservationId: bookingData.reservationId,
-                    amount: bookingData.paymentAmount,
-                    payment_method: bookingData.paymentMethod,
-                    reference_number: referenceNumber.trim(),
-                    notes: `Payment collected at booking via ${bookingData.paymentMethod}`,
-                }),
-            });
+            const paidVal = bookingData.paymentAmount;
+            const roomPayAmount = Math.max(0, paidVal - 1000);
+            const depositAmount = Math.min(paidVal, 1000);
 
-            if (!res.ok) throw new Error("Failed to record payment");
+            if (roomPayAmount > 0) {
+                const res = await fetch("/api/hos/folio", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        type: "payment",
+                        reservationId: bookingData.reservationId,
+                        amount: roomPayAmount,
+                        payment_method: bookingData.paymentMethod,
+                        reference_number: referenceNumber.trim(),
+                        notes: `Payment collected at booking via ${bookingData.paymentMethod}`,
+                    }),
+                });
+                if (!res.ok) throw new Error("Failed to record room payment");
+            }
+
+            if (depositAmount > 0) {
+                const res = await fetch("/api/hos/folio", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        type: "payment",
+                        reservationId: bookingData.reservationId,
+                        amount: depositAmount,
+                        payment_method: bookingData.paymentMethod,
+                        reference_number: referenceNumber.trim(),
+                        notes: "Incidental Deposit Hold",
+                    }),
+                });
+                if (!res.ok) throw new Error("Failed to record deposit payment");
+            }
 
             setVerified(true);
 
@@ -195,7 +239,18 @@ export function PaymentQrModal({ open, onOpenChange, bookingData, onPaymentCompl
                                         </p>
                                     </div>
                                     <span className="text-sm font-semibold text-foreground">
-                                        ₱{bookingData.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                        ₱{(bookingData.basePrice * bookingData.nights).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center px-4 py-3">
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground">Deposit Insurance</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Refundable incidental deposit
+                                        </p>
+                                    </div>
+                                    <span className="text-sm font-semibold text-foreground">
+                                        ₱1,000.00
                                     </span>
                                 </div>
                             </div>
@@ -245,9 +300,26 @@ export function PaymentQrModal({ open, onOpenChange, bookingData, onPaymentCompl
                         </div>
 
                         {/* QR Code */}
-                        <div className="w-44 h-44 p-3 bg-white rounded-2xl shadow-lg border border-muted/30">
-                            <MockQrCode />
+                        <div className="w-44 h-44 p-3 bg-white rounded-2xl shadow-lg border border-muted/30 flex items-center justify-center relative">
+                            {loadingCheckout ? (
+                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                            ) : (
+                                <MockQrCode />
+                            )}
                         </div>
+
+                        {/* Live/Mock Checkout Link Helper */}
+                        {checkoutUrl && !loadingCheckout && (
+                            <a
+                                href={checkoutUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-semibold"
+                            >
+                                Open PayMongo Checkout
+                                <ExternalLink className="h-3 w-3" />
+                            </a>
+                        )}
 
                         {/* Reference Input + Verify */}
                         <div className="w-full space-y-3">
