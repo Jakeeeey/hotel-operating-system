@@ -1,5 +1,5 @@
 import { DM_Sans } from "next/font/google";
-import { NavBar, Footer } from "../../../../modules/hotel-operating-system/hotel-landing-page";
+import { NavBar, Footer } from "../../../../../modules/hotel-operating-system/hotel-landing-page";
 import { AllRoomsGrid } from "@/modules/hotel-operating-system/hotel-landing-page/pages/rooms/AllRoomsGrid";
 import { getRoomsService } from "@/modules/hotel-operating-system/hotel-landing-page/pages/home/services/room.service";
 import { RoomData } from "@/modules/hotel-operating-system/hotel-landing-page/pages/home/types/room.types";

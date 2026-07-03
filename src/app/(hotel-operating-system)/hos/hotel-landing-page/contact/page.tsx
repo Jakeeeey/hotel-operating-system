@@ -1,6 +1,6 @@
 import { DM_Sans } from "next/font/google";
 import { NavBar, Footer } from "../../../../../modules/hotel-operating-system/hotel-landing-page";
-import BookingSuccessPage from "@/modules/hotel-operating-system/hotel-landing-page/pages/booking/success/page";
+import { ContactView } from "@/modules/hotel-operating-system/hotel-landing-page/pages/contact/ContactView";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -8,20 +8,16 @@ const dmSans = DM_Sans({
 });
 
 export const metadata = {
-  title: "Booking Success | Luxury Stays",
-  description: "Your reservation has been successfully processed.",
+  title: "Exclusive Premium Packages & Active Promotional Hub | Luxury Stays",
+  description: "Browse dynamic resort reduction packages, flash campaigns, and claim premium rates via our checkout pipeline interfaces.",
 };
 
-interface PageProps {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}
-
-export default function SuccessRoute({ searchParams }: PageProps) {
+export default function ContactPage() {
   return (
     <main className={`${dmSans.className} min-h-screen bg-white flex flex-col`}>
       <NavBar />
       <div className="pt-28 pb-20 flex-grow">
-        <BookingSuccessPage searchParams={searchParams} />
+        <ContactView />
       </div>
       <Footer />
     </main>

@@ -1,5 +1,5 @@
 import { DM_Sans } from "next/font/google";
-import { NavBar, Footer } from "../../../../modules/hotel-operating-system/hotel-landing-page";
+import { NavBar, Footer } from "../../../../../modules/hotel-operating-system/hotel-landing-page";
 import { OfferDetailsView } from "@/modules/hotel-operating-system/hotel-landing-page/pages/offers/OfferDetailsView";
 import { Suspense } from "react";
 
