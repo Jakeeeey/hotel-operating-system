@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 interface RawGuest extends Record<string, unknown> {
     id: string | number;
@@ -32,11 +32,8 @@ interface RawReservation extends Record<string, unknown> {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL;
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     try {
-        const { searchParams } = new URL(req.url);
-        const filter = searchParams.get('filter');
-
         if (!API_BASE_URL) {
             return NextResponse.json({ error: 'Missing API configuration.' }, { status: 500 });
         }
@@ -107,7 +104,7 @@ export async function GET(req: NextRequest) {
         });
 
         // 3. Manually stitch enriched reservations into their corresponding guests
-        let guestsWithReservations = guests.map((guest: RawGuest) => {
+        const guestsWithReservations = guests.map((guest: RawGuest) => {
             const guestReservations = enrichedReservations.filter((r: RawReservation) => {
                 const rGuestId = typeof r.guest_id === 'object' && r.guest_id !== null ? (r.guest_id as { id: string | number }).id : r.guest_id;
                 return rGuestId === guest.id;
@@ -117,19 +114,6 @@ export async function GET(req: NextRequest) {
                 reservations: guestReservations
             };
         });
-
-        if (filter === 'checked-in') {
-            guestsWithReservations = guestsWithReservations
-                .filter((guest) => {
-                    return guest.reservations.some((r: RawReservation) => r.status === 'Checked-In');
-                })
-                .map((guest) => {
-                    return {
-                        ...guest,
-                        reservations: guest.reservations.filter((r: RawReservation) => r.status === 'Checked-In')
-                    };
-                });
-        }
 
         // Sort guests by created_at descending (most recent first)
         guestsWithReservations.sort((a, b) => {
@@ -142,7 +126,7 @@ export async function GET(req: NextRequest) {
             data: guestsWithReservations
         });
     } catch (error) {
-        console.error('Error fetching master guest list:', error);
+        console.error('Error fetching reservation history:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

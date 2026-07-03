@@ -11,7 +11,6 @@ import { User, Phone, Mail, CalendarDays } from "lucide-react";
 import { differenceInDays, parseISO } from "date-fns";
 import { DataTable } from "./new-data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import { ManageStayModal } from "./manage-stay-modal";
 
 export interface ReservationItem {
     room_id?: {
@@ -47,8 +46,6 @@ interface GuestHistoryModalProps {
 }
 
 export function GuestHistoryModal({ open, onOpenChange, guest }: GuestHistoryModalProps) {
-    const [manageReservationId, setManageReservationId] = React.useState<number | null>(null);
-
     const sortedReservations = useMemo(() => {
         if (!guest?.reservations) return [];
         return [...guest.reservations].sort((a, b) => {
@@ -139,26 +136,6 @@ export function GuestHistoryModal({ open, onOpenChange, guest }: GuestHistoryMod
                     </Badge>
                 );
             }
-        },
-        {
-            id: "actions",
-            header: () => <div className="text-right">Action</div>,
-            cell: ({ row }) => {
-                const status = (row.original.status || '').toLowerCase();
-                if (status === 'checked-in' || status === 'in-house') {
-                    return (
-                        <div className="text-right">
-                           <button 
-                               onClick={() => setManageReservationId(row.original.id)}
-                               className="text-sm text-primary hover:underline font-medium"
-                           >
-                               Edit Stay
-                           </button>
-                        </div>
-                    );
-                }
-                return null;
-            }
         }
     ], []);
 
@@ -218,18 +195,6 @@ export function GuestHistoryModal({ open, onOpenChange, guest }: GuestHistoryMod
                     </div>
                 </div>
             </DialogContent>
-
-            <ManageStayModal 
-                open={manageReservationId !== null} 
-                onOpenChange={(isOpen) => {
-                    if (!isOpen) setManageReservationId(null);
-                }} 
-                reservation={guest.reservations?.find(r => r.id === manageReservationId) || null}
-                onSuccess={() => {
-                    // Ideally we'd trigger a refresh here, for now just close
-                    setManageReservationId(null);
-                }}
-            />
         </Dialog>
     );
 }

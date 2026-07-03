@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { DataTable } from "./components/new-data-table";
 import { ColumnDef } from "@tanstack/react-table";
 
-export default function MasterGuestListModule() {
+export default function ReservationHistoryModule() {
     const [guests, setGuests] = useState<Guest[]>([]);
     const [loading, setLoading] = useState(true);
     
@@ -20,7 +20,7 @@ export default function MasterGuestListModule() {
     const fetchGuests = async () => {
         setLoading(true);
         try {
-            const res = await fetch("/api/hos/master-guest-list?filter=checked-in");
+            const res = await fetch("/api/hos/reservation-history");
             if (!res.ok) throw new Error("Failed to load guests");
             const json = await res.json();
             setGuests(json.data || []);
@@ -79,10 +79,10 @@ export default function MasterGuestListModule() {
                 <div className="space-y-2">
                     <h1 className="text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
                         <Users className="h-7 w-7 text-primary" />
-                        In-House Guests
+                        Reservation History
                     </h1>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                        View present guests, their contact information, and manage their stays.
+                        View past and present guests, their contact information, and complete stay history.
                     </p>
                 </div>
             </div>
