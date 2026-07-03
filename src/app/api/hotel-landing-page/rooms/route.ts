@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getRoomsService } from '@/components/hotel-landing-page/pages/home/services/room.service';
+import { getRoomsService } from '@/modules/hotel-operating-system/hotel-landing-page/pages/home/services/room.service';
 /**
  * GET handler for fetching rooms
  * Proxies request to Directus via the Service layer

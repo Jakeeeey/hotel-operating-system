@@ -1,8 +1,8 @@
 import { DM_Sans } from "next/font/google";
-import { NavBar, Footer } from "@/components/hotel-landing-page";
-import { AllRoomsGrid } from "@/components/hotel-landing-page/pages/rooms/AllRoomsGrid";
-import { getRoomsService } from "@/components/hotel-landing-page/pages/home/services/room.service";
-import { RoomData } from "@/components/hotel-landing-page/pages/home/types/room.types";
+import { NavBar, Footer } from "../../../../modules/hotel-operating-system/hotel-landing-page";
+import { AllRoomsGrid } from "@/modules/hotel-operating-system/hotel-landing-page/pages/rooms/AllRoomsGrid";
+import { getRoomsService } from "@/modules/hotel-operating-system/hotel-landing-page/pages/home/services/room.service";
+import { RoomData } from "@/modules/hotel-operating-system/hotel-landing-page/pages/home/types/room.types";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],

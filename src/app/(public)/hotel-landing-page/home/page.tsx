@@ -13,7 +13,7 @@ import {
   CallToAction,
   Footer,
   WhyChooseUs,
-} from "@/components/hotel-landing-page";
+} from "../../../../modules/hotel-operating-system/hotel-landing-page";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],

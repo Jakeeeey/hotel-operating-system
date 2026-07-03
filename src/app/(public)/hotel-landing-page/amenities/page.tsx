@@ -1,6 +1,6 @@
 import { DM_Sans } from "next/font/google";
-import { NavBar, Footer } from "@/components/hotel-landing-page";
-import { AmenitiesView } from "@/components/hotel-landing-page/pages/amenities/AmenitiesView";
+import { NavBar, Footer } from "../../../../modules/hotel-operating-system/hotel-landing-page";
+import { AmenitiesView } from "@/modules/hotel-operating-system/hotel-landing-page/pages/amenities/AmenitiesView";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
