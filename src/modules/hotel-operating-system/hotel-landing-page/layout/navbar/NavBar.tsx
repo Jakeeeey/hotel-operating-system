@@ -1,14 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Globe, Menu, X } from "lucide-react";
+import { Search, Globe, Menu, X, LogOut, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export function NavBar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const pathname = usePathname(); // Reads the active route location to handle focus styles
+  const router = useRouter();
 
   // Replaced arbitrary Link placeholder strings with exact funnel path strings
   const navLinks = [
@@ -31,6 +34,29 @@ export function NavBar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    fetch("/api/hotel-landing-page/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.user) {
+          setUser(data.user);
+        }
+      })
+      .catch((err) => console.error("[NavBar] Failed to fetch session:", err));
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/hotel-landing-page/auth/logout", { method: "POST" });
+      setUser(null);
+      setDropdownOpen(false);
+      setIsOpen(false);
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <>
@@ -117,12 +143,55 @@ export function NavBar() {
                 <Globe size={16} strokeWidth={1.8} className="text-neutral-700" />
                 <span className="text-sm text-neutral-700">EN</span>
               </div>
-              <button className="text-sm font-normal bg-transparent border-none cursor-pointer text-neutral-600 hover:text-black transition-colors">
-                Log In
-              </button>
-              <button className="rounded-[8px] px-4 py-2 text-sm font-semibold cursor-pointer whitespace-nowrap bg-[#111111] text-white hover:bg-neutral-800 transition-colors">
-                Sign Up
-              </button>
+              {user ? (
+                <div className="relative">
+                  <button 
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="flex items-center gap-2 cursor-pointer outline-none hover:opacity-80 transition-opacity"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-[#111111] text-white flex items-center justify-center text-sm font-semibold">
+                      {user.first_name ? user.first_name.charAt(0).toUpperCase() : "U"}
+                    </div>
+                    <span className="text-sm font-medium text-black hidden md:block">{user.first_name}</span>
+                    <ChevronDown size={14} className="text-neutral-500 hidden md:block" />
+                  </button>
+                  {dropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-xl shadow-lg py-1 z-50">
+                      <Link 
+                        href="/hotel-landing-page/account/settings" 
+                        className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        Account Settings
+                      </Link>
+                      <Link 
+                        href="/hotel-landing-page/account/history" 
+                        className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        My Reservations
+                      </Link>
+                      <div className="h-[1px] bg-neutral-100 my-1"></div>
+                      <button 
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-neutral-100 transition-colors flex items-center gap-2"
+                      >
+                        <LogOut size={14} />
+                        Log Out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Link href="/hotel-landing-page/login" className="text-sm font-normal bg-transparent border-none cursor-pointer text-neutral-600 hover:text-black transition-colors">
+                    Log In
+                  </Link>
+                  <Link href="/hotel-landing-page/signup" className="rounded-[8px] px-4 py-2 text-sm font-semibold cursor-pointer whitespace-nowrap bg-[#111111] text-white hover:bg-neutral-800 transition-colors">
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Mobile Menu Toggle Button */}
@@ -190,20 +259,57 @@ export function NavBar() {
               <span className="text-base font-semibold text-white">EN</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mt-2">
-              <button
-                onClick={() => setIsOpen(false)}
-                className="w-full border border-white/20 text-white rounded-[10px] py-3 text-sm font-medium hover:bg-white/5 transition-colors"
-              >
-                Log In
-              </button>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="w-full bg-white text-[#111111] rounded-[10px] py-3 text-sm font-semibold hover:bg-white/90 transition-colors"
-              >
-                Sign Up
-              </button>
-            </div>
+            {user ? (
+              <div className="flex flex-col gap-3 mt-2">
+                <div className="flex items-center gap-3 px-1 text-white py-2 border-b border-white/10 mb-2">
+                  <div className="w-10 h-10 rounded-full bg-white text-[#111111] flex items-center justify-center text-lg font-semibold">
+                    {user.first_name ? user.first_name.charAt(0).toUpperCase() : "U"}
+                  </div>
+                  <div>
+                    <p className="font-medium text-base">{user.first_name} {user.last_name}</p>
+                    <p className="text-sm text-white/60">{user.email}</p>
+                  </div>
+                </div>
+                <Link
+                  href="/hotel-landing-page/account/settings"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full text-left text-white/80 py-2 text-base font-medium hover:text-white transition-colors"
+                >
+                  Account Settings
+                </Link>
+                <Link
+                  href="/hotel-landing-page/account/history"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full text-left text-white/80 py-2 text-base font-medium hover:text-white transition-colors"
+                >
+                  My Reservations
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left text-red-400 py-2 text-base font-medium hover:text-red-300 transition-colors flex items-center gap-2 mt-2"
+                >
+                  <LogOut size={16} />
+                  Log Out
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <Link
+                  href="/hotel-landing-page/login"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full text-center border border-white/20 text-white rounded-[10px] py-3 text-sm font-medium hover:bg-white/5 transition-colors block"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href="/hotel-landing-page/signup"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full text-center bg-white text-[#111111] rounded-[10px] py-3 text-sm font-semibold hover:bg-white/90 transition-colors block"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
